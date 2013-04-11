@@ -1,4 +1,6 @@
+#encoding: utf-8
 require "bundler/gem_tasks"
+
 
 namespace :nginx do
   NGINX_VER = "nginx-1.3.15"
@@ -6,20 +8,36 @@ namespace :nginx do
 
   #desc "Make nginx prerequisites"
   task :prereq do
-    tools = %w{zlib1g zlib1g-dev libpcre3 libpcre3-dev openssl libxml2-dev libxslt-dev libgd2-xpm libgd2-xpm-dev libgeoip-dev}
+    tools = %w{zlib1g zlib1g-dev libpcre3 libpcre3-dev openssl libssl-dev libxml2-dev libxslt-dev libgd2-xpm libgd2-xpm-dev libgeoip-dev}
     install_pkg(tools)
-    notice("Installed nginx prerequisites")
+    notice("完成了nginx依赖模块的安装。")
   end
 
   #desc "install nginx source"
   task :nginx_src do
     FileUtils.cd(TMP_DIR) do
       sh("wget -O #{NGINX_VER}.tar.gz http://nginx.org/download/#{NGINX_VER}.tar.gz && tar xvfz #{NGINX_VER}.tar.gz && cd #{NGINX_VER}")
-      notice("Installed nginx source")
+      notice("完成了#{NGINX_VER}源代码的下载。")
     end
   end
 
-  task :nginx => [:prereq, :nginx_src] do
+  #desc "write nginx config file"
+  task :nginx_conf do
+	File.open('/etc/nginx/nginx.conf', 'w') do |f2|
+		f2.puts NGINX_CONF
+	end
+
+	File.open('/etc/init.d/nginx', 'w') do |f2|
+		f2.puts NGINX_INITD
+	end
+
+	FileUtils.chmod 'a+x', '/etc/init.d/nginx'
+	FileUtils.mkdir_p '/var/lib/nginx/body'
+
+	notice('完成了nginx的配置，现在nginx是一个正向代理，监听在3124端口。')
+  end
+
+  task :nginx => [:prereq, :nginx_src, :nginx_conf] do
     FileUtils.cd(TMP_DIR) do
       FileUtils.cd(NGINX_VER) do
         options = %w{
@@ -39,7 +57,7 @@ namespace :nginx do
           --pid-path=/var/run/nginx.pid
           --with-debug
           --with-http_addition_module
-	  --with-http_dav_module 
+					--with-http_dav_module 
 	  --with-http_geoip_module 
           --with-http_gzip_static_module
 	  --with-http_gunzip_module
@@ -59,13 +77,63 @@ namespace :nginx do
         ensure
           # ...
         end
-        notice("Installed nginx binary")
+        notice("Nginx编译安装完毕。请输入service nginx start启动服务。")
       end
     end
   end
 end
 
+desc "安装编译nginx和第三方模块"
 task :nginx => ["nginx:nginx"]
+
+#=============== ruby ===============
+
+namespace :ruby do
+  #desc "Install ruby"
+  task :install => ["system:curl", "dev:essential"] do
+    pkgs = %w{
+	bison
+	openssl libssl-dev
+	libreadline6 libreadline6-dev
+	zlib1g zlib1g-dev
+	libyaml-dev
+	libxml2-dev libxslt-dev
+	libgdbm-dev libffi-dev
+    }
+    install_pkg(pkgs)
+
+    rubies = %w{
+        ruby-1.9.3-p392
+        ruby-2.0.0-p0
+    }
+    rubies.each {|ruby| sh("rvm install --verify-downloads 1 #{ruby}")}
+    notice('ruby运行环境安装完毕，请在.bashrc或.profile添加[[ -s "/usr/local/rvm/scripts/rvm" ]] && source "/usr/local/rvm/scripts/rvm')
+  end
+end
+
+desc "安装ruby的rvm运行环境"
+task :ruby => ["ruby:install"]
+
+#=============== build tools ===============
+
+namespace :system do
+  task :curl do
+    tools = %w{libcurl3 libcurl3-gnutls libcurl4-openssl-dev curl}
+    install_pkg(tools)
+  end
+end
+task :system => ["system:curl"]
+
+namespace :dev do
+  #desc "Install essential tools"
+  task :essential do
+    tools = %w{build-essential autogen autoconf automake dkms libtool cmake }
+    install_pkg(tools)
+  end
+end
+#desc "Install all dev tools"
+task :dev => ["dev:essential"]
+
 
 #=============== tools ===============
 
