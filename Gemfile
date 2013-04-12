@@ -5,4 +5,7 @@ gemspec
 
 gem 'sinatra'
 gem 'sinatra-rocketio'
+gem 'thin'
 gem 'uuid'
+gem 'haml'
+gem 'sass'

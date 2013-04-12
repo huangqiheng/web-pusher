@@ -1,6 +1,20 @@
 #encoding: utf-8
 require "bundler/gem_tasks"
 
+desc '启动服务器'
+task :start do
+	system 'export PORT=5000'
+	system 'export WS_PORT=8080'
+	system 'rackup config.ru -p 5000'
+end
+
+desc '从github中，更新本源代码。'
+task :pull do
+	system 'git reset --hard HEAD'
+	system 'git pull'
+end
+
+#=============== instal nginx ===============
 
 namespace :nginx do
   NGINX_VER = "nginx-1.3.15"
