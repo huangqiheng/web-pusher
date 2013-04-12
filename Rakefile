@@ -5,8 +5,13 @@ desc '启动服务器'
 task :start do
 	system 'export PORT=5000'
 	system 'export WS_PORT=8080'
-	system 'rackup config.ru -p 5000'
+	system 'rackup config.ru -p 5000 &'
 end
+
+desc '关闭服务器'
+task :stop do
+	system 'ps aux | awk \'/bin\/rackup/{print $2}\' | xargs kill -9'
+end 
 
 desc '从github中，更新本源代码。'
 task :pull do
@@ -71,7 +76,7 @@ namespace :nginx do
           --pid-path=/var/run/nginx.pid
           --with-debug
           --with-http_addition_module
-					--with-http_dav_module 
+	  --with-http_dav_module 
 	  --with-http_geoip_module 
           --with-http_gzip_static_module
 	  --with-http_gunzip_module
@@ -84,7 +89,6 @@ namespace :nginx do
           --with-ipv6
           --with-pcre
           --with-pcre-jit
-          --without-http_rewrite_module
         }
         begin
           configure_make(options)
@@ -216,20 +220,16 @@ http {
 			client_max_body_size 32m;
 			send_timeout 180;
 			sub_filter_once on;
-			sub_filter </head> '<script type="text/javascript" src="/OMPSTATIC/script.js"></script></head>';
+			sub_filter </head> '<script type="text/javascript" src="/OMPSERVER/loader.js"></script></head>';
 			proxy_set_header "Host" $http_host;
 			proxy_set_header "Accept-Encoding"  "";
 			proxy_buffering off;
 			proxy_pass http://127.0.0.1:3129;
 		}
 
-		location /OMPCLIENT {
-			alias /srv/http/pusher/static;
-		}
-
 		location /OMPSERVER {
-			proxy_set_header "Host" "omp.doctorcom.com";
-			proxy_pass http://127.0.0.1:801/adjs/screen_js_lite.php;
+			rewrite ^/OMPSERVER/(.*)$ /$1 break;
+			proxy_pass http://127.0.0.1:5000;
 		}
 	}
 
@@ -259,6 +259,20 @@ http {
 			gunzip on;
 			gunzip_buffers 64 4k;
 			#gzip_proxied off;
+		}
+	}
+
+	server {
+		listen 3128;
+		server_name omp.cn;
+		location / {
+			proxy_set_header   X-Forwarded-For 	$proxy_add_x_forwarded_for;
+			proxy_set_header   X-Forwarded-Host 	$server_name;
+			proxy_set_header   X-Real-IP  		$remote_addr;
+			proxy_set_header   Host 		$host;
+			proxy_buffering    off;
+			proxy_redirect	   off;
+			proxy_pass  	   http://127.0.0.1:5000;
 		}
 	}
 }  
