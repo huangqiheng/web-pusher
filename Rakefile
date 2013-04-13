@@ -45,7 +45,11 @@ namespace :nginx do
 	File.open('/etc/nginx/nginx.conf', 'w') do |f2|
 		f2.puts NGINX_CONF
 	end
+	notice('完成了nginx的配置，现在nginx是一个正向代理，监听在3124端口。')
+  end
 
+  #desc "write nginx config file"
+  task :nginx_initd do
 	File.open('/etc/init.d/nginx', 'w') do |f2|
 		f2.puts NGINX_INITD
 	end
@@ -53,10 +57,10 @@ namespace :nginx do
 	FileUtils.chmod 'a+x', '/etc/init.d/nginx'
 	FileUtils.mkdir_p '/var/lib/nginx/body'
 
-	notice('完成了nginx的配置，现在nginx是一个正向代理，监听在3124端口。')
+	notice('创建nginx开机启动脚本')
   end
 
-  task :nginx => [:prereq, :nginx_src, :nginx_conf] do
+  task :nginx => [:prereq, :nginx_src, :nginx_conf, :nginx_initd] do
     FileUtils.cd(TMP_DIR) do
       FileUtils.cd(NGINX_VER) do
         options = %w{
