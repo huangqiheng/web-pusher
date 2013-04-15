@@ -3,15 +3,16 @@ require "bundler/gem_tasks"
 
 desc '启动服务器'
 task :start do
-	system 'export PORT=5000'
-	system 'export WS_PORT=8080'
-	system 'rackup config.ru -p 5000 &'
+	system 'ruby web-pusher.rb &'
 end
 
 desc '关闭服务器'
 task :stop do
-	system 'ps aux | awk \'/bin\/rackup/{print $2}\' | xargs kill -9'
+	system 'ps aux | awk \'/ruby web-pusher.rb/{print $2}\' | xargs kill -9'
 end 
+
+desc '从新启动服务器'
+task :restart => [:stop, :start]
 
 desc '从github中，更新本源代码。'
 task :pull do
@@ -35,6 +36,8 @@ namespace :nginx do
   #desc "install nginx source"
   task :nginx_src do
     FileUtils.cd(TMP_DIR) do
+      sh("rm -rf #{TMP_DIR}/nginx-push-stream-module") 
+      sh('git clone git@github.com:wandenberg/nginx-push-stream-module.git')
       sh("wget -O #{NGINX_VER}.tar.gz http://nginx.org/download/#{NGINX_VER}.tar.gz && tar xvfz #{NGINX_VER}.tar.gz && cd #{NGINX_VER}")
       notice("完成了#{NGINX_VER}源代码的下载。")
     end
@@ -60,7 +63,7 @@ namespace :nginx do
 	notice('创建nginx开机启动脚本')
   end
 
-  task :nginx => [:prereq, :nginx_src, :nginx_conf, :nginx_initd] do
+  task :compile do
     FileUtils.cd(TMP_DIR) do
       FileUtils.cd(NGINX_VER) do
         options = %w{
@@ -93,7 +96,8 @@ namespace :nginx do
           --with-ipv6
           --with-pcre
           --with-pcre-jit
-        }
+	  --add-module=/tmp/nginx-push-stream-module
+	}
         begin
           configure_make(options)
         ensure
@@ -103,10 +107,18 @@ namespace :nginx do
       end
     end
   end
+
+  task :tmp_clean do
+      sh("rm -rf #{TMP_DIR}/nginx-push-stream-module") 
+      sh("rm -rf #{TMP_DIR}/#{NGINX_VER}") 
+      sh("rm -f #{TMP_DIR}/#{NGINX_VER}.tar.gz") 
+  end
+
+  task :install => [:prereq, :nginx_src, :compile, :nginx_conf, :nginx_initd, :tmp_clean]
 end
 
-desc "安装编译nginx和第三方模块"
-task :nginx => ["nginx:nginx"]
+desc '安装编译nginx和第三方模块'
+task :nginx => ['nginx:install']
 
 #=============== ruby ===============
 
@@ -181,107 +193,6 @@ def notice(message)
 end
 
 #============ files sample ==========
-NGINX_CONF = <<start_file
-user  www-data;
-worker_processes  4;
-error_log  /dev/null warn;
-pid        /var/run/nginx.pid;
-    
-events {
-	worker_connections  1024;
-}           
-            
-http {      
-	include       /etc/nginx/mime.types;
-	default_type  application/octet-stream;
-	    
-	access_log  off;
-	sendfile        on;
-	keepalive_timeout  65;
-
-	client_body_buffer_size 128k;
-	client_header_buffer_size 32k;
-	large_client_header_buffers 4 64k;
-	client_max_body_size 24m;
-
-	resolver 8.8.8.8;
-
-	server {
-		listen 3128;
-		access_log off;
-
-		location / {
-			#sub_filter_types text/html;
-			gzip on;
-			gzip_comp_level 9;
-			gzip_disable "msie6";
-			gzip_proxied off;
-			gzip_min_length 512;
-			gzip_buffers 16 8k;
-			gzip_types text/plain text/xml text/css text/comma-separated-values text/javascript application/x-javascript application/json
-				application/xml application/xml+rss application/atom+xml;
-			client_body_buffer_size 128k;
-			client_max_body_size 32m;
-			send_timeout 180;
-			sub_filter_once on;
-			sub_filter </head> '<script type="text/javascript" src="/OMPSERVER/loader.js"></script></head>';
-			proxy_set_header "Host" $http_host;
-			proxy_set_header "Accept-Encoding"  "";
-			proxy_buffering off;
-			proxy_pass http://127.0.0.1:3129;
-		}
-
-		location /OMPSERVER {
-			rewrite ^/OMPSERVER/(.*)$ /$1 break;
-			proxy_pass http://127.0.0.1:5000;
-		}
-	}
-
-	server {
-		listen 3129;
-		access_log off;
-		location / {
-			proxy_redirect off;
-			proxy_set_header "Accept-Encoding"  "gzip";
-			proxy_set_header "Host" $http_host;
-			client_body_buffer_size 128k;
-			client_max_body_size 32m;
-
-			proxy_connect_timeout 180;
-			proxy_send_timeout 180;
-			proxy_read_timeout 180;
-			proxy_buffer_size 4k;
-			proxy_buffers 4 32k;
-			proxy_busy_buffers_size 64k;
-			proxy_temp_file_write_size 64k;
-			proxy_buffering off;
-			send_timeout 180;
-			proxy_set_header Connection "";
-			proxy_http_version 1.1;
-
-			proxy_pass http://$http_host$request_uri;
-			gunzip on;
-			gunzip_buffers 64 4k;
-			#gzip_proxied off;
-		}
-	}
-
-	server {
-		listen 3128;
-		server_name omp.cn;
-		location / {
-			proxy_set_header   X-Forwarded-For 	$proxy_add_x_forwarded_for;
-			proxy_set_header   X-Forwarded-Host 	$server_name;
-			proxy_set_header   X-Real-IP  		$remote_addr;
-			proxy_set_header   Host 		$host;
-			proxy_buffering    off;
-			proxy_redirect	   off;
-			proxy_pass  	   http://127.0.0.1:5000;
-		}
-	}
-}  
-start_file
-
 NGINX_INITD = <<start_file
 #!/bin/sh
 
@@ -379,4 +290,129 @@ case "$1" in
 esac
 
 exit 0
+start_file
+
+NGINX_CONF = <<start_file
+user  www-data;
+worker_processes  4;
+error_log  /dev/null warn;
+pid        /var/run/nginx.pid;
+    
+events {
+	worker_connections  1024;
+}           
+            
+http {      
+	include       /etc/nginx/mime.types;
+	default_type  application/octet-stream;
+	    
+	access_log  off;
+	sendfile        on;
+	keepalive_timeout  65;
+
+	client_body_buffer_size 128k;
+	client_header_buffer_size 32k;
+	large_client_header_buffers 4 64k;
+	client_max_body_size 24m;
+
+	resolver 8.8.8.8;
+
+	server {
+		listen 3128;
+		access_log off;
+
+		location / {
+			#sub_filter_types text/html;
+			gzip on;
+			gzip_comp_level 9;
+			gzip_disable "msie6";
+			gzip_proxied off;
+			gzip_min_length 512;
+			gzip_buffers 16 8k;
+			gzip_types text/plain text/xml text/css text/comma-separated-values text/javascript application/x-javascript application/json
+				application/xml application/xml+rss application/atom+xml;
+			client_body_buffer_size 128k;
+			client_max_body_size 32m;
+			send_timeout 180;
+			sub_filter_once on;
+			sub_filter </head> '<script type="text/javascript" src="/OMPSERVER/loader.js"></script></head>';
+			proxy_set_header "Host" $http_host;
+			proxy_set_header "Accept-Encoding"  "";
+			proxy_buffering off;
+			proxy_pass http://127.0.0.1:3129;
+		}
+
+		location /OMPSERVER {
+			rewrite ^/OMPSERVER/(.*)$ /$1 break;
+			proxy_pass http://127.0.0.1:5000;
+		}
+	}
+
+	server {
+		listen 3129;
+		access_log off;
+		location / {
+			proxy_redirect off;
+			proxy_set_header "Accept-Encoding"  "gzip";
+			proxy_set_header "Host" $http_host;
+			client_body_buffer_size 128k;
+			client_max_body_size 32m;
+
+			proxy_connect_timeout 180;
+			proxy_send_timeout 180;
+			proxy_read_timeout 180;
+			proxy_buffer_size 4k;
+			proxy_buffers 4 32k;
+			proxy_busy_buffers_size 64k;
+			proxy_temp_file_write_size 64k;
+			proxy_buffering off;
+			send_timeout 180;
+			proxy_set_header Connection "";
+			proxy_http_version 1.1;
+
+			proxy_pass http://$http_host$request_uri;
+			gunzip on;
+			gunzip_buffers 64 4k;
+			#gzip_proxied off;
+		}
+	}
+
+	server {
+		listen 3128;
+		server_name omp.cn;
+
+		tcp_nopush                      off;
+		tcp_nodelay                     on;
+		keepalive_timeout               10;
+		send_timeout                    10;
+		client_body_timeout             10;
+		client_header_timeout           10;
+		sendfile                        on;
+		client_header_buffer_size       1k;
+		large_client_header_buffers     2 4k;
+		client_max_body_size            1k;
+		client_body_buffer_size         1k;
+		ignore_invalid_headers          on;
+		push_stream_message_template    "{\"id\":~id~,\"channel\":\"~channel~\",\"text\":\"~text~\"}";
+
+		location /channels-stats {
+			push_stream_channels_statistics;
+			set $push_stream_channel_id             $arg_id;
+		}
+
+		location /pub {
+			push_stream_publisher admin;
+			set $push_stream_channel_id             $arg_id;
+		}
+
+		location ~ /sub/(.*) {
+			push_stream_subscriber;
+			set $push_stream_channels_path              $1;
+		}
+
+		location /device {
+			proxy_pass http://127.0.0.1:5000;
+		}
+	}
+}  
 start_file

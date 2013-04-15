@@ -8,6 +8,7 @@ GEM
   specs:
     backports (3.3.0)
     daemons (1.1.9)
+    daybreak (0.3.0)
     em-websocket (0.5.0)
       eventmachine (>= 0.12.9)
       http_parser.rb (~> 0.5.3)
@@ -83,6 +84,7 @@ PLATFORMS
 
 DEPENDENCIES
   bundler
+  daybreak
   haml
   rake
   sass
