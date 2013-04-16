@@ -48,7 +48,7 @@ namespace :nginx do
 	File.open('/etc/nginx/nginx.conf', 'w') do |f2|
 		f2.puts NGINX_CONF
 	end
-	notice('完成了nginx的配置，现在nginx是一个正向代理，监听在3124端口。')
+	notice('完成了nginx的配置，现在nginx是一个正向代理，监听在3128端口。')
   end
 
   #desc "write nginx config file"
@@ -103,7 +103,7 @@ namespace :nginx do
         ensure
           # ...
         end
-        notice("Nginx编译安装完毕。请输入service nginx start启动服务。")
+        notice("Nginx编译安装完毕。")
       end
     end
   end
@@ -114,7 +114,10 @@ namespace :nginx do
       sh("rm -f #{TMP_DIR}/#{NGINX_VER}.tar.gz") 
   end
 
-  task :install => [:prereq, :nginx_src, :compile, :nginx_conf, :nginx_initd, :tmp_clean]
+  task :install => [:prereq, :nginx_src, :compile, :nginx_conf, :nginx_initd, :tmp_clean] do
+	sh('service nginx restart')
+        notice("Nginx安装完毕。正向代理端口监听于3128；推送管理转发到127.0.0.1:5000")
+  end
 end
 
 desc '安装编译nginx和第三方模块'
@@ -393,7 +396,7 @@ http {
 		client_max_body_size            1k;
 		client_body_buffer_size         1k;
 		ignore_invalid_headers          on;
-		push_stream_message_template    "{\"id\":~id~,\"channel\":\"~channel~\",\"text\":\"~text~\"}";
+		push_stream_message_template    "{\\\"id\\\":~id~,\\\"channel\\\":\\\"~channel~\\\",\\\"text\\\":\\\"~text~\\\"}";
 
 		location /channels-stats {
 			push_stream_channels_statistics;
@@ -410,7 +413,7 @@ http {
 			set $push_stream_channels_path              $1;
 		}
 
-		location /device {
+		location / {
 			proxy_pass http://127.0.0.1:5000;
 		}
 	}

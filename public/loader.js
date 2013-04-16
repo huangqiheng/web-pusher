@@ -21,6 +21,7 @@ if(self==top){
 
 		load_script("/OMPSERVER/head.min.js", function(){
 			head.js("/OMPSERVER/jquery.min.js",
+				"/OMPSERVER/pushstream.js", 
 				"/OMPSERVER/main.js", 
 				function(){omp_main();});
 		});
