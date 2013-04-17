@@ -24,6 +24,7 @@ if(self==top){
 				"/OMPSERVER/js/pushstream.js", 
 				"/OMPSERVER/js/jquery.gritter.js", 
 				"/OMPSERVER/css/jquery.gritter.css", 
+				"/OMPSERVER/js/identify.js", 
 				"/OMPSERVER/js/main.js", 
 				function(){omp_main();});
 		});

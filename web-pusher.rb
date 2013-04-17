@@ -59,12 +59,20 @@ set :environment, :production
 
 db = Daybreak::DB.new DB_FILE
 
-get '/device/:command' do
-	command = params[:command]
-	response['Access-Control-Allow-Origin'] = "http://#{params[:host]}"
+before do
+	if (request.referer) 
+		uri = URI(request.referer)
+		origin = "#{uri.scheme}://#{uri.host}"
+	else	
+		origin = '*'
+	end
+	response['Access-Control-Allow-Origin'] = origin
 	response['Access-Control-Allow-Methods'] = 'POST, GET, OPTIONS'
 	response['Access-Control-Allow-Credentials'] = 'true'
-	
+end
+
+get '/device/:command' do
+	command = params[:command]
 	if (command == 'get')
 		device_id = request.cookies['device_id']
 		if (device_id == nil)
@@ -107,8 +115,11 @@ get '/send/device/:id/:msg' do
 	'succeed'
 end
 
-get '/role/bind/:device/:key/:value' do
-
+get '/role/bind/:device/:domain/:account' do
+	puts 'device id', params[:device]
+	puts 'domain', params[:domain]
+	puts 'account', params[:account]
+	'ok'
 end
 
 get '/role/reset/:device' do

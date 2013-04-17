@@ -2,25 +2,27 @@
 function omp_main() 
 {
 	var xhr = new XMLHttpRequest();  
-	xhr.open("GET", "http://omp.cn/device/get?host="+window.location.hostname, true);  
+	xhr.open('GET', 'http://omp.cn/device/get', true);  
 	xhr.onreadystatechange = function(){
 		if (xhr.readyState == 4 && xhr.status == 200)
 		{
-			push_routine(xhr.responseText); 
+			var device_id = xhr.responseText;
+			push_routine(device_id); 
+			report_user_name(device_id);
 		}
 	}
 	xhr.withCredentials = true; 
 	xhr.send();
 }
 
-function log(msg)
+function mylog(msg)
 {
-	window.console&&console.log(msg);
+	window.console && console.log(msg);
 }
 
 function push_routine(device_id) 
 {
-	log('start push_routine')
+	mylog('start push_routine')
 	PushStream.LOG_LEVEL = 'debug';
 	var pushstream = new PushStream({
 		host: 'omp.cn',
@@ -42,9 +44,9 @@ function push_routine(device_id)
 
 	function _statuschanged(state) {
 		if (state == PushStream.OPEN) {
-			log('omp online now');
+			mylog('omp online now');
 		} else {
-			log('omp offline now');
+			mylog('omp offline now');
 		}
 	};
 
