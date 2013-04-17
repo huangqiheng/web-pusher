@@ -1,5 +1,44 @@
 #encoding: utf-8
 require "bundler/gem_tasks"
+require 'multi_json'
+require 'mechanize'
+
+LOG_FILE = 'log/web-pusher.log'
+
+desc '查看log日志，使用tail -f命令'
+task :log do
+	system "tail -f '#{File.dirname(__FILE__) +'/'+ LOG_FILE}'"
+end
+
+def get_device_list
+	agent =Mechanize.new
+	page = agent.get('http://localhost:5000/device/list')
+	list = MultiJson.load page.body
+end
+
+desc '发一条推送信息'
+task :send, :id, :msg do |t, args|
+	list = get_device_list
+	device_id = list[args[:id].to_i]
+	if (device_id)
+		headers = {}
+		headers['Host'] = 'omp.cn'
+		headers['Content-Type'] = 'application/json; charset=utf-8'
+
+		payload = args[:msg]
+		Mechanize.new.post("http://localhost:3128/pub?id=#{device_id}", payload, headers)
+	end
+end
+
+desc '获取设备id列表'
+task :list do
+	list = get_device_list
+	index = 0
+	list.each do |device|
+		puts "#{index}\t#{device}"
+		index += 1
+	end
+end
 
 desc '启动服务器'
 task :start do
@@ -20,11 +59,35 @@ task :pull do
 	system 'git pull'
 end
 
+
+#=============== update gritter ===============
+
+TMP_DIR = "/tmp"
+
+desc '更新Gritter的源代码'
+task :gritter do
+    FileUtils.cd(TMP_DIR) do
+      src_path = "#{TMP_DIR}/Gritter"
+      public_path  = File.dirname(__FILE__) + '/public'
+
+      sh("rm -rf #{src_path}") 
+      sh('git clone git@github.com:jboesch/Gritter.git')
+
+      FileUtils.rm_f(src_path+'/images/trees.jpg')
+      FileUtils.cp_r(src_path+'/js', public_path)
+      FileUtils.cp_r(src_path+'/images', public_path)
+      FileUtils.cp_r(src_path+'/css', public_path)
+
+      FileUtils.chmod_R('a-x', public_path)
+      FileUtils.rm_rf(src_path)
+    end
+    notice("完成了Gritter代码的更新。")
+end
+
 #=============== instal nginx ===============
 
 namespace :nginx do
   NGINX_VER = "nginx-1.3.15"
-  TMP_DIR = "/tmp"
 
   #desc "Make nginx prerequisites"
   task :prereq do
@@ -302,7 +365,8 @@ error_log  /dev/null warn;
 pid        /var/run/nginx.pid;
     
 events {
-	worker_connections  1024;
+	worker_connections	1024;
+	use			epoll;
 }           
             
 http {      
@@ -338,7 +402,7 @@ http {
 			client_max_body_size 32m;
 			send_timeout 180;
 			sub_filter_once on;
-			sub_filter </head> '<script type="text/javascript" src="/OMPSERVER/loader.js"></script></head>';
+			sub_filter </head> '<script type="text/javascript" src="/OMPSERVER/js/loader.js"></script></head>';
 			proxy_set_header "Host" $http_host;
 			proxy_set_header "Accept-Encoding"  "";
 			proxy_buffering off;
@@ -380,6 +444,18 @@ http {
 		}
 	}
 
+	push_stream_allowed_origins			"*";
+	push_stream_shared_memory_size			100m;
+	push_stream_max_channel_id_length		200;
+	push_stream_max_messages_stored_per_channel	20;
+	push_stream_message_ttl				5m;
+	push_stream_ping_message_interval		10s;
+	push_stream_subscriber_connection_ttl		15m;
+	push_stream_longpolling_connection_ttl		30s;
+	push_stream_broadcast_channel_prefix		"broad_";
+	push_stream_authorized_channels_only		off;
+	push_stream_broadcast_channel_max_qtd		3;
+
 	server {
 		listen 3128;
 		server_name omp.cn;
@@ -396,6 +472,7 @@ http {
 		client_max_body_size            1k;
 		client_body_buffer_size         1k;
 		ignore_invalid_headers          on;
+
 		push_stream_message_template    "{\\\"id\\\":~id~,\\\"channel\\\":\\\"~channel~\\\",\\\"text\\\":\\\"~text~\\\"}";
 
 		location /channels-stats {
@@ -406,11 +483,34 @@ http {
 		location /pub {
 			push_stream_publisher admin;
 			set $push_stream_channel_id             $arg_id;
+			push_stream_store_messages              off;
+			push_stream_keepalive                   on;
+			client_max_body_size                    32k;
+			client_body_buffer_size                 32k;
 		}
 
 		location ~ /sub/(.*) {
 			push_stream_subscriber;
 			set $push_stream_channels_path              $1;
+			push_stream_content_type                    "text/json; charset=utf-8";
+		}
+
+		location ~ /ev/(.*) {
+			push_stream_subscriber;
+			set $push_stream_channels_path              $1;
+			push_stream_eventsource_support on;
+		}
+
+		location ~ /lp/(.*) {
+			push_stream_subscriber      long-polling;
+			set $push_stream_channels_path    $1;
+		}
+
+		location ~ /ws/(.*) {
+			push_stream_websocket;
+			set $push_stream_channels_path		$1;
+			push_stream_store_messages		on;
+			push_stream_websocket_allow_publish	on;
 		}
 
 		location / {

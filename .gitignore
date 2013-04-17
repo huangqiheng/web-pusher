@@ -1,3 +1,5 @@
+*.log
+*.db
 *.swp
 *.yml
 *.gem
