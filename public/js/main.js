@@ -1,7 +1,16 @@
 
 function omp_main() 
 {
-	$.get('http://omp.cn/device/get', {}, push_routine);
+	var xhr = new XMLHttpRequest();  
+	xhr.open("GET", "http://omp.cn/device/get?host="+window.location.hostname, true);  
+	xhr.onreadystatechange = function(){
+		if (xhr.readyState == 4 && xhr.status == 200)
+		{
+			push_routine(xhr.responseText); 
+		}
+	}
+	xhr.withCredentials = true; 
+	xhr.send();
 }
 
 function log(msg)
@@ -11,20 +20,23 @@ function log(msg)
 
 function push_routine(device_id) 
 {
+	log('start push_routine')
 	PushStream.LOG_LEVEL = 'debug';
 	var pushstream = new PushStream({
 		host: 'omp.cn',
 		port: window.location.port,
-		modes: "longpolling"
+		modes: "eventsource|longpolling"
+		//modes: "stream|websocket|eventsource|longpolling"
 	});
 	pushstream.onmessage = _manageEvent;
 	pushstream.onstatuschange = _statuschanged;
 
 	function _manageEvent(eventMessage) {
 		if (eventMessage != '') {
-			var values = $.parseJSON(eventMessage);
-			var line = values.nick + ': ' + values.text.replace(/\\r/g, '\r').replace(/\\n/g, '\n');
-			Log4js.info(line);
+			$.gritter.add({
+				title: '通知!',
+				text: eventMessage
+			});
 		}
 	};
 
