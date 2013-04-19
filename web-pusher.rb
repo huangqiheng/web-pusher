@@ -10,10 +10,11 @@ require 'daybreak'
 require 'mechanize'
 require 'logger'
 
+APP_ROOT = File.dirname(__FILE__)
 OMP_DOMAIN_NAME = 'omp.cn'
-LOG_FILE = 'log/web-pusher.log'
-CONFIG_FILE = 'web-pusher.yml'
-DB_FILE = 'devices.db'
+LOG_FILE = "#{APP_ROOT}/log/web-pusher.log"
+CONFIG_FILE = "#{APP_ROOT}/web-pusher.yml"
+DB_FILE = "#{APP_ROOT}/devices.db"
 PROXY_PORT = 3128
 
 =begin 
@@ -93,9 +94,7 @@ get '/device/:command' do
 	end
 end
 
-get '/send/device/:id/:msg' do
-	device_id = params[:id]
-
+def send_message(device_id, message)
 	if (device_id.length != 32)
 		index_tofind = device_id.to_i
 		index = 0
@@ -111,7 +110,13 @@ get '/send/device/:id/:msg' do
 	headers = {}
 	headers['Host'] = OMP_DOMAIN_NAME
 	headers['Content-Type'] = 'application/json; charset=utf-8'
-	Mechanize.new.post("http://localhost:#{PROXY_PORT}/pub?id=#{device_id}", params[:msg], headers)
+	Mechanize.new.post("http://localhost:#{PROXY_PORT}/pub?id=#{device_id}", message, headers)
+end
+
+get '/send/device/:id/:msg' do
+	device_id = params[:id]
+	message = params[:msg]
+	send_message device_id, message
 	'succeed'
 end
 

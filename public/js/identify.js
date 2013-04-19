@@ -23,16 +23,19 @@ function bind_device_user(device_id, username)
 	var domain  = username[1];
 
 	var xhr = new XMLHttpRequest();  
+	xhr.withCredentials = true; 
 	xhr.open("GET", 'http://omp.cn/role/bind/'+device_id+'/'+domain+'/'+account, true);  
 	xhr.onreadystatechange = function(){
-		if (xhr.status == 200)
-		{
-			mylog('bind: ' + username);
-		} else {
-			mylog('bind: error');
+		if (xhr.status != 200) {
+			return;
 		}
+
+		if (xhr.readyState != 4) {
+			return;
+		}
+
+		mylog('bind ok: ' + username);
 	}
-	xhr.withCredentials = true; 
 	xhr.send();
 }
 

@@ -12,6 +12,7 @@ GEM
     domain_name (0.5.11)
       unf (>= 0.0.5, < 1.0.0)
     eventmachine (1.0.3)
+    logger (1.2.8)
     macaddr (1.6.1)
       systemu (~> 2.5.0)
     mechanize (2.6.0)
@@ -45,8 +46,6 @@ GEM
       rack-test
       sinatra (~> 1.4.2)
       tilt (~> 1.3)
-    sinatra-logger (0.1.1)
-      sinatra (>= 1.0)
     systemu (2.5.2)
     thin (1.5.1)
       daemons (>= 1.0.9)
@@ -66,12 +65,12 @@ PLATFORMS
 DEPENDENCIES
   bundler
   daybreak
+  logger
   mechanize
   multi_json
   rake
   sinatra
   sinatra-contrib
-  sinatra-logger
   thin
   uuid
   web-pusher!
