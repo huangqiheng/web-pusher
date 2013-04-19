@@ -58,7 +58,7 @@ set :public_folder, Proc.new { File.join(root, "public") }
 set :views, Proc.new { File.join(root, "views") }
 set :environment, :production
 
-db = Daybreak::DB.new DB_FILE
+$db = Daybreak::DB.new DB_FILE
 
 before do
 	if (request.referer) 
@@ -72,33 +72,18 @@ before do
 	response['Access-Control-Allow-Credentials'] = 'true'
 end
 
-get '/device/:command' do
-	command = params[:command]
-	if (command == 'get')
-		device_id = request.cookies['device_id']
-		if (device_id == nil)
-			device_id = UUID.generate().delete('-')
-			response.set_cookie('device_id', :value => device_id,
-					:domain => OMP_DOMAIN_NAME,
-					:path => '/',
-					:expires => Time.utc(2100,'jan',1,0,0,0))
-		end
-		db[device_id] = Time.now.to_i
-		return device_id
-	elsif (command == 'list')
-		list = Array.new
-		db.each do |key, value|
-			list << key
-		end
-		return MultiJson.dump(list, :pretty=>true)
-	end
+def send_message_raw(device_id, message)
+	headers = {}
+	headers['Host'] = OMP_DOMAIN_NAME
+	headers['Content-Type'] = 'application/json; charset=utf-8'
+	Mechanize.new.post("http://localhost:#{PROXY_PORT}/pub?id=#{device_id}", message, headers)
 end
 
 def send_message(device_id, message)
 	if (device_id.length != 32)
 		index_tofind = device_id.to_i
 		index = 0
-		db.each do |key, value|
+		$db.each do |key, value|
 			if (index == index_tofind)
 				device_id = key
 				break
@@ -107,10 +92,47 @@ def send_message(device_id, message)
 		end
 	end
 
-	headers = {}
-	headers['Host'] = OMP_DOMAIN_NAME
-	headers['Content-Type'] = 'application/json; charset=utf-8'
-	Mechanize.new.post("http://localhost:#{PROXY_PORT}/pub?id=#{device_id}", message, headers)
+	send_message_raw(device_id, message)
+end
+
+def device_cmd(request, command)
+	if (command == 'get')
+		device_id = request.cookies['device_id']
+		if (device_id == nil)
+			device_id = UUID.generate().delete('-')
+			response.set_cookie('device_id', 
+				:value => device_id,
+				:domain => OMP_DOMAIN_NAME,
+				:path => '/',
+				:expires => Time.utc(2100,'jan',1,0,0,0))
+		end
+		$db[device_id] = Time.now.to_i
+		return device_id
+	elsif (command == 'list')
+		list = Array.new
+		$db.each do |key, value|
+			list << key
+		end
+		return MultiJson.dump(list, :pretty=>true)
+	end
+end
+
+get '/omp.php' do
+	case params[:type]
+	when 'device'
+		redirect "http://omp.cn/device/#{params[:cmd]}"
+	when 'send'
+		redirect "http://omp.cn/send/device/#{params[:id]}/#{params[:msg]}"
+	when 'bind'
+		redirect "http://omp.cn/role/bind/#{params[:device]}/#{params[:plat]}/#{params[:user]}/#{params[:nick]}"
+	when 'reset'
+		redirect "http://omp.cn/role/reset/#{params[:device]}"
+	end
+end
+
+get '/device/:cmd' do
+	command = params[:cmd]
+	device_cmd(request, command)
 end
 
 get '/send/device/:id/:msg' do
@@ -120,15 +142,16 @@ get '/send/device/:id/:msg' do
 	'succeed'
 end
 
-get '/role/bind/:device/:domain/:account' do
-	puts 'device id', params[:device]
-	puts 'domain', params[:domain]
-	puts 'account', params[:account]
+get '/role/bind/:device/:plat/:user/:nick' do
+	puts "device id: #{params[:device]}"
+	puts "platform: #{params[:plat]}"
+	puts "user: #{params[:user]}"
+	puts "nick: #{params[:nick]}"
 	'ok'
 end
 
 get '/role/reset/:device' do
-
+	params[:device]
 end
 
 not_found do

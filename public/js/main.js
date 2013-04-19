@@ -2,7 +2,7 @@
 function omp_main() 
 {
 	var xhr = new XMLHttpRequest();  
-	xhr.open('GET', 'http://omp.cn/device/get', true);  
+	xhr.open('GET', 'http://omp.cn/omp.php?type=device&cmd=get', true);  
 	xhr.onreadystatechange = function(){
 		if (xhr.readyState == 4 && xhr.status == 200)
 		{
@@ -35,7 +35,8 @@ function push_routine(device_id)
 
 	function _manageEvent(eventMessage) {
 		if (eventMessage != '') {
-			$.gritter.add({
+			var o = ($.gritter)? $ : jQuery.noConflict();
+			o.gritter.add({
 				title: '通知!',
 				text: eventMessage
 			});

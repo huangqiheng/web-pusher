@@ -53,6 +53,9 @@ end
 desc '从新启动服务器'
 task :restart => [:stop, :start]
 
+desc '默认：查看日志'
+task :default => [:log]
+
 desc '从github中，更新本源代码。'
 task :pull do
 	system 'git reset --hard HEAD'

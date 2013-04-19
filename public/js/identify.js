@@ -21,10 +21,12 @@ function bind_device_user(device_id, username)
 	}
 	var account = username[0];
 	var domain  = username[1];
+	var nickname = '';
+	var url = 'http://omp.cn/omp.php?type=bind&device='+device_id+'&plat='+domain+'&user='+account+'&nick='+nickname;
 
 	var xhr = new XMLHttpRequest();  
 	xhr.withCredentials = true; 
-	xhr.open("GET", 'http://omp.cn/role/bind/'+device_id+'/'+domain+'/'+account, true);  
+	xhr.open("GET", url, true);  
 	xhr.onreadystatechange = function(){
 		if (xhr.status != 200) {
 			return;
@@ -52,13 +54,25 @@ function get_user_name()
                 }
 
 		var contents = username_regexs[i].contents;
-		var html_text = ' ';
+		var html_text = null;
+		var new_text, content;
 		for(ii=0, ll=contents.length; ii<ll; ii++)
 		{
-			var new_text = $(contents[ii]).html();
-			if (new_text) {
-				html_text += new_text;
+			if ((content = $(contents[ii])) == null) {
+				continue;
 			}
+
+			if (new_text = content.html()) {
+				if (html_text == null) {
+					html_text = new_text;
+				} else {
+					html_text += new_text;
+				}
+			}
+		}
+
+		if (html_text == null) {
+			continue;
 		}
 
 		html_text = html_text.replace(/[\r\n]+/g, '');
@@ -115,18 +129,20 @@ var username_regexs = [
         {'name':'腾讯微博',
          'host':"qq\\.com",
          'bypass':['进入微博'],
-	 'contents': [".mblog_login_info"],
+	 'contents': [".mblog_login_info", '#topNav1'],
          'matchs':[
 		 "<a target=\\\"_blank\\\" href=\\\"http:\\/\\/t\\.qq\\.com\\/[^\\/]+?\\/\\?pref=qqcom\\.mininav[^>]+?>([^<]+?)<\\/a>",
+		 "<a href=\\\"http:\\/\\/t\\.qq\\.com\\/[^\\?]+?\\?preview\\\" class=[\\s\\S]+?title=\\\"([^\\\"]+?)\\\">",
 	]},
 
         {'name':'腾讯QQ',
          'host':"qq\\.com",
          'bypass':[],
-	 'contents': [".qqName", ".log_info"],
+	 'contents': [".qqName", ".log_info", '#modHeadPersonal'],
          'matchs':[
 		"<span id=\\\"userName\\\">([^<]+)<\\/span>[^<]*?<span>\\[<\\/span>",
 		"<span class=\\\"usr_info\\\" id=\\\"usr_info\\\">[^\\(]+\\((\\d+?)\\)[^<]*?<\\/span>",
+		"<span class=\\\"ico_text\\\" data-type=\\\"nickname\\\">([^<]+?)<\\/span>",
 	]},
 
 ];
