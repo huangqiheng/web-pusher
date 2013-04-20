@@ -135,8 +135,8 @@ get '/device/:cmd' do
 	device_cmd(request, command)
 end
 
-get '/send/device/:id/:msg' do
-	device_id = params[:id]
+get '/send/device/:device/:msg' do
+	device_id = params[:device]
 	message = params[:msg]
 	send_message device_id, message
 	'succeed'

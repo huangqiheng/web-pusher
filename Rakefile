@@ -87,6 +87,34 @@ task :gritter do
     notice("完成了Gritter代码的更新。")
 end
 
+#=============== instal php ===============
+
+desc '安装php5-fpm、memcached、zeromq环境'
+namespace :php do
+	task :php5 do
+	  system('apt-get install python-software-properties')
+	  system('add-apt-repository ppa:ondrej/php5')
+	  system('apt-get update')
+	  tools=%w{php5-common php5-gd php5-cgi php5-cli php5-fpm php5-mysql php5-curl php5-mcrypt php-pear php-apc}
+	  install_pkg(tools)
+	end
+
+	task :memcached do
+	  install_pkg(%w{memcached php5-memcache php5-memcached})
+	end
+
+	task :zeromq do
+	  install_pkg(%w{libzmq-dev php5-dev libtool libpgm-dev})
+	  system('pear channel-discover pear.zero.mq')
+	  system('pecl install pear.zero.mq/zmq-beta')
+
+	  FileUtils.cd('/etc/php5/conf.d') do
+	    system('echo extension=zmq.so > zmq.ini')
+	  end
+	end
+end
+
+
 #=============== instal nginx ===============
 
 namespace :nginx do
