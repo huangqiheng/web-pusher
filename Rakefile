@@ -114,6 +114,8 @@ namespace :php do
 	end
 end
 
+desc '安装php环境'
+task :php => [:php5, :memcached, :zeromq]
 
 #=============== instal nginx ===============
 

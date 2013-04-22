@@ -6,6 +6,7 @@ define('PUSHER_PORT', 3128);
 define('MEMC_HOST', '127.0.0.1');
 define('MEMC_PORT', 11211);
 define('CACHE_EXPIRE_SECONDS', 1800);
+define('COOKIE_DEVICE_ID', 'device_id');
 
 $in_type 	= get_param('type');
 $in_cmd  	= get_param('cmd');
@@ -22,19 +23,64 @@ header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Credentials: true');
 
 empty($in_type) && exit();
-isset($in_cmd) && goto label_device;
+cmdis('device') && isset($in_cmd) && goto label_device;
 empty($in_device_id) && exit();
-isset($in_message) && goto label_sendmessage;
-isset($in_platform) && isset($in_username) && isset($in_nickname) && goto label_sendmessage;
+cmdis('send')   && isset($in_message) && goto label_sendmessage;
+cmdis('bind')   && isset($in_platform) && isset($in_username) && isset($in_nickname) && goto label_bind;
+cmdis('reset')  && goto label_reset;
 exit();
 
 label_device:
-
+echo handle_device_cmd($in_cmd);
 exit();
 
 label_sendmessage:
-
+echo handle_sendmesage($in_device_id, $in_message);
 exit();
+
+label_bind:
+echo handle_bind_device($in_device_id, $in_platform, $in_username, $in_nickname);
+exit();
+
+label_reset:
+echo handle_reset($in_device_id);
+exit();
+
+function handle_device_cmd($command)
+{
+	if ($command == 'get') {
+		$device = isset($_COOKIE[COOKIE_DEVICE_ID]) ? $_COOKIE[COOKIE_DEVICE_ID] : null;
+		if (empty($device))
+		{
+
+		}
+		
+
+	} else 
+	if ($command == 'list') {
+
+	}
+}
+
+function handle_sendmesage($device, $message)
+{
+
+}
+
+function handle_bind_device($device, $platform, $username, $nickname)
+{
+
+}
+
+function handle_reset($device)
+{
+
+}
+
+function cmdis($cmd)
+{
+	return ($in_type == $cmd);
+}
 
 function get_param($name)
 {

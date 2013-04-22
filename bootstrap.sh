@@ -3,9 +3,9 @@
 mkdir -p ~/bin ~/tmp
 
 sudo apt-get install -y curl
-sudo apt-get install -y git 
-sudo apt-get install -y ruby
-sudo gem install rake
+sudo apt-get install -y git git-core
+sudo apt-get install -y ruby ruby-dev
+sudo gem install rake bundle
 curl -L https://get.rvm.io | bash -s stable --ruby
 
 # add to .profile
