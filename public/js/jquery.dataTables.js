@@ -9182,7 +9182,7 @@
 				 *      } );
 				 *    } );
 				 */
-				"sFirst": "First",
+				"sFirst": "第一页",
 			
 			
 				/**
@@ -9203,7 +9203,7 @@
 				 *      } );
 				 *    } );
 				 */
-				"sLast": "Last",
+				"sLast": "最后一页",
 			
 			
 				/**
@@ -9224,7 +9224,7 @@
 				 *      } );
 				 *    } );
 				 */
-				"sNext": "Next",
+				"sNext": "下一页",
 			
 			
 				/**
@@ -9245,7 +9245,7 @@
 				 *      } );
 				 *    } );
 				 */
-				"sPrevious": "Previous"
+				"sPrevious": "前一页"
 			},
 		
 			/**
@@ -9287,7 +9287,7 @@
 			 *      } );
 			 *    } );
 			 */
-			"sInfo": "Showing _START_ to _END_ of _TOTAL_ entries",
+			"sInfo": "显示 _START_ 到 _END_  共有 _TOTAL_ 个推送终端",
 		
 		
 			/**
@@ -9306,7 +9306,7 @@
 			 *      } );
 			 *    } );
 			 */
-			"sInfoEmpty": "Showing 0 to 0 of 0 entries",
+			"sInfoEmpty": "显示 0 到 0 共有 0 个推送终端",
 		
 		
 			/**
@@ -9407,7 +9407,7 @@
 			 *      } );
 			 *    } );
 			 */
-			"sLengthMenu": "Show _MENU_ entries",
+			"sLengthMenu": "每页显示 _MENU_ 个推送终端",
 		
 		
 			/**
@@ -9481,7 +9481,7 @@
 			 *      } );
 			 *    } );
 			 */
-			"sSearch": "Search:",
+			"sSearch": "搜索:",
 		
 		
 			/**

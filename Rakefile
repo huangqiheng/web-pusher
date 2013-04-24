@@ -47,7 +47,7 @@ task :datatables do
       FileUtils.rm_f(src_path+'/media/js/jquery.js')
       FileUtils.rm_f(src_path+'/media/images/favicon.ico')
       system("rm -f \'#{src_path}/media/images/Sorting icons.psd\'")
-      system("rm -f \'#{src_path}/media/css/demo*.css\'")
+#      system("rm -f \'#{src_path}/media/css/demo*.css\'")
 
       FileUtils.cp_r(src_path+'/media/js', public_path)
       FileUtils.cp_r(src_path+'/media/images', public_path)
