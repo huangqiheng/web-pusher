@@ -1,18 +1,15 @@
 <?php
 
-define('PUSHER_DOMAIN', 'omp.cn');
-define('PUSHER_HOST', 'localhost');
-define('PUSHER_PORT', 3128);
-define('MEMC_HOST', '127.0.0.1');
-define('MEMC_PORT', 11211);
-define('CACHE_EXPIRE_SECONDS', 1800);
-define('COOKIE_DEVICE_ID', 'device_id');
+require_once 'memcache_array.php';
+require_once 'config.php';
+require_once 'functions.php';
 
 $in_type 	= get_param('type');
 $in_cmd  	= get_param('cmd');
 $in_message  	= get_param('msg');
 $in_device_id	= get_param('device');
 $in_platform	= get_param('plat');
+$in_caption 	= get_param('cap');
 $in_username	= get_param('user');
 $in_nickname	= get_param('nick');
 
@@ -23,11 +20,11 @@ header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Credentials: true');
 
 empty($in_type) && exit();
-cmdis('device') && isset($in_cmd) && goto label_device;
+if (iscmd('device') && isset($in_cmd)) goto label_device;
 empty($in_device_id) && exit();
-cmdis('send')   && isset($in_message) && goto label_sendmessage;
-cmdis('bind')   && isset($in_platform) && isset($in_username) && isset($in_nickname) && goto label_bind;
-cmdis('reset')  && goto label_reset;
+if (iscmd('send')   && isset($in_message)) goto label_sendmessage;
+if (iscmd('bind')   && isset($in_platform) && isset($in_caption) && isset($in_username) && isset($in_nickname)) goto label_bind;
+if (iscmd('reset')) goto label_reset;
 exit();
 
 label_device:
@@ -39,7 +36,7 @@ echo handle_sendmesage($in_device_id, $in_message);
 exit();
 
 label_bind:
-echo handle_bind_device($in_device_id, $in_platform, $in_username, $in_nickname);
+echo handle_bind_device($in_device_id, $in_platform, $in_caption, $in_username, $in_nickname);
 exit();
 
 label_reset:
@@ -50,26 +47,55 @@ function handle_device_cmd($command)
 {
 	if ($command == 'get') {
 		$device = isset($_COOKIE[COOKIE_DEVICE_ID]) ? $_COOKIE[COOKIE_DEVICE_ID] : null;
-		if (empty($device))
-		{
-
+		if (empty($device)) {
+			setcookie(COOKIE_DEVICE_ID, $device, time()+COOKIE_TIMEOUT, '/', PUSHER_DOMAIN);
 		}
-		
 
+		#$browser = json_encode(get_browser(null, true));
+		$ua = $_SERVER['HTTP_USER_AGENT'];
+		mmc_array_set(NS_DEVICE_LIST, $device, $ua, CACHE_EXPIRE_SECONDS);
+		return $device;
 	} else 
 	if ($command == 'list') {
-
+		return json_encode(mmc_array_all(NS_DEVICE_LIST));
 	}
 }
 
 function handle_sendmesage($device, $message)
 {
-
+	return send_message($device, $message);
 }
 
-function handle_bind_device($device, $platform, $username, $nickname)
+function handle_bind_device($device, $platform, $caption, $username, $nickname)
 {
+	$ns_bind_list = NS_BINDING_LIST.$platform;
+	$bind_info = mmc_array_get($ns_bind_list, $device);
+	$bind_info = ($bind_info)? json_decoce($bind_info) : [];
 
+	$changed = false;
+
+	if ($username) {
+		if ($bind_info['username'] != $username) {
+			$bind_info['username'] = $username;
+			$changed = true;
+		}
+	}
+	if ($nickname) {
+		if ($bind_info['nickname'] != $nickname) {
+			$bind_info['nickname'] = $nickname;
+			$changed = true;
+		}
+	}
+
+	if (!$changed) {
+		return 'ok';
+	}
+
+	if (mmc_array_set($ns_bind_list, $device, json_encode($bind_info))) {
+		mmc_array_caption($ns_bind_list, $caption);
+	}
+
+	return 'ok';
 }
 
 function handle_reset($device)
@@ -77,8 +103,9 @@ function handle_reset($device)
 
 }
 
-function cmdis($cmd)
+function iscmd($cmd)
 {
+	global $in_type;
 	return ($in_type == $cmd);
 }
 
@@ -87,43 +114,4 @@ function get_param($name)
 	return (isset($_GET[$name]))? $_GET[$name] : null;
 }
 
-function send_message($device_id, $message)
-{
-	$pub_url = 'http://'.PUSHER_HOST.':'.PUSHER_PORT.'/pub?id='.$device_id;
-        $headers = ['Content-Type: application/json; charset=utf-8'];
-	$headers[] = 'Host: '.PUSHER_DOMAIN;
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $pub_url);
-	curl_setopt($ch, CURLOPT_POST, 1);
-	curl_setopt($ch, CURLOPT_POSTFIELDS, $message);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_HEADER, 0);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 3);
-
-        $res = curl_exec($ch);
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $err = curl_errno($ch);
-        curl_close($ch);
-
-	return ($err)? (($httpcode==200)? $res : null) : null;
-}
-
-function cache($key, $value=null)
-{
-	$mem = new Memcache;
-	$mem->connect(MEMC_HOST, MEMC_PORT);
-	if (isnull($value)) {
-		$result = $mem->get($key);
-		$mem->close();
-		return $result;
-	} else {
-		$mem->set($key, $value, 0, CACHE_EXPIRE_SECONDS);
-		$mem->close();
-		return null;
-	}
-}
 ?>

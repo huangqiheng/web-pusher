@@ -19,10 +19,13 @@ function bind_device_user(device_id, username)
 	if (username == null) {
 		return;
 	}
-	var account = username[0];
-	var domain  = username[1];
-	var nickname = '';
-	var url = 'http://omp.cn/omp.php?type=bind&device='+device_id+'&plat='+domain+'&user='+account+'&nick='+nickname;
+
+	var url = 'http://omp.cn/omp.php?type=bind';
+	url +=  '&device=' + device_id;
+	url +=  '&plat=' + username[0];
+	url +=  '&cap=' + username[1];
+	url +=  '&user=' + username[2];
+	url +=  '&nick=' + username[3];
 
 	var xhr = new XMLHttpRequest();  
 	xhr.withCredentials = true; 
@@ -94,7 +97,7 @@ function get_user_name()
 					continue;
 				}
 
-				return [result[1], username_regexs[i].name];
+				return [username_regexs[i].name, username_regexs[i].caption, result[1], ''];
 			}
 		}
         }
@@ -115,7 +118,8 @@ function inarray(obj, arr)
 
 
 var username_regexs = [
-        {'name':'新浪通行证',
+        {'name':'sina_account',
+         'caption':'新浪通行证',
          'host':"sina\\.com\\.cn",
          'bypass': ['账号设置'],
 	 'contents': [".tn-user", ".cheadUserInfo", ".h2cont", ".J_Name"],
@@ -126,7 +130,8 @@ var username_regexs = [
 		 "<a href=\\\"http:\\/\\/login\\.sina\\.com\\.cn\\/member\\/my\\.php\\\"[^>]+?>([^<]+?)<\\/a>",
 	]},
 
-        {'name':'腾讯微博',
+        {'name':'tencent_weibo',
+         'caption':'腾讯微博',
          'host':"qq\\.com",
          'bypass':['进入微博'],
 	 'contents': [".mblog_login_info", '#topNav1'],
@@ -135,7 +140,8 @@ var username_regexs = [
 		 "<a href=\\\"http:\\/\\/t\\.qq\\.com\\/[^\\?]+?\\?preview\\\" class=[\\s\\S]+?title=\\\"([^\\\"]+?)\\\">",
 	]},
 
-        {'name':'腾讯QQ',
+        {'name':'tencent_qq',
+         'caption':'腾讯QQ',
          'host':"qq\\.com",
          'bypass':[],
 	 'contents': [".qqName", ".log_info", '#modHeadPersonal'],
