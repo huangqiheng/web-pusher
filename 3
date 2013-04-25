@@ -38,16 +38,21 @@ task :datatables do
     FileUtils.cd(TMP_DIR) do
       src_path = "#{TMP_DIR}/DataTables-1.9.4"
       public_path  = File.dirname(__FILE__) + '/public'
-
+=begin
       system('apt-get install unzip')
       system("rm -rf #{src_path}") 
       system('wget http://datatables.net/releases/DataTables-1.9.4.zip')
       system('unzip DataTables-1.9.4.zip')
+=end
 
       FileUtils.rm_f(src_path+'/media/js/jquery.js')
+      FileUtils.rm_f(src_path+'/media/images/Sorting icons.psd.psd')
+      
+
       FileUtils.rm_f(src_path+'/media/images/favicon.ico')
-      system("rm -f \'#{src_path}/media/images/Sorting icons.psd\'")
-      system("rm -f \'#{src_path}/media/css/demo*.css\'")
+#      FileUtils.rm_f(src_path+'/media/css/demo_page.css')
+#      FileUtils.rm_f(src_path+'/media/css/demo_table.css')
+#      FileUtils.rm_f(src_path+'/media/css/demo_table_jui.css')
 
       FileUtils.cp_r(src_path+'/media/js', public_path)
       FileUtils.cp_r(src_path+'/media/images', public_path)
@@ -55,7 +60,6 @@ task :datatables do
 
       FileUtils.chmod_R('a-x', public_path)
       FileUtils.rm_rf(src_path)
-      FileUtils.rm_rf(src_path+'.zip')
     end
     notice("完成了jquery datatables代码的更新。")
 end
