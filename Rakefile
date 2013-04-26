@@ -53,7 +53,7 @@ task :datatables do
       FileUtils.cp_r(src_path+'/media/images', public_path)
       FileUtils.cp_r(src_path+'/media/css', public_path)
 
-      FileUtils.chmod_R('a-x', public_path)
+      system("find #{public_path} -type f -exec chmod a-x {} \\;")
       FileUtils.rm_rf(src_path)
       FileUtils.rm_rf(src_path+'.zip')
     end
@@ -112,6 +112,12 @@ end
 
 desc '安装php环境'
 task :php => ['php:php5', 'php:memcached', 'php:zeromq']
+
+desc '配置browscap.ini'
+task :browscap do
+	system('mkdir_p /etc/php5/extra')
+	system('cp public/browscap.ini /etc/php5/extra')
+end
 
 #=============== instal nginx ===============
 

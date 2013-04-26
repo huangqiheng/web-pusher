@@ -1,5 +1,4 @@
 <?php
-
 require_once 'memcache_array.php';
 require_once 'config.php';
 require_once 'functions.php';
@@ -51,7 +50,6 @@ function handle_device_cmd($command)
 			setcookie(COOKIE_DEVICE_ID, $device, time()+COOKIE_TIMEOUT, '/', PUSHER_DOMAIN);
 		}
 
-		#$browser = json_encode(get_browser(null, true));
 		$ua = $_SERVER['HTTP_USER_AGENT'];
 		mmc_array_set(NS_DEVICE_LIST, $device, $ua, CACHE_EXPIRE_SECONDS);
 		return $device;
@@ -69,6 +67,12 @@ function handle_sendmesage($device, $message)
 function handle_bind_device($device, $platform, $caption, $username, $nickname)
 {
 	$ns_bind_list = NS_BINDING_LIST.$platform;
+
+	$platform_list = mmc_array_all(NS_BINDING_LIST);
+	if (!in_array($platform, $platform_list)) {
+		mmc_array_get(NS_BINDING_LIST, $platform);
+	}
+
 	$bind_info = mmc_array_get($ns_bind_list, $device);
 	$bind_info = ($bind_info)? json_decoce($bind_info) : [];
 

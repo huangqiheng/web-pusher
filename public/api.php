@@ -10,15 +10,43 @@ header('Access-Control-Allow-Credentials: true');
 
 if (isset($_GET['cmd']) or isset($_POST['cmd'])) goto label_api_mode;
 
-$aDataSet = [
-	['Trident1','Internet Explorer 4.0','Win 95+','4','X'],
-	['Trident2','Internet Explorer 4.0','Win 95+','4','X'],
-	['Trident3','Internet Explorer 4.0','Win 95+','4','X'],
-	['Trident4','Internet Explorer 5.0','Win 95+','5','C'],
-	['Trident5','Internet Explorer 5.0','Win 95+','5','C'],
-	['Trident6','Internet Explorer 5.0','Win 95+','5','C'],
-	['Trident7','Internet Explorer 5.5','Win 95+','5.5','A']
-];
+if (!ini_get("browscap")) {
+	echo '请配置browscap.ini';
+	exit();
+}
+
+$device_list  = mmc_array_all(NS_DEVICE_LIST);
+$platform_list = mmc_array_all(NS_BINDING_LIST);
+$aDataSet = [];
+
+foreach($device_list as $device) {
+	$user_agent = mmc_array_get(NS_DEVICE_LIST, $device);
+	if (empty($user_agent)) {
+		continue;
+	}
+
+	$browser = json_encode(get_browser($user_agent, true));
+	if (empty($browser)) {
+		continue;
+	}
+
+	$row_item = [$device, $browser['browser'], $browser['platform'], $browser['ismobiledevice']]
+
+	$account_info = '';
+	foreach($platform_list as $platform) {
+		$ns_binding = NS_BINDING_LIST.$platform;
+		$caption = mmc_array_caption($ns_binding);
+		$device_list = mmc_array_all($ns_binding);
+		if (in_array($device, $device_list)) { 
+			$account = mmc_array_get($ns_binding, $device);
+			if (($account) and ($account['username'])) {
+				$account_info .= $account['username'].'@'.$caption;
+			}
+		}	
+	}
+	$row_item[] = $account_info;
+	$aDataSet[] = $row_item;
+}
 
 ?>
 <html>
