@@ -30,8 +30,33 @@ task :pull do
 	system 'git pull'
 end
 
-#============== update datatables ==========
+#============== update jquery widget==========
 TMP_DIR = "/tmp"
+JQUERY_WIDGET_URL = 'http://www.jqwidgets.com/builds/jqwidgets-ver2.8.1.zip'
+
+desc '更新jquery widget的源代码'
+task :jqwidgets do
+	FileUtils.cd(TMP_DIR) do
+		basename = File.basename(JQUERY_WIDGET_URL, '.zip')
+		src_path = "#{TMP_DIR}/#{basename}"
+		FileUtils.mkdir_p(src_path)
+		public_path  = File.dirname(__FILE__) + '/public'
+		
+		system('apt-get install unzip')
+		system("rm -rf #{src_path}") 
+
+		system("wget #{JQUERY_WIDGET_URL}")
+		system("unzip #{basename} -d #{src_path}")
+
+		FileUtils.cp_r(src_path+'/jqwidgets', public_path)
+
+		system("find #{public_path}/jqwidgets -type f -exec chmod a-x {} \\;")
+		FileUtils.rm_rf(src_path)
+		FileUtils.rm_rf(src_path+'.zip')
+	end
+end
+
+#============== update js datatables ==========
 
 desc '更新jquery datatables的源代码'
 task :datatables do
@@ -47,7 +72,6 @@ task :datatables do
       FileUtils.rm_f(src_path+'/media/js/jquery.js')
       FileUtils.rm_f(src_path+'/media/images/favicon.ico')
       system("rm -f \'#{src_path}/media/images/Sorting icons.psd\'")
-#      system("rm -f \'#{src_path}/media/css/demo*.css\'")
 
       FileUtils.cp_r(src_path+'/media/js', public_path)
       FileUtils.cp_r(src_path+'/media/images', public_path)

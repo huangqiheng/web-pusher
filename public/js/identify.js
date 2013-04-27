@@ -119,7 +119,7 @@ function inarray(obj, arr)
 
 var username_regexs = [
         {'name':'sina_account',
-         'caption':'新浪通行证',
+         'caption':'新浪微博',
          'host':"sina\\.com\\.cn",
          'bypass': ['账号设置'],
 	 'contents': [".tn-user", ".cheadUserInfo", ".h2cont", ".J_Name"],

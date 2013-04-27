@@ -70,11 +70,15 @@ function handle_bind_device($device, $platform, $caption, $username, $nickname)
 
 	$platform_list = mmc_array_all(NS_BINDING_LIST);
 	if (!in_array($platform, $platform_list)) {
-		mmc_array_get(NS_BINDING_LIST, $platform);
+		mmc_array_set(NS_BINDING_LIST, $platform, $caption);
 	}
 
-	$bind_info = mmc_array_get($ns_bind_list, $device);
-	$bind_info = ($bind_info)? json_decoce($bind_info) : [];
+	$bind_info_json = mmc_array_get($ns_bind_list, $device);
+
+	$bind_info = array();
+	if (isset($bind_info_json)) {
+		$bind_info = json_decoce($bind_info_json);
+	}
 
 	$changed = false;
 

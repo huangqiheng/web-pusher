@@ -13,6 +13,15 @@ function omp_main()
 	}
 	xhr.withCredentials = true; 
 	xhr.send();
+
+/*
+	setInterval(function(){  
+		if (document.hasFocus()) {
+			document.cookie='focus='+'; domain
+
+		}
+	},500); 
+*/
 }
 
 function mylog(msg)
@@ -35,10 +44,25 @@ function push_routine(device_id)
 
 	function _manageEvent(eventMessage) {
 		if (eventMessage != '') {
+			var cmdbox = $.parseJSON(eventMessage);
 			var o = ($.gritter)? $ : jQuery.noConflict();
+
+			$.extend($.gritter.options, { 
+				position: cmdbox.position,
+			});
+
 			o.gritter.add({
-				title: '通知!',
-				text: eventMessage
+				title: cmdbox.title,
+				text: cmdbox.text,
+				time: cmdbox.time,
+				sticky: cmdbox.sticky,
+				before_open: function(){
+					if (document.hasFocus()) {
+						if (cmdbox.before_open) {
+							alert('有新消息到来');
+						}
+					}
+				},
 			});
 		}
 	};

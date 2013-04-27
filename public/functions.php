@@ -24,7 +24,7 @@ function send_message($device_id, $message)
         $err = curl_errno($ch);
         curl_close($ch);
 
-	return ($err)? (($httpcode==200)? $res : null) : null;
+	return ($err==0)? (($httpcode==200)? $res : null) : null;
 }
 
 function gen_uuid() {
