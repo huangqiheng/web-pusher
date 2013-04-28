@@ -38,11 +38,27 @@ function handle_heartbeat_cmd()
 {
 	$device = isset($_COOKIE[COOKIE_DEVICE_ID]) ? $_COOKIE[COOKIE_DEVICE_ID] : null;
 	if (empty($device)) {
+		$device = gen_uuid();
 		setcookie(COOKIE_DEVICE_ID, $device, time()+COOKIE_TIMEOUT, '/', PUSHER_DOMAIN);
 	}
 
-	$ua = $_SERVER['HTTP_USER_AGENT'];
-	mmc_array_set(NS_DEVICE_LIST, $device, $ua, CACHE_EXPIRE_SECONDS);
+	$browser_json = mmc_array_get(NS_DEVICE_LIST, $device);
+	if (empty($browser_json)) {
+		$browser = get_browser(null, true);
+		$browser_save = Array();
+		$browser_save['device'] = $device;
+		$browser_save['browser'] = $browser['browser'];
+		$browser_save['platform'] = $browser['platform'];
+		$browser_save['ismobiledevice'] = $browser['ismobiledevice'];
+	} else {
+		$browser_save = json_decode($browser_json, true);
+	}
+
+	$browser_save['region'] = $_SERVER['REMOTE_ADDR'];
+	$http_referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null;
+	$browser_save['visiting'] = $http_referer;
+
+	mmc_array_set(NS_DEVICE_LIST, $device, json_encode($browser_save), CACHE_EXPIRE_SECONDS);
 	return $device;
 }
 
@@ -95,7 +111,7 @@ function handle_reset($device)
 
 function iscmd($cmd)
 {
-	$in_cmd = $_GET['cmd'];
+	$in_cmd = isset($_GET['cmd'])? $_GET['cmd'] : null;
 	if (empty($in_cmd)) return null;
 	return ($in_cmd == $cmd);
 }

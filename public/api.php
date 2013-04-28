@@ -2,6 +2,7 @@
 require_once 'memcache_array.php';
 require_once 'functions.php';
 require_once 'config.php';
+require_once 'geoipcity.php';
 
 $http_referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null;
 $referer = ($http_referer)? parse_url($http_referer) : null;
@@ -27,22 +28,21 @@ $device_browser_list  = mmc_array_all(NS_DEVICE_LIST);
 $device_user_list = mmc_array_all(NS_BINDING_LIST);
 $aDataSet = [];
 
-foreach($device_browser_list as $device) {
-	$user_agent = mmc_array_get(NS_DEVICE_LIST, $device);
-	if (empty($user_agent)) {
+foreach($device_browser_list as $device) 
+{
+	$browser_json = mmc_array_get(NS_DEVICE_LIST, $device);
+	if (empty($browser_json)) {
 		continue;
 	}
 
-	$browser = get_browser($user_agent, true);
+	$browser = json_decode($browser_json);
 	if (empty($browser)) {
 		continue;
 	}
 
-	$is_mobile = ($browser['ismobiledevice'])? '是' : '不是';
-	$row_item = [$device,$browser['browser'],$browser['platform'],$is_mobile];
-
 	$account_info = ' ';
-	foreach($device_user_list as $platform) {
+	foreach($device_user_list as $platform) 
+	{
 		$ns_binding = NS_BINDING_LIST.$platform;
 		$caption = mmc_array_caption($ns_binding);
 		$device_list = mmc_array_all($ns_binding);
@@ -72,8 +72,17 @@ foreach($device_browser_list as $device) {
 			$account_info .= '; '.$got_user;
 		}
 	}
-	$row_item[] = $account_info;
-	$aDataSet[] = $row_item;
+
+	$account = ($account_info == ' ')? '未知' : trim($account_info);
+	$ref_obj = ($browser->visiting)? parse_url($browser->visiting) : null;
+	$visiting = $ref_obj['host'];
+	$region = get_city_name($browser->region);
+	if (empty($region)) {
+		$region = $browser->region;
+	}
+	$is_mobile = ($browser->ismobiledevice)? '是' : '不是';
+
+	$aDataSet[] = [$account, $region, $visiting, $browser->browser, $browser->platform, $is_mobile, $browser->device];
 }
 
 function is_utf8($string) 

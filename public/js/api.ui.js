@@ -1,4 +1,3 @@
-
 function api_ui_init(aDataSet)
 {
     $(document).ready(function() {
@@ -9,22 +8,24 @@ function api_ui_init(aDataSet)
 		"aaData": aDataSet,
 		"bAutoWidth": false,
 		"aoColumns": [
-			{ "sTitle": "设备ID",   'sWidth': '230px',},
-			{ "sTitle": "浏览器",   'sWidth': '90px', "sClass": "center"},
-			{ "sTitle": "操作系统", 'sWidth': '90px', "sClass": "center"},
-			{ "sTitle": "移动设备", 'sWidth': '90px', "sClass": "center"},
-			{ "sTitle": "网站账户", 'sWidth': '300px',  "sClass": "center"}
+			{ 'sTitle': '在线账户', 'sWidth': '320px'},
+			{ 'sTitle': '访问来源', 'sWidth': '100px'},
+			{ 'sTitle': '正在访问', 'sWidth': '150px'},
+			{ 'sTitle': '浏览器',   'sWidth': '90px', 'sClass': 'center'},
+			{ 'sTitle': '操作系统', 'sWidth': '90px', 'sClass': 'center'},
+			{ 'sTitle': '移动', 	'sWidth': '50px', 'sClass': 'center'},
+			{ 'sTitle': '设备ID',   'bVisible': false},
 		]
 	});	
 	$('#example tr').click( function() {
 		$(this).toggleClass('row_selected');
+		var sData = oTable.fnGetData(this);
+
 		if ($(this).hasClass('row_selected')) {
-			var device = this.cells.item(0).innerText;
-			var list = add_device(device);
+			var list = add_device(sData[6]);
 			console.log(list);
 		} else {
-			var device = this.cells.item(0).innerText;
-			var list = remove_device(device);
+			var list = remove_device(sData[6]);
 			console.log(list);
 		}
 	});
@@ -96,7 +97,10 @@ function add_device(device)
 		device_list = new Array();
 		window.devices = device_list;
 	}
-	device_list.push(device);
+
+	if (device_list.indexOf(device) == -1) {
+		device_list.push(device);
+	}
 	return device_list;
 }
 

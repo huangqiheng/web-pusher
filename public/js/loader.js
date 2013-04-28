@@ -1,5 +1,8 @@
 if(self==top){
 	(function(){
+		//bypass websites
+
+
 		function load_script(url, callback){
 		    var script = document.createElement("script")
 		    script.type = "text/javascript";

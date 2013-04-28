@@ -79,7 +79,6 @@ function get_user_name()
 		}
 
 		html_text = html_text.replace(/[\r\n]+/g, '');
-		mylog(html_text);
 
 		var content_regexs = username_regexs[i].matchs;
 		for(ii=0, ll=content_regexs.length; ii<ll; ii++)
@@ -92,9 +91,12 @@ function get_user_name()
 			while((result = patt.exec(html_text)) != null) 
 			{
 				mylog('match: ' + result);
-				if (inarray(result[1], username_regexs[i].bypass)) {
-					mylog('bypass: ' + result[1]);
-					continue;
+				if (username_regexs[i].bypass.length >0) {
+					if (jQuery.inArray(result[1], username_regexs[i].bypass) != -1) {
+						mylog('bypass: ' + result[1]);
+						mylog(username_regexs[i].bypass);
+						continue;
+					}
 				}
 
 				var user_name = result[2];
@@ -110,18 +112,6 @@ function get_user_name()
 		}
         }
         return null;
-}
-
-function inarray(obj, arr)
-{
-        if(typeof obj == 'string') {
-                for(var i in arr) {
-                        if(arr[i] == obj) {
-                                return true;
-                        }
-                }
-        }
-        return false;
 }
 
 
@@ -160,6 +150,14 @@ var username_regexs = [
 		"<span class=\\\"ico_text\\\" data-type=\\\"nickname\\\">([^<]+?)()<\\/span>",
 	]},
 
+        {'name':'taobao',
+         'caption':'淘宝网',
+         'host':"taobao\\.com",
+         'bypass':[],
+	 'contents': [".vip-head"],
+         'matchs':[
+	 	"<a class=\\\"user-nick\\\"[^>]+?>([^<]+?)()<\\/a>",
+	]},
 ];
 
 
