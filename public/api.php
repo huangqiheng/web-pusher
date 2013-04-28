@@ -8,6 +8,8 @@ $referer = ($http_referer)? parse_url($http_referer) : null;
 header('Access-Control-Allow-Origin: '.($referer ? ($referer['scheme'].'://'.$referer['host']) : '*'));
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Credentials: true');
+header('Content-Type: text/html; charset=utf-8');
+
 
 if (isset($_GET['cmd']) or isset($_POST['cmd'])) goto label_api_mode;
 
@@ -16,11 +18,16 @@ if (!ini_get("browscap")) {
 	exit();
 }
 
-$device_list  = mmc_array_all(NS_DEVICE_LIST);
-$platform_list = mmc_array_all(NS_BINDING_LIST);
+/*
+ini_set("log_errors", 1);
+ini_set("error_log", "/var/log/php_errors.log");
+*/
+
+$device_browser_list  = mmc_array_all(NS_DEVICE_LIST);
+$device_user_list = mmc_array_all(NS_BINDING_LIST);
 $aDataSet = [];
 
-foreach($device_list as $device) {
+foreach($device_browser_list as $device) {
 	$user_agent = mmc_array_get(NS_DEVICE_LIST, $device);
 	if (empty($user_agent)) {
 		continue;
@@ -34,27 +41,52 @@ foreach($device_list as $device) {
 	$is_mobile = ($browser['ismobiledevice'])? '是' : '不是';
 	$row_item = [$device,$browser['browser'],$browser['platform'],$is_mobile];
 
-
 	$account_info = ' ';
-	foreach($platform_list as $platform) {
+	foreach($device_user_list as $platform) {
 		$ns_binding = NS_BINDING_LIST.$platform;
 		$caption = mmc_array_caption($ns_binding);
 		$device_list = mmc_array_all($ns_binding);
 
-		if (in_array($device, $device_list)) { 
-			$account_json = mmc_array_get($ns_binding, $device);
-			print_r($account_json);
-			$account = json_decode($account_json);
-
-			print_r($account);
-			
-			if (($account) and ($account['username'])) {
-				$account_info .= $account['username'].'@'.$caption;
-			}
+		if (!in_array($device, $device_list)) { 
+			continue;
 		}	
+
+		$account_json = mmc_array_get($ns_binding, $device);
+		$account = json_decode($account_json);
+		$username = $account->username;
+
+		if (empty($username)) {
+			continue;
+		}
+
+		$got_user = $username.'@'.$caption;
+		if (!is_utf8($got_user)) {
+			$got_user = iconv("gb2312","utf-8//IGNORE",$got_user);
+		}
+
+		if ($account_info == ' ') {
+			$account_info = $got_user;
+		} else {
+			$account_info .= '; '.$got_user;
+		}
 	}
-	$row_item[] = trim($account_info);
+	$row_item[] = $account_info;
 	$aDataSet[] = $row_item;
+}
+
+function is_utf8($string) 
+{
+	// From http://w3.org/International/questions/qa-forms-utf-8.html
+	return preg_match('%^(?:
+	[\x09\x0A\x0D\x20-\x7E] # ASCII
+	| [\xC2-\xDF][\x80-\xBF] # non-overlong 2-byte
+	| \xE0[\xA0-\xBF][\x80-\xBF] # excluding overlongs
+	| [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2} # straight 3-byte
+	| \xED[\x80-\x9F][\x80-\xBF] # excluding surrogates
+	| \xF0[\x90-\xBF][\x80-\xBF]{2} # planes 1-3
+	| [\xF1-\xF3][\x80-\xBF]{3} # planes 4-15
+	| \xF4[\x80-\x8F][\x80-\xBF]{2} # plane 16
+	)*$%xs', $string);
 }
 
 ?>
@@ -87,11 +119,11 @@ foreach($device_list as $device) {
 </script>
 </head>
 <body background="images/bg_tile.jpg">
-	<div id='content' style='min-width: 600px; max-width: 800px; margin: auto;'>
+	<div id='content' style='min-width: 600px; max-width: 960px; margin: auto;'>
 		<div id='message'>
 			<div id="notify-title" style='float:left;'></div>
 			<input id="notify-content" type="text" style='float:left;'/>
-			<input id='send-button' type="button" value="发送" style='float:left;' />
+			<input id='send-button' type="button" value="发送消息" style='float:left;' />
 			<div id='property-panel' style='float:left;'>
 				<div id='viewposi' style='float: left;'></div>
 				<div id='notify-ttl' style='float:left;'></div>
@@ -100,7 +132,7 @@ foreach($device_list as $device) {
 			</div>
 		</div>
 		<br>
-		<div id='dynamic' style='margin-top:22px;'></div>
+		<div id='dynamic' style='width:100%; margin-top:22px;'></div>
 	</div>
 </body>
 </html>

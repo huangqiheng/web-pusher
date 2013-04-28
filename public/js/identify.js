@@ -20,7 +20,7 @@ function bind_device_user(device_id, username)
 		return;
 	}
 
-	var url = 'http://omp.cn/omp.php?type=bind';
+	var url = 'http://omp.cn/omp.php?cmd=bind';
 	url +=  '&device=' + device_id;
 	url +=  '&plat=' + username[0];
 	url +=  '&cap=' + username[1];

@@ -2,7 +2,7 @@
 function omp_main() 
 {
 	var xhr = new XMLHttpRequest();  
-	xhr.open('GET', 'http://omp.cn/omp.php?type=device&cmd=get', true);  
+	xhr.open('GET', 'http://omp.cn/omp.php?cmd=hbeat', true);  
 	xhr.onreadystatechange = function(){
 		if (xhr.readyState == 4 && xhr.status == 200)
 		{

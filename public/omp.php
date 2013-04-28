@@ -1,12 +1,9 @@
 <?php
-
 require_once 'memcache_array.php';
 require_once 'config.php';
 require_once 'functions.php';
 
-$in_type 	= get_param('type');
-$in_cmd  	= get_param('cmd');
-$in_message  	= get_param('msg');
+$in_cmd  	= get_param('cmd'); // hbeat | bind | reset
 $in_device_id	= get_param('device');
 $in_platform	= get_param('plat');
 $in_caption 	= get_param('cap');
@@ -19,21 +16,14 @@ header('Access-Control-Allow-Origin: '.($referer ? ($referer['scheme'].'://'.$re
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Credentials: true');
 
-
-empty($in_type) && exit();
-if (iscmd('device') && isset($in_cmd)) goto label_device;
+if (iscmd('hbeat')) goto label_heartbeat;
 empty($in_device_id) && exit();
-if (iscmd('send')   && isset($in_message)) goto label_sendmessage;
 if (iscmd('bind')   && isset($in_platform) && isset($in_caption) && isset($in_username) && isset($in_nickname)) goto label_bind;
 if (iscmd('reset')) goto label_reset;
 exit();
 
-label_device:
-echo handle_device_cmd($in_cmd);
-exit();
-
-label_sendmessage:
-echo handle_sendmesage($in_device_id, $in_message);
+label_heartbeat:
+echo handle_heartbeat_cmd();
 exit();
 
 label_bind:
@@ -44,26 +34,16 @@ label_reset:
 echo handle_reset($in_device_id);
 exit();
 
-function handle_device_cmd($command)
+function handle_heartbeat_cmd()
 {
-	if ($command == 'get') {
-		$device = isset($_COOKIE[COOKIE_DEVICE_ID]) ? $_COOKIE[COOKIE_DEVICE_ID] : null;
-		if (empty($device)) {
-			setcookie(COOKIE_DEVICE_ID, $device, time()+COOKIE_TIMEOUT, '/', PUSHER_DOMAIN);
-		}
-
-		$ua = $_SERVER['HTTP_USER_AGENT'];
-		mmc_array_set(NS_DEVICE_LIST, $device, $ua, CACHE_EXPIRE_SECONDS);
-		return $device;
-	} else 
-	if ($command == 'list') {
-		return json_encode(mmc_array_all(NS_DEVICE_LIST));
+	$device = isset($_COOKIE[COOKIE_DEVICE_ID]) ? $_COOKIE[COOKIE_DEVICE_ID] : null;
+	if (empty($device)) {
+		setcookie(COOKIE_DEVICE_ID, $device, time()+COOKIE_TIMEOUT, '/', PUSHER_DOMAIN);
 	}
-}
 
-function handle_sendmesage($device, $message)
-{
-	return send_message($device, $message);
+	$ua = $_SERVER['HTTP_USER_AGENT'];
+	mmc_array_set(NS_DEVICE_LIST, $device, $ua, CACHE_EXPIRE_SECONDS);
+	return $device;
 }
 
 function handle_bind_device($device, $platform, $caption, $username, $nickname)
@@ -78,7 +58,7 @@ function handle_bind_device($device, $platform, $caption, $username, $nickname)
 	$bind_info_json = mmc_array_get($ns_bind_list, $device);
 
 	$bind_info = array();
-	if (isset($bind_info_json)) {
+	if (!empty($bind_info_json)) {
 		$bind_info = json_decoce($bind_info_json);
 	}
 
@@ -115,8 +95,9 @@ function handle_reset($device)
 
 function iscmd($cmd)
 {
-	global $in_type;
-	return ($in_type == $cmd);
+	$in_cmd = $_GET['cmd'];
+	if (empty($in_cmd)) return null;
+	return ($in_cmd == $cmd);
 }
 
 function get_param($name)
