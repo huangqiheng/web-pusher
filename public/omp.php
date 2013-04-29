@@ -1,4 +1,5 @@
 <?php
+
 require_once 'memcache_array.php';
 require_once 'config.php';
 require_once 'functions.php';
@@ -17,6 +18,7 @@ $referer = ($http_referer)? parse_url($http_referer) : null;
 header('Access-Control-Allow-Origin: '.($referer ? ($referer['scheme'].'://'.$referer['host']) : '*'));
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Credentials: true');
+
 
 empty($in_type) && exit();
 if (iscmd('device') && isset($in_cmd)) goto label_device;

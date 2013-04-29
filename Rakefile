@@ -1,11 +1,11 @@
 #encoding: utf-8
 require "bundler/gem_tasks"
 
-LOG_FILE = 'log/web-pusher.log'
 
 desc '查看log日志，使用tail -f命令'
 task :log do
-	system "tail -f '#{File.dirname(__FILE__) +'/'+ LOG_FILE}'"
+	LOG_FILE = '/var/log/php_errors.log'
+	system "tail -f '#{LOG_FILE}'"
 end
 
 desc '启动服务器'
@@ -165,11 +165,10 @@ namespace :nginx do
     end
   end
 
-  #desc "write nginx config file"
+  desc "复制nginx.conf到/etc/nginx目录"
   task :nginx_conf do
-	File.open('/etc/nginx/nginx.conf', 'w') do |f2|
-		f2.puts NGINX_CONF
-	end
+	conf_file  = File.dirname(__FILE__) + '/conf/nginx.conf'
+	sh("cp #{conf_file} /etc/nginx/")
 	notice('完成了nginx的配置，现在nginx是一个正向代理，监听在3128端口。')
   end
 
@@ -415,166 +414,4 @@ case "$1" in
 esac
 
 exit 0
-start_file
-
-NGINX_CONF = <<start_file
-user  www-data;
-worker_processes  4;
-error_log  /dev/null warn;
-pid        /var/run/nginx.pid;
-    
-events {
-	worker_connections	1024;
-	use			epoll;
-}           
-            
-http {      
-	include       /etc/nginx/mime.types;
-	default_type  application/octet-stream;
-	    
-	access_log  off;
-	sendfile        on;
-	keepalive_timeout  65;
-
-	client_body_buffer_size 128k;
-	client_header_buffer_size 32k;
-	large_client_header_buffers 4 64k;
-	client_max_body_size 24m;
-
-	resolver 8.8.8.8;
-
-	server {
-		listen 3128;
-		access_log off;
-
-		location / {
-			#sub_filter_types text/html;
-			gzip on;
-			gzip_comp_level 9;
-			gzip_disable "msie6";
-			gzip_proxied off;
-			gzip_min_length 512;
-			gzip_buffers 16 8k;
-			gzip_types text/plain text/xml text/css text/comma-separated-values text/javascript application/x-javascript application/json
-				application/xml application/xml+rss application/atom+xml;
-			client_body_buffer_size 128k;
-			client_max_body_size 32m;
-			send_timeout 180;
-			sub_filter_once on;
-			sub_filter </head> '<script type="text/javascript" src="/OMPSERVER/js/loader.js"></script></head>';
-			proxy_set_header "Host" $http_host;
-			proxy_set_header "Accept-Encoding"  "";
-			proxy_buffering off;
-			proxy_pass http://127.0.0.1:3129;
-		}
-
-		location /OMPSERVER {
-			rewrite ^/OMPSERVER/(.*)$ /$1 break;
-			proxy_pass http://127.0.0.1:5000;
-		}
-	}
-
-	server {
-		listen 3129;
-		access_log off;
-		location / {
-			proxy_redirect off;
-			proxy_set_header "Accept-Encoding"  "gzip";
-			proxy_set_header "Host" $http_host;
-			client_body_buffer_size 128k;
-			client_max_body_size 32m;
-
-			proxy_connect_timeout 180;
-			proxy_send_timeout 180;
-			proxy_read_timeout 180;
-			proxy_buffer_size 4k;
-			proxy_buffers 4 32k;
-			proxy_busy_buffers_size 64k;
-			proxy_temp_file_write_size 64k;
-			proxy_buffering off;
-			send_timeout 180;
-			proxy_set_header Connection "";
-			proxy_http_version 1.1;
-
-			proxy_pass http://$http_host$request_uri;
-			gunzip on;
-			gunzip_buffers 64 4k;
-			#gzip_proxied off;
-		}
-	}
-
-	push_stream_allowed_origins			"*";
-	push_stream_shared_memory_size			100m;
-	push_stream_max_channel_id_length		200;
-	push_stream_max_messages_stored_per_channel	20;
-	push_stream_message_ttl				5m;
-	push_stream_ping_message_interval		10s;
-	push_stream_subscriber_connection_ttl		15m;
-	push_stream_longpolling_connection_ttl		30s;
-	push_stream_broadcast_channel_prefix		"broad_";
-	push_stream_authorized_channels_only		off;
-	push_stream_broadcast_channel_max_qtd		3;
-
-	server {
-		listen 3128;
-		server_name omp.cn;
-
-		tcp_nopush                      off;
-		tcp_nodelay                     on;
-		keepalive_timeout               10;
-		send_timeout                    10;
-		client_body_timeout             10;
-		client_header_timeout           10;
-		sendfile                        on;
-		client_header_buffer_size       1k;
-		large_client_header_buffers     2 4k;
-		client_max_body_size            1k;
-		client_body_buffer_size         1k;
-		ignore_invalid_headers          on;
-
-		push_stream_message_template    "{\\\"id\\\":~id~,\\\"channel\\\":\\\"~channel~\\\",\\\"text\\\":\\\"~text~\\\"}";
-
-		location /channels-stats {
-			push_stream_channels_statistics;
-			set $push_stream_channel_id             $arg_id;
-		}
-
-		location /pub {
-			push_stream_publisher admin;
-			set $push_stream_channel_id             $arg_id;
-			push_stream_store_messages              off;
-			push_stream_keepalive                   on;
-			client_max_body_size                    32k;
-			client_body_buffer_size                 32k;
-		}
-
-		location ~ /sub/(.*) {
-			push_stream_subscriber;
-			set $push_stream_channels_path              $1;
-			push_stream_content_type                    "text/json; charset=utf-8";
-		}
-
-		location ~ /ev/(.*) {
-			push_stream_subscriber;
-			set $push_stream_channels_path              $1;
-			push_stream_eventsource_support on;
-		}
-
-		location ~ /lp/(.*) {
-			push_stream_subscriber      long-polling;
-			set $push_stream_channels_path    $1;
-		}
-
-		location ~ /ws/(.*) {
-			push_stream_websocket;
-			set $push_stream_channels_path		$1;
-			push_stream_store_messages		on;
-			push_stream_websocket_allow_publish	on;
-		}
-
-		location / {
-			proxy_pass http://127.0.0.1:5000;
-		}
-	}
-}  
 start_file
