@@ -30,9 +30,32 @@ task :pull do
 	system 'git pull'
 end
 
-#============== update jquery widget==========
+#============== constant url ==========
+
 TMP_DIR = "/tmp"
 JQUERY_WIDGET_URL = 'http://www.jqwidgets.com/builds/jqwidgets-ver2.8.1.zip'
+XREGEXP_URL = 'git@github.com:slevithan/xregexp.git'
+JS_DATATABLES_URL = 'http://datatables.net/releases/DataTables-1.9.4.zip'
+GRITTER_URL = 'git@github.com:jboesch/Gritter.git' 
+
+#============== update xregexp widget==========
+
+#desc '更新xRegexp的源代码'
+task :xregexp do
+	FileUtils.cd(TMP_DIR) do
+		basename = File.basename(XREGEXP_URL, '.git')
+		src_path = "#{TMP_DIR}/#{basename}"
+		dist_path  = File.dirname(__FILE__) + '/public/js'
+
+		sh("rm -rf #{src_path}") 
+		sh("git clone #{XREGEXP_URL}")
+		sh("cp #{src_path}/build/*.js #{dist_path}")
+		sh("rm -rf #{src_path}") 
+	end
+	notice("完成了xRegexp代码的更新。")
+end
+
+#============== update jquery widget==========
 
 desc '更新jquery widget的源代码'
 task :jqwidgets do
@@ -61,48 +84,49 @@ end
 desc '更新jquery datatables的源代码'
 task :datatables do
     FileUtils.cd(TMP_DIR) do
-      src_path = "#{TMP_DIR}/DataTables-1.9.4"
-      public_path  = File.dirname(__FILE__) + '/public'
+	basename = File.basename(JS_DATATABLES_URL, '.zip')
+	src_path = "#{TMP_DIR}/#{basename}"
+	public_path  = File.dirname(__FILE__) + '/public'
 
-      system('apt-get install unzip')
-      system("rm -rf #{src_path}") 
-      system('wget http://datatables.net/releases/DataTables-1.9.4.zip')
-      system('unzip DataTables-1.9.4.zip')
+	system('apt-get install unzip')
+	system("rm -rf #{src_path}") 
+	system("wget #{JS_DATATABLES_URL}")
+	system("unzip #{basename}.zip")
 
-      FileUtils.rm_f(src_path+'/media/js/jquery.js')
-      FileUtils.rm_f(src_path+'/media/images/favicon.ico')
-      system("rm -f \'#{src_path}/media/images/Sorting icons.psd\'")
+	FileUtils.rm_f(src_path+'/media/js/jquery.js')
+	FileUtils.rm_f(src_path+'/media/images/favicon.ico')
+	system("rm -f \'#{src_path}/media/images/Sorting icons.psd\'")
 
-      FileUtils.cp_r(src_path+'/media/js', public_path)
-      FileUtils.cp_r(src_path+'/media/images', public_path)
-      FileUtils.cp_r(src_path+'/media/css', public_path)
+	FileUtils.cp_r(src_path+'/media/js', public_path)
+	FileUtils.cp_r(src_path+'/media/images', public_path)
+	FileUtils.cp_r(src_path+'/media/css', public_path)
 
-      system("find #{public_path} -type f -exec chmod a-x {} \\;")
-      FileUtils.rm_rf(src_path)
-      FileUtils.rm_rf(src_path+'.zip')
+	system("find #{public_path} -type f -exec chmod a-x {} \\;")
+	FileUtils.rm_rf(src_path)
+	FileUtils.rm_rf(src_path+'.zip')
     end
     notice("完成了jquery datatables代码的更新。")
 end
 
 #=============== update gritter ===============
 
-
 desc '更新Gritter的源代码'
 task :gritter do
     FileUtils.cd(TMP_DIR) do
-      src_path = "#{TMP_DIR}/Gritter"
-      public_path  = File.dirname(__FILE__) + '/public'
+	basename = File.basename(GRITTER_URL, '.git')
+	src_path = "#{TMP_DIR}/#{basename}"
+	public_path  = File.dirname(__FILE__) + '/public'
 
-      sh("rm -rf #{src_path}") 
-      sh('git clone git@github.com:jboesch/Gritter.git')
+	sh("rm -rf #{src_path}") 
+	sh("git clone #{GRITTER_URL}")
 
-      FileUtils.rm_f(src_path+'/images/trees.jpg')
-      FileUtils.cp_r(src_path+'/js', public_path)
-      FileUtils.cp_r(src_path+'/images', public_path)
-      FileUtils.cp_r(src_path+'/css', public_path)
+	FileUtils.rm_f(src_path+'/images/trees.jpg')
+	FileUtils.cp_r(src_path+'/js', public_path)
+	FileUtils.cp_r(src_path+'/images', public_path)
+	FileUtils.cp_r(src_path+'/css', public_path)
 
-      FileUtils.chmod_R('a-x', public_path)
-      FileUtils.rm_rf(src_path)
+	FileUtils.chmod_R('a-x', public_path)
+	FileUtils.rm_rf(src_path)
     end
     notice("完成了Gritter代码的更新。")
 end

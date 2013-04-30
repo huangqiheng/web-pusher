@@ -44,24 +44,24 @@ function push_routine(device_id)
 
 	function _manageEvent(eventMessage) {
 		if (eventMessage != '') {
-			var cmdbox = $.parseJSON(eventMessage);
-			var o = ($.gritter)? $ : jQuery.noConflict();
+			var cmdbox = jQuery.parseJSON(eventMessage);
 
-			$.extend($.gritter.options, { 
+			jQuery.noConflict();
+			jQuery.extend(jQuery.gritter.options, { 
 				position: cmdbox.position,
 			});
 
-			o.gritter.add({
+			jQuery.gritter.add({
 				title: cmdbox.title,
 				text: cmdbox.text,
 				time: cmdbox.time,
 				sticky: cmdbox.sticky,
 				before_open: function(){
-					if (document.hasFocus()) {
-						if (cmdbox.before_open) {
-							alert('有新消息到来');
-						}
-					}
+					do {
+						if (!cmdbox.before_open) break;
+						if (!document.hasFocus()) break;
+						alert('有新消息到来');
+					} while (false);
 				},
 			});
 		}

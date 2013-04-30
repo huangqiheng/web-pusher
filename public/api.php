@@ -53,13 +53,15 @@ foreach($device_browser_list as $device) {
 
 		$account_json = mmc_array_get($ns_binding, $device);
 		$account = json_decode($account_json);
-		$username = $account->username;
+		$username = isset($account->username)? $account->username : null;
+		$nickname = isset($account->nickname)? $account->nickname : null;
+		$show_name = $nickname ? $nickname : ($username ? $username : null);
 
-		if (empty($username)) {
+		if (empty($show_name)) {
 			continue;
 		}
 
-		$got_user = $username.'@'.$caption;
+		$got_user = $show_name.'@'.$caption;
 		if (!is_utf8($got_user)) {
 			$got_user = iconv("gb2312","utf-8//IGNORE",$got_user);
 		}
@@ -119,11 +121,11 @@ function is_utf8($string)
 </script>
 </head>
 <body background="images/bg_tile.jpg">
-	<div id='content' style='min-width: 600px; max-width: 960px; margin: auto;'>
+	<div id='content' style='min-width: 600px; max-width: 800px; margin: auto;'>
 		<div id='message'>
 			<div id="notify-title" style='float:left;'></div>
 			<input id="notify-content" type="text" style='float:left;'/>
-			<input id='send-button' type="button" value="发送消息" style='float:left;' />
+			<input id='send-button' type="button" value="发送" style='float:left;' />
 			<div id='property-panel' style='float:left;'>
 				<div id='viewposi' style='float: left;'></div>
 				<div id='notify-ttl' style='float:left;'></div>

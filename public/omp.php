@@ -11,8 +11,8 @@ $in_username	= get_param('user');
 $in_nickname	= get_param('nick');
 
 $http_referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null;
-$referer = ($http_referer)? parse_url($http_referer) : null;
-header('Access-Control-Allow-Origin: '.($referer ? ($referer['scheme'].'://'.$referer['host']) : '*'));
+$ref_obj = ($http_referer)? parse_url($http_referer) : null;
+header('Access-Control-Allow-Origin: '.($ref_obj? ($ref_obj['scheme'].'://'.$ref_obj['host']) : '*'));
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Credentials: true');
 

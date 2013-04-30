@@ -84,10 +84,10 @@ function get_user_name()
 		var content_regexs = username_regexs[i].matchs;
 		for(ii=0, ll=content_regexs.length; ii<ll; ii++)
 		{
+			mylog(content_regexs[ii]);
+
 			var patt = new RegExp(content_regexs[ii], 'ig');
 			var result;
-
-			mylog(content_regexs[ii]);
 
 			while((result = patt.exec(html_text)) != null) 
 			{
@@ -97,7 +97,15 @@ function get_user_name()
 					continue;
 				}
 
-				return [username_regexs[i].name, username_regexs[i].caption, result[1], ''];
+				var user_name = result[2];
+				var user_nick;
+				if (result.length == 4) {
+					user_nick = result[3];
+				} else {
+					user_nick = result[1];
+				}
+
+				return [username_regexs[i].name, username_regexs[i].caption, user_name, user_nick];
 			}
 		}
         }
@@ -124,10 +132,11 @@ var username_regexs = [
          'bypass': ['账号设置'],
 	 'contents': [".tn-user", ".cheadUserInfo", ".h2cont", ".J_Name"],
          'matchs':[
-		 "<i class=\\\"sa_newlogin_name\\\"[^>]*?>([^<]+?)<\\/i>",
-		 "<span id=\\\"uq_username\\\"[^>]*?>([^<]+?)<\\/span>",
-		 "<a href=\\\"https?:\\/\\/login\\.sina\\.com\\.cn\\/\\\"[^>]+?>([^<]+?)<\\/a>",
-		 "<a href=\\\"http:\\/\\/login\\.sina\\.com\\.cn\\/member\\/my\\.php\\\"[^>]+?>([^<]+?)<\\/a>",
+		 // matchs的第二个子组，匹配username，其前或后则是nickname
+		 "<i class=\\\"sa_newlogin_name\\\"[^>]*?>([^<]+?)()<\\/i>",
+		 "<span id=\\\"uq_username\\\"[^>]*?>([^<]+?)()<\\/span>",
+		 "<a href=\\\"https?:\\/\\/login\\.sina\\.com\\.cn\\/\\\"[^>]+?>([^<]+?)()<\\/a>",
+		 "<a href=\\\"http:\\/\\/login\\.sina\\.com\\.cn\\/member\\/my\\.php\\\"[^>]+?>([^<]+?)()<\\/a>",
 	]},
 
         {'name':'tencent_weibo',
@@ -136,8 +145,8 @@ var username_regexs = [
          'bypass':['进入微博'],
 	 'contents': [".mblog_login_info", '#topNav1'],
          'matchs':[
-		 "<a target=\\\"_blank\\\" href=\\\"http:\\/\\/t\\.qq\\.com\\/[^\\/]+?\\/\\?pref=qqcom\\.mininav[^>]+?>([^<]+?)<\\/a>",
-		 "<a href=\\\"http:\\/\\/t\\.qq\\.com\\/[^\\?]+?\\?preview\\\" class=[\\s\\S]+?title=\\\"([^\\\"]+?)\\\">",
+		 "<a target=\\\"_blank\\\" href=\\\"http:\\/\\/t\\.qq\\.com\\/[^\\/]+?\\/\\?pref=qqcom\\.mininav[^>]+?>()([^<]+?)<\\/a>",
+		 "<a href=\\\"http:\\/\\/t\\.qq\\.com\\/[^\\?]+?\\?preview\\\" class=[\\s\\S]+?title=\\\"([^\\\(]+?)\\\(@([^\\\)]+?)\\\)\\\">",
 	]},
 
         {'name':'tencent_qq',
@@ -146,9 +155,9 @@ var username_regexs = [
          'bypass':[],
 	 'contents': [".qqName", ".log_info", '#modHeadPersonal'],
          'matchs':[
-		"<span id=\\\"userName\\\">([^<]+)<\\/span>[^<]*?<span>\\[<\\/span>",
-		"<span class=\\\"usr_info\\\" id=\\\"usr_info\\\">[^\\(]+\\((\\d+?)\\)[^<]*?<\\/span>",
-		"<span class=\\\"ico_text\\\" data-type=\\\"nickname\\\">([^<]+?)<\\/span>",
+		"<span id=\\\"userName\\\">([^<]+)()<\\/span>[^<]*?<span>\\[<\\/span>",
+		"<span class=\\\"usr_info\\\" id=\\\"usr_info\\\">[^\\(]+\\((\\d+?)()\\)[^<]*?<\\/span>",
+		"<span class=\\\"ico_text\\\" data-type=\\\"nickname\\\">([^<]+?)()<\\/span>",
 	]},
 
 ];

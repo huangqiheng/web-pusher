@@ -9,11 +9,11 @@ function api_ui_init(aDataSet)
 		"aaData": aDataSet,
 		"bAutoWidth": false,
 		"aoColumns": [
-			{ "sTitle": "设备ID",   'sWidth': '248px',},
-			{ "sTitle": "浏览器",   'sWidth': '100px', "sClass": "center"},
-			{ "sTitle": "操作系统", 'sWidth': '100px', "sClass": "center"},
+			{ "sTitle": "设备ID",   'sWidth': '230px',},
+			{ "sTitle": "浏览器",   'sWidth': '90px', "sClass": "center"},
+			{ "sTitle": "操作系统", 'sWidth': '90px', "sClass": "center"},
 			{ "sTitle": "移动设备", 'sWidth': '90px', "sClass": "center"},
-			{ "sTitle": "网站账户", 'sWidth': '400px',  "sClass": "center"}
+			{ "sTitle": "网站账户", 'sWidth': '300px',  "sClass": "center"}
 		]
 	});	
 	$('#example tr').click( function() {
@@ -35,7 +35,7 @@ function api_ui_init(aDataSet)
 	$("#notify-title").jqxComboBox({theme: theme,source: source, selectedIndex:0, width:80, height:28});
 
 	var countries = new Array();
-	$("#notify-content").jqxInput({theme: theme,placeHolder:"请输入通知内容",source:countries,width:524,height:28});
+	$("#notify-content").jqxInput({theme: theme,placeHolder:"请输入通知内容",source:countries,width:394,height:28});
 	$("#property-panel").jqxPanel({theme: theme, width: 277, height: 28, theme: theme });
 
 	$("#notify-ttl").jqxNumberInput({theme: theme,symbol:'秒',symbolPosition:'right',min:1,decimal:8,decimalDigits:0,width:55,height:26, inputMode:'simple',spinButtons:true});
@@ -50,7 +50,7 @@ function api_ui_init(aDataSet)
 	var source_posi = ['左上方','左下方','右上方','右下方'];
 	$("#viewposi").jqxDropDownList({source:source_posi, selectedIndex:2,width: '62', height: '26', theme: theme });
 
-	$("#send-button").jqxButton({ width: 73, height:30, theme: theme });
+	$("#send-button").jqxButton({ width: 43, height:30, theme: theme });
 	$("#send-button").on('click', function () {
 		var title = $('#notify-title').jqxComboBox('val');
 		var content = $('#notify-content').val();
