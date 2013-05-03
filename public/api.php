@@ -62,9 +62,6 @@ foreach($device_browser_list as $device)
 		}
 
 		$got_user = $show_name.'@'.$caption;
-		if (!is_utf8($got_user)) {
-			$got_user = iconv("gb2312","utf-8//IGNORE",$got_user);
-		}
 
 		if ($account_info == ' ') {
 			$account_info = $got_user;

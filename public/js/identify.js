@@ -158,6 +158,15 @@ var username_regexs = [
          'matchs':[
 	 	"<a class=\\\"user-nick\\\"[^>]+?>([^<]+?)()<\\/a>",
 	]},
+
+        {'name':'cityspot',
+         'caption':'城市热点',
+         'host':"192.168.41.220",
+         'bypass':[],
+	 'contents': [".navtd"],
+         'matchs':[
+		"<span class[\\s\\S]+?\\/span>[^<]*?<span[^>]+?>([^<]+?)(): &nbsp;<\\/span>",
+	]},
 ];
 
 
