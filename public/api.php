@@ -2,7 +2,7 @@
 require_once 'memcache_array.php';
 require_once 'functions.php';
 require_once 'config.php';
-require_once 'geoipcity.php';
+//require_once 'geoipcity.php';
 
 $http_referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null;
 $referer = ($http_referer)? parse_url($http_referer) : null;
@@ -14,10 +14,12 @@ header('Content-Type: text/html; charset=utf-8');
 
 if (isset($_GET['cmd']) or isset($_POST['cmd'])) goto label_api_mode;
 
+/*
 if (!ini_get("browscap")) {
 	echo '请配置browscap.ini';
 	exit();
 }
+ */
 
 /*
 ini_set("log_errors", 1);
@@ -73,7 +75,8 @@ foreach($device_browser_list as $device)
 	$account = ($account_info == ' ')? '未知' : trim($account_info);
 	$ref_obj = ($browser->visiting)? parse_url($browser->visiting) : null;
 	$visiting = $ref_obj['host'];
-	$region = get_city_name($browser->region);
+	//$region = get_city_name($browser->region);
+	$region = '';
 	if (empty($region)) {
 		$region = $browser->region;
 	}
