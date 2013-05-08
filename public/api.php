@@ -14,17 +14,10 @@ header('Content-Type: text/html; charset=utf-8');
 
 if (isset($_GET['cmd']) or isset($_POST['cmd'])) goto label_api_mode;
 
-/*
 if (!ini_get("browscap")) {
 	echo '请配置browscap.ini';
 	exit();
 }
- */
-
-/*
-ini_set("log_errors", 1);
-ini_set("error_log", "/var/log/php_errors.log");
-*/
 
 $device_browser_list  = mmc_array_all(NS_DEVICE_LIST);
 $device_user_list = mmc_array_all(NS_BINDING_LIST);
