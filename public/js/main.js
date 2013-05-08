@@ -1,27 +1,15 @@
 
 function omp_main() 
 {
-    var xhr = new XMLHttpRequest();  
-    xhr.open('GET', 'http://omp.cn/omp.php?cmd=hbeat', true);  
-        xhr.onreadystatechange = function(){
-            if (xhr.readyState == 4 && xhr.status == 200)
-            {
-                var device_id = xhr.responseText;
+    jQuery.ajax({
+        url: 'http://omp.cn/omp.php?cmd=hbeat',
+        xhrFields: { withCredentials: true }
+    })
+        .success(function(m) {
+                var device_id = m.device;
                 push_routine(device_id); 
                 report_user_name(device_id);
-            }
-        }
-    xhr.withCredentials = true; 
-    xhr.send();
-
-    /*
-       setInterval(function(){  
-       if (document.hasFocus()) {
-       document.cookie='focus='+'; domain
-
-       }
-       },500); 
-       */
+        });
 }
 
 function mylog(msg)
@@ -41,10 +29,7 @@ function push_routine(device_id)
         //modes: "stream|websocket|eventsource|longpolling"
     });
 
-    pushstream.onmessage = _manageEvent;
-    pushstream.onstatuschange = _statuschanged;
-
-    function _manageEvent(eventMessage) {
+    pushstream.onmessage = function (eventMessage) {
         if (eventMessage != '') {
             var cmdbox = jQuery.parseJSON(eventMessage);
 
@@ -69,7 +54,7 @@ function push_routine(device_id)
         }
     };
 
-    function _statuschanged(state) {
+    pushstream.onstatuschange = function (state) {
         if (state == PushStream.OPEN) {
             mylog('omp online now');
         } else {

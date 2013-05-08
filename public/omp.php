@@ -17,7 +17,7 @@ switch($in_cmd) {
         echo handle_heartbeat_cmd();
         break;
     case 'bind':
-        echo handle_bind_device();
+        echo handle_bind_device($PARAMS);
         break;
     case 'reset':
         echo handle_reset();
@@ -28,6 +28,7 @@ switch($in_cmd) {
 
 function handle_heartbeat_cmd()
 {
+    header('Content-Type: application/json');
     session_set_cookie_params(COOKIE_TIMEOUT);
     session_start();
 
@@ -52,10 +53,10 @@ function handle_heartbeat_cmd()
     $browser_save['visiting'] = @$_SERVER['HTTP_REFERER'];
 
     mmc_array_set(NS_DEVICE_LIST, $device, json_encode($browser_save), CACHE_EXPIRE_SECONDS);
-    return $device;
+    return json_encode(array('device' => $device));
 }
 
-function handle_bind_device()
+function handle_bind_device($PARAMS)
 {
     $device    = @$PARAMS[ 'device' ];
     $platform    = @$PARAMS[ 'plat' ];
@@ -79,25 +80,19 @@ function handle_bind_device()
 
     $changed = false;
 
-    if ($username) {
-        if ($bind_info['username'] != $username) {
-            $bind_info['username'] = $username;
-            $changed = true;
-        }
+    if ($username && @$bind_info['username'] !== $username) {
+        $bind_info['username'] = $username;
+        $changed = true;
     }
-    if ($nickname) {
-        if ($bind_info['nickname'] != $nickname) {
-            $bind_info['nickname'] = $nickname;
-            $changed = true;
-        }
+    if ($nickname && @$bind_info['nickname'] !== $nickname) {
+        $bind_info['nickname'] = $nickname;
+        $changed = true;
     }
 
-    if (!$changed) {
-        return 'ok';
-    }
-
-    if (mmc_array_set($ns_bind_list, $device, json_encode($bind_info))) {
-        mmc_array_caption($ns_bind_list, $caption);
+    if ($changed) {
+        if (mmc_array_set($ns_bind_list, $device, json_encode($bind_info))) {
+            mmc_array_caption($ns_bind_list, $caption);
+        }
     }
 
     return 'ok';
@@ -108,7 +103,7 @@ function handle_reset($device)
 
 }
 
-function get_param($key)
+function get_param($key = null)
 {
     $union = array_merge($_GET, $_POST); 
     if ($key) {

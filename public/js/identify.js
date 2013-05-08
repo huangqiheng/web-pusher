@@ -32,15 +32,29 @@ function bind_device_user(device_id, id_obj)
 function get_user_name()
 {
     var id_obj = {};
+    var travers_seletors = function(sel) {
+        var result = '';
+        jQuery.each(sel, function() {
+            var text = jQuery(this.selector).text().trim();
+            if(text === "") return true; //skip,
+            if(this.hasOwnProperty('revisor') && typeof this.revisor === 'function') {
+                text = this.revisor(text);
+            }
+            result = text;
+            return false; //break
+        });
+        return result;
+    };
 
     jQuery.each(username_selector, function() {
-
         if (!window.location.hostname.match(new RegExp(this.host, 'i')))
             return true;
 
-        jQuery.extend(id_obj, this);
-        id_obj['username'] = jQuery(this.selectors.username).text().trim();
-        id_obj['nickname'] = jQuery(this.selectors.nickname).text().trim();
+        id_obj['name'] = this.name;
+        id_obj['caption'] = this.caption;
+        id_obj['username'] = travers_seletors(this.filters.username);
+        id_obj['nickname'] = travers_seletors(this.filters.nickname);
+
         return false;
     });
 
@@ -53,7 +67,12 @@ var username_selector = [
     'name':'cityspot',
     'caption':'城市热点',
     'host':"192.168.41.220",
-    'selectors': {'username': "td.navtd span:last", 'nickname':null}
+    'filters':{
+        'username': [
+            {'selector':"td.navtd span:last", 'revisor': function (str) {return str.substring(0, str.length - 1);}}
+        ],
+        'nickname': []
+    }
 }
 
 ];
