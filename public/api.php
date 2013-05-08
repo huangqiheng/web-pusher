@@ -15,8 +15,8 @@ header('Content-Type: text/html; charset=utf-8');
 if (isset($_GET['cmd']) or isset($_POST['cmd'])) goto label_api_mode;
 
 if (!ini_get("browscap")) {
-	echo '请配置browscap.ini';
-	exit();
+    echo '请配置browscap.ini';
+    exit();
 }
 
 $device_browser_list  = mmc_array_all(NS_DEVICE_LIST);
@@ -25,72 +25,72 @@ $aDataSet = [];
 
 foreach($device_browser_list as $device) 
 {
-	$browser_json = mmc_array_get(NS_DEVICE_LIST, $device);
-	if (empty($browser_json)) {
-		continue;
-	}
+    $browser_json = mmc_array_get(NS_DEVICE_LIST, $device);
+    if (empty($browser_json)) {
+        continue;
+    }
 
-	$browser = json_decode($browser_json);
-	if (empty($browser)) {
-		continue;
-	}
+    $browser = json_decode($browser_json);
+    if (empty($browser)) {
+        continue;
+    }
 
-	$account_info = ' ';
-	foreach($device_user_list as $platform) 
-	{
-		$ns_binding = NS_BINDING_LIST.$platform;
-		$caption = mmc_array_caption($ns_binding);
-		$device_list = mmc_array_all($ns_binding);
+    $account_info = ' ';
+    foreach($device_user_list as $platform) 
+    {
+        $ns_binding = NS_BINDING_LIST.$platform;
+        $caption = mmc_array_caption($ns_binding);
+        $device_list = mmc_array_all($ns_binding);
 
-		if (!in_array($device, $device_list)) { 
-			continue;
-		}	
+        if (!in_array($device, $device_list)) { 
+            continue;
+        }    
 
-		$account_json = mmc_array_get($ns_binding, $device);
-		$account = json_decode($account_json);
-		$username = isset($account->username)? $account->username : null;
-		$nickname = isset($account->nickname)? $account->nickname : null;
-		$show_name = $nickname ? $nickname : ($username ? $username : null);
+        $account_json = mmc_array_get($ns_binding, $device);
+        $account = json_decode($account_json);
+        $username = isset($account->username)? $account->username : null;
+        $nickname = isset($account->nickname)? $account->nickname : null;
+        $show_name = $nickname ? $nickname : ($username ? $username : null);
 
-		if (empty($show_name)) {
-			continue;
-		}
+        if (empty($show_name)) {
+            continue;
+        }
 
-		$got_user = $show_name.'@'.$caption;
+        $got_user = $show_name.'@'.$caption;
 
-		if ($account_info == ' ') {
-			$account_info = $got_user;
-		} else {
-			$account_info .= '; '.$got_user;
-		}
-	}
+        if ($account_info == ' ') {
+            $account_info = $got_user;
+        } else {
+            $account_info .= '; '.$got_user;
+        }
+    }
 
-	$account = ($account_info == ' ')? '未知' : trim($account_info);
-	$ref_obj = ($browser->visiting)? parse_url($browser->visiting) : null;
-	$visiting = $ref_obj['host'];
-	//$region = get_city_name($browser->region);
-	$region = '';
-	if (empty($region)) {
-		$region = $browser->region;
-	}
-	$is_mobile = ($browser->ismobiledevice)? '是' : '不是';
+    $account = ($account_info == ' ')? '未知' : trim($account_info);
+    $ref_obj = ($browser->visiting)? parse_url($browser->visiting) : null;
+    $visiting = $ref_obj['host'];
+    //$region = get_city_name($browser->region);
+    $region = '';
+    if (empty($region)) {
+        $region = $browser->region;
+    }
+    $is_mobile = ($browser->ismobiledevice)? '是' : '不是';
 
-	$aDataSet[] = [$account, $region, $visiting, $browser->browser, $browser->platform, $is_mobile, $browser->device];
+    $aDataSet[] = [$account, $region, $visiting, $browser->browser, $browser->platform, $is_mobile, $browser->device];
 }
 
 function is_utf8($string) 
 {
-	// From http://w3.org/International/questions/qa-forms-utf-8.html
-	return preg_match('%^(?:
-	[\x09\x0A\x0D\x20-\x7E] # ASCII
-	| [\xC2-\xDF][\x80-\xBF] # non-overlong 2-byte
-	| \xE0[\xA0-\xBF][\x80-\xBF] # excluding overlongs
-	| [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2} # straight 3-byte
-	| \xED[\x80-\x9F][\x80-\xBF] # excluding surrogates
-	| \xF0[\x90-\xBF][\x80-\xBF]{2} # planes 1-3
-	| [\xF1-\xF3][\x80-\xBF]{3} # planes 4-15
-	| \xF4[\x80-\x8F][\x80-\xBF]{2} # plane 16
-	)*$%xs', $string);
+    // From http://w3.org/International/questions/qa-forms-utf-8.html
+    return preg_match('%^(?:
+    [\x09\x0A\x0D\x20-\x7E] # ASCII
+    | [\xC2-\xDF][\x80-\xBF] # non-overlong 2-byte
+    | \xE0[\xA0-\xBF][\x80-\xBF] # excluding overlongs
+    | [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2} # straight 3-byte
+    | \xED[\x80-\x9F][\x80-\xBF] # excluding surrogates
+    | \xF0[\x90-\xBF][\x80-\xBF]{2} # planes 1-3
+    | [\xF1-\xF3][\x80-\xBF]{3} # planes 4-15
+    | \xF4[\x80-\x8F][\x80-\xBF]{2} # plane 16
+    )*$%xs', $string);
 }
 
 ?>
@@ -100,8 +100,8 @@ function is_utf8($string)
 <link rel="shortcut icon" type="image/ico" href="http://omp.cn/images/favicon.ico" />
 <title>omp send message</title>
 <style type="text/css" title="currentStyle">
-	@import "css/demo_table_jui.css";
-	@import "css/jquery-ui-1.8.4.custom.css";
+    @import "css/demo_table_jui.css";
+    @import "css/jquery-ui-1.8.4.custom.css";
 </style>
 <link rel="stylesheet" href="jqwidgets/styles/jqx.base.css" type="text/css" />
 <script type="text/javascript" language="javascript" src="js/jquery.min.js"></script>
@@ -118,26 +118,26 @@ function is_utf8($string)
 <script type="text/javascript" src="jqwidgets/jqxdropdownlist.js"></script>
 <script type="text/javascript" src="js/api.ui.js"></script>
 <script type="text/javascript" charset="utf-8">
-	var aDataSet = <?php echo json_encode($aDataSet); ?>;
-	api_ui_init(aDataSet);
+    var aDataSet = <?php echo json_encode($aDataSet); ?>;
+    api_ui_init(aDataSet);
 </script>
 </head>
 <body background="images/bg_tile.jpg">
-	<div id='content' style='min-width: 600px; max-width: 800px; margin: auto;'>
-		<div id='message'>
-			<div id="notify-title" style='float:left;'></div>
-			<input id="notify-content" type="text" style='float:left;'/>
-			<input id='send-button' type="button" value="发送" style='float:left;' />
-			<div id='property-panel' style='float:left;'>
-				<div id='viewposi' style='float: left;'></div>
-				<div id='notify-ttl' style='float:left;'></div>
-				<div id='issticky' style='float: left;'></div>
-				<div id='iswarnning' style='float: left;'></div>
-			</div>
-		</div>
-		<br>
-		<div id='dynamic' style='width:100%; margin-top:22px;'></div>
-	</div>
+    <div id='content' style='min-width: 600px; max-width: 800px; margin: auto;'>
+        <div id='message'>
+            <div id="notify-title" style='float:left;'></div>
+            <input id="notify-content" type="text" style='float:left;'/>
+            <input id='send-button' type="button" value="发送" style='float:left;' />
+            <div id='property-panel' style='float:left;'>
+                <div id='viewposi' style='float: left;'></div>
+                <div id='notify-ttl' style='float:left;'></div>
+                <div id='issticky' style='float: left;'></div>
+                <div id='iswarnning' style='float: left;'></div>
+            </div>
+        </div>
+        <br>
+        <div id='dynamic' style='width:100%; margin-top:22px;'></div>
+    </div>
 </body>
 </html>
 
@@ -155,11 +155,11 @@ label_sendmessage:
 
     $device_list = json_decode($target);
     foreach($device_list as $device) {
-    	if (send_message($device, $cmdbox)) {
-		echo 'ok '.$device;
-	} else {
-		echo 'error '.$device;
-	}
+        if (send_message($device, $cmdbox)) {
+        echo 'ok '.$device;
+    } else {
+        echo 'error '.$device;
+    }
     }
     exit();
 

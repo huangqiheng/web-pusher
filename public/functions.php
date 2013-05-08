@@ -4,14 +4,14 @@ require_once 'config.php';
 
 function send_message($device_id, $message)
 {
-	$pub_url = 'http://'.PUSHER_HOST.':'.PUSHER_PORT.'/pub?id='.$device_id;
+    $pub_url = 'http://'.PUSHER_HOST.':'.PUSHER_PORT.'/pub?id='.$device_id;
         $headers = ['Content-Type: application/json; charset=utf-8'];
-	$headers[] = 'Host: '.PUSHER_DOMAIN;
+    $headers[] = 'Host: '.PUSHER_DOMAIN;
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $pub_url);
-	curl_setopt($ch, CURLOPT_POST, 1);
-	curl_setopt($ch, CURLOPT_POSTFIELDS, $message);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $message);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_HEADER, 0);
@@ -24,7 +24,7 @@ function send_message($device_id, $message)
         $err = curl_errno($ch);
         curl_close($ch);
 
-	return ($err==0)? (($httpcode==200)? $res : null) : null;
+    return ($err==0)? (($httpcode==200)? $res : null) : null;
 }
 
 function gen_uuid() {
