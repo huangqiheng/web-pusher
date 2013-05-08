@@ -6,7 +6,8 @@ function report_user_name(device_id)
     {
         $(window).load(function() {
             mylog("second try match");
-            report_user_name(device_id);
+            var id_obj = get_user_name();
+            bind_device_user(device_id, id_obj);
         });
     } else {
         bind_device_user(device_id, id_obj);
@@ -15,15 +16,14 @@ function report_user_name(device_id)
 
 function bind_device_user(device_id, id_obj)
 {
-    jQuery.post('/OMPSERVER/omp.php',
-            {
-                'cmd':'bind',
-                'plat': id_obj.name,
-                'device': device_id,
-                'cap': id_obj.caption,
-                'user': id_obj.username,
-                'nick': id_obj.nickname
-            })
+    jQuery.post('/OMPSERVER/omp.php', {
+        cmd:'bind',
+        plat: id_obj.name,
+        device: device_id,
+        cap: id_obj.caption,
+        user: id_obj.username,
+        nick: id_obj.nickname
+    })
     .success(function () {
         mylog('bind ok: -- dev_id:' + device_id + ' username:' + id_obj.username + " nickname: " + id_obj.nickname);
     });
@@ -35,11 +35,15 @@ function get_user_name()
     var travers_seletors = function(sel) {
         var result = '';
         jQuery.each(sel, function() {
-            var text = jQuery(this.selector).text().trim();
-            if(text === "") return true; //skip,
+            var target = jQuery(this.selector), text = '';
+            if(target.length === 0) return true; //skip,
+
             if(this.hasOwnProperty('revisor') && typeof this.revisor === 'function') {
-                text = this.revisor(text);
+                text = this.revisor(target);
+            } else {
+                text = target.text().trim();
             }
+
             result = text;
             return false; //break
         });
@@ -63,74 +67,84 @@ function get_user_name()
 
 var username_selector = [
 
-{   
+{
     'name':'cityspot',
     'caption':'城市热点',
     'host':"192.168.41.220",
     'filters':{
+        username: [
+            {selector:"td.navtd span:last",
+             revisor: function (t) {
+                    var tx=t.text().trim();
+                    return tx.substring(0, tx.length - 1);
+                }
+            }
+        ],
+        nickname: []
+    }
+}
+,
+{
+    'name':'sina_account',
+    'caption':'新浪微博',
+    'host':'weibo.com',
+    'filters':{
         'username': [
-            {'selector':"td.navtd span:last", 'revisor': function (str) {return str.substring(0, str.length - 1);}}
+            {selector:".gn_person a.gn_name",
+             revisor: function(t) {
+                    return t.attr('href').split('/')[1]
+                }
+            },
+            {selector:".nameBox a.name",
+             revisor: function(t) {
+                    return t.attr('href').split('/')[1]
+                }
+            }
+        ],
+        'nickname': [
+            {selector:".gn_person a.gn_name"},
+            {selector:".nameBox a.name"},
+        ]
+    }
+}
+,
+{
+    'name':'taobao',
+    'caption':'淘宝',
+    'host':'taobao.com',
+    'filters':{
+        'username': [
+            {'selector':"a.user-nick"}
         ],
         'nickname': []
     }
 }
+,
+{
+    'name':'tmall',
+    'caption':'天猫',
+    'host':'tmall.com',
+    'filters':{
+        'username': [
+            {'selector':".sn-welcome-info a.j_UserNick"}
+        ],
+        'nickname': []
+    }
+}
+/*
+,
+{
+    'name':'',
+    'caption':'',
+    'host':'',
+    'filters':{
+        'username': [
+            {'selector':"", 'revisor': function (str) {return str;}}
+        ],
+        'nickname': []
+    }
+}
+*/
 
 ];
 
-/*
-var username_regexs = [
-{'name':'sina_account',
-    'caption':'新浪微博',
-    'host':"sina\\.com\\.cn",
-    'bypass': ['账号设置'],
-    'contents': [".tn-user", ".cheadUserInfo", ".h2cont", ".J_Name"],
-    'matchs':[
-        // matchs的第二个子组，匹配username，其前或后则是nickname
-        "<i class=\\\"sa_newlogin_name\\\"[^>]*?>([^<]+?)()<\\/i>",
-    "<span id=\\\"uq_username\\\"[^>]*?>([^<]+?)()<\\/span>",
-    "<a href=\\\"https?:\\/\\/login\\.sina\\.com\\.cn\\/\\\"[^>]+?>([^<]+?)()<\\/a>",
-    "<a href=\\\"http:\\/\\/login\\.sina\\.com\\.cn\\/member\\/my\\.php\\\"[^>]+?>([^<]+?)()<\\/a>",
-    ]},
-
-{'name':'tencent_weibo',
-    'caption':'腾讯微博',
-    'host':"qq\\.com",
-    'bypass':['进入微博'],
-    'contents': [".mblog_login_info", '#topNav1'],
-    'matchs':[
-        "<a target=\\\"_blank\\\" href=\\\"http:\\/\\/t\\.qq\\.com\\/[^\\/]+?\\/\\?pref=qqcom\\.mininav[^>]+?>()([^<]+?)<\\/a>",
-    "<a href=\\\"http:\\/\\/t\\.qq\\.com\\/[^\\?]+?\\?preview\\\" class=[\\s\\S]+?title=\\\"([^\\\(]+?)\\\(@([^\\\)]+?)\\\)\\\">",
-    ]},
-
-{'name':'tencent_qq',
-    'caption':'腾讯QQ',
-    'host':"qq\\.com",
-    'bypass':[],
-    'contents': [".qqName", ".log_info", '#modHeadPersonal'],
-    'matchs':[
-        "<span id=\\\"userName\\\">([^<]+)()<\\/span>[^<]*?<span>\\[<\\/span>",
-    "<span class=\\\"usr_info\\\" id=\\\"usr_info\\\">[^\\(]+\\((\\d+?)()\\)[^<]*?<\\/span>",
-    "<span class=\\\"ico_text\\\" data-type=\\\"nickname\\\">([^<]+?)()<\\/span>",
-    ]},
-
-{'name':'taobao',
-    'caption':'淘宝网',
-    'host':"taobao\\.com",
-    'bypass':[],
-    'contents': [".vip-head"],
-    'matchs':[
-        "<a class=\\\"user-nick\\\"[^>]+?>([^<]+?)()<\\/a>",
-    ]},
-
-{'name':'cityspot',
-    'caption':'城市热点',
-    'host':"192.168.41.220",
-    'bypass':[],
-    'contents': [".navtd"],
-    'matchs':[
-        "<span class[\\s\\S]+?\\/span>[^<]*?<span[^>]+?>([^<]+?)(): &nbsp;<\\/span>",
-    ]},
-    ];
-
-
-*/
