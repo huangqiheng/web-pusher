@@ -1,7 +1,7 @@
 
 function omp_main() 
 {
-    jQuery.ajax({
+    jQomp.ajax({
         url: 'http://omp.cn/omp.php?cmd=hbeat',
         xhrFields: { withCredentials: true }
     })
@@ -31,14 +31,13 @@ function push_routine(device_id)
 
     pushstream.onmessage = function (eventMessage) {
         if (eventMessage != '') {
-            var cmdbox = jQuery.parseJSON(eventMessage);
+            var cmdbox = jQomp.parseJSON(eventMessage);
 
-            jQuery.noConflict();
-            jQuery.extend(jQuery.gritter.options, { 
+            jQomp.extend(jQomp.gritter.options, { 
                 position: cmdbox.position,
             });
 
-            jQuery.gritter.add({
+            jQomp.gritter.add({
                 title: cmdbox.title,
                 text: cmdbox.text,
                 time: cmdbox.time,

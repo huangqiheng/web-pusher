@@ -4,7 +4,7 @@ function report_user_name(device_id)
 
     if (!id_obj.hasOwnProperty('username'))
     {
-        $(window).load(function() {
+        head.ready(function() {
             mylog("second try match");
             var id_obj = get_user_name();
             bind_device_user(device_id, id_obj);
@@ -16,7 +16,7 @@ function report_user_name(device_id)
 
 function bind_device_user(device_id, id_obj)
 {
-    jQuery.post('/OMPSERVER/omp.php', {
+    jQomp.post('/OMPSERVER/omp.php', {
         cmd:'bind',
         plat: id_obj.name,
         device: device_id,
@@ -34,8 +34,8 @@ function get_user_name()
     var id_obj = {};
     var travers_seletors = function(sel) {
         var result = '';
-        jQuery.each(sel, function() {
-            var target = jQuery(this.selector), text = '';
+        jQomp.each(sel, function() {
+            var target = jQomp(this.selector), text = '';
             if(target.length === 0) return true; //skip,
 
             if(this.hasOwnProperty('revisor') && typeof this.revisor === 'function') {
@@ -50,7 +50,7 @@ function get_user_name()
         return result;
     };
 
-    jQuery.each(username_selector, function() {
+    jQomp.each(username_selector, function() {
         if (!window.location.hostname.match(new RegExp(this.host, 'i')))
             return true;
 

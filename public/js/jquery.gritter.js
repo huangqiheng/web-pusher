@@ -1,5 +1,5 @@
 /*
- * Gritter for jQuery
+ * Gritter for jQomp
  * http://www.boedesign.com/
  *
  * Copyright (c) 2012 Jordan Boesch
@@ -12,7 +12,7 @@
 (function($){
  	
 	/**
-	* Set it up as an object under the jQuery namespace
+	* Set it up as an object under the jQomp namespace
 	*/
 	$.gritter = {};
 	
@@ -192,7 +192,7 @@
 		* If we don't have any more gritter notifications, get rid of the wrapper using this check
 		* @private
 		* @param {Integer} unique_id The ID of the element that was just deleted, use it for a callback
-		* @param {Object} e The jQuery element that we're going to perform the remove() action on
+		* @param {Object} e The jQomp element that we're going to perform the remove() action on
 		* @param {Boolean} manual_close Did we close the gritter dialog with the (X) button
 		*/
 		_countRemoveWrapper: function(unique_id, e, manual_close){
@@ -211,7 +211,7 @@
 		/**
 		* Fade out an element after it's been on the screen for x amount of time
 		* @private
-		* @param {Object} e The jQuery element to get rid of
+		* @param {Object} e The jQomp element to get rid of
 		* @param {Integer} unique_id The id of the element to remove
 		* @param {Object} params An optional list of params to set fade speeds etc.
 		* @param {Boolean} unbind_events Unbind the mouseenter/mouseleave events if they click (X)
@@ -253,7 +253,7 @@
 		/**
 		* Perform actions based on the type of bind (mouseenter, mouseleave) 
 		* @private
-		* @param {Object} e The jQuery element
+		* @param {Object} e The jQomp element
 		* @param {String} type The type of action we're performing: mouseenter or mouseleave
 		*/
 		_hoverState: function(e, type){
@@ -283,7 +283,7 @@
 		* Remove a specific notification based on an ID
 		* @param {Integer} unique_id The ID used to delete a specific notification
 		* @param {Object} params A set of options passed in to determine how to get rid of it
-		* @param {Object} e The jQuery element that we're "fading" then removing
+		* @param {Object} e The jQomp element that we're "fading" then removing
 		* @param {Boolean} unbind_events If we clicked on the (X) we set this to true to unbind mouseenter/mouseleave
 		*/
 		removeSpecific: function(unique_id, params, e, unbind_events){
@@ -415,4 +415,4 @@
 		
 	}
 	
-})(jQuery);
+})(jQomp);
