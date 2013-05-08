@@ -15,7 +15,7 @@ function report_user_name(device_id)
 
 function bind_device_user(device_id, id_obj)
 {
-    jQuery.get('http://omp.cn/omp.php?callback=?',
+    jQuery.post('/OMPSERVER/omp.php',
             {
                 'cmd':'bind',
                 'plat': id_obj.name,
