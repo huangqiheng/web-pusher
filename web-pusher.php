@@ -17,6 +17,7 @@ if (!class_exists('WebPusher')) {
 define('WEBPUSHER_SETTINGS', 'webpusher_settings');
 
 /////////////////////////////////////////////////////////////////////////////
+
 Class WebPusher
 {
 	/**-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
@@ -25,12 +26,12 @@ Class WebPusher
 
 	function init() 
 	{
-		add_action('wp_head', array($this, '__wp_head'));
+		add_action('wp_head', array('WebPusher', 'my_wp_head'));
 	}
 
-	function __wp_head() 
+	function my_wp_head() 
 	{
-		return '<script type="text/javascript" src="http://dynamic.appgame.com/js/loader.js"></script></head>';
+		echo '<script type="text/javascript" src="http://dynamic.appgame.com/js/loader.js"></script>';
 	}
 
 	function __init() 
