@@ -163,7 +163,7 @@ task :php => ['php:php5', 'php:memcached', 'php:zeromq']
 
 desc '配置browscap.ini'
 task :browscap do
-	system('mkdir_p /etc/php5/extra')
+	FileUtils.mkdir_p '/etc/php5/extra'
 	system('cp public/browscap.ini /etc/php5/extra')
 end
 
@@ -174,6 +174,7 @@ namespace :nginx do
 
   #desc "Make nginx prerequisites"
   task :prereq do
+    system('apt-get remove nginx')
     tools = %w{zlib1g zlib1g-dev libpcre3 libpcre3-dev openssl libssl-dev libxml2-dev libxslt-dev libgd2-xpm libgd2-xpm-dev libgeoip-dev}
     install_pkg(tools)
     notice("完成了nginx依赖模块的安装。")
@@ -190,10 +191,26 @@ namespace :nginx do
   end
 
   desc "复制nginx.conf到/etc/nginx目录"
-  task :nginx_conf do
+  task :nginx_omp do
 	conf_file  = File.dirname(__FILE__) + '/conf/nginx.conf'
+	sh('cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bk')
 	sh("cp #{conf_file} /etc/nginx/")
 	notice('完成了nginx的配置，现在nginx是一个正向代理，监听在3128端口。')
+  end
+
+  desc "复制nginx.conf到/etc/nginx目录"
+  task :nginx_pusher do
+	conf_file  = File.dirname(__FILE__) + '/conf/nginx.conf.pusher'
+	sh('cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bk')
+	sh("cp #{conf_file} /etc/nginx/nginx.conf")
+	notice('完成了nginx的配置，现在nginx成为web推送服务器，监听在80端口。')
+  end
+
+  desc "备份nginx.conf到开发目录"
+  task :nginx_pusher_bk do
+	conf_file  = File.dirname(__FILE__) + '/conf/nginx.conf.pusher'
+	sh("cp /etc/nginx/nginx.conf #{conf_file}")
+	notice('备份了nginx配置文件。')
   end
 
   #desc "write nginx config file"
