@@ -17,7 +17,8 @@ function api_ui_init(aDataSet)
 			{ 'sTitle': '设备ID',   'bVisible': false},
 		]
 	});	
-	$('#example tr').click( function() {
+	        
+	$("#example").on('click','tr',function(event) {
 		$(this).toggleClass('row_selected');
 		var sData = oTable.fnGetData(this);
 
