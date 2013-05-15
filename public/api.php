@@ -97,7 +97,7 @@ function is_utf8($string)
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rel="shortcut icon" type="image/ico" href="http://omp.cn/images/favicon.ico" />
+<link rel="shortcut icon" type="image/ico" href="http://omp.doctorcom.com/images/favicon.ico" />
 <title>omp send message</title>
 <style type="text/css" title="currentStyle">
     @import "css/demo_table_jui.css";
@@ -164,11 +164,11 @@ label_sendmessage:
     exit();
 
 # 获取设备id和分类和发送
-# get http://omp.cn/api.php?cmd=list&type=[device|browser|platform|mobile]
-# post http://omp.cn/api.php?cmd=send&type=[device|browser|platform|mobile]&value=xxxxx
+# get http://omp.doctorcom.com/api.php?cmd=list&type=[device|browser|platform|mobile]
+# post http://omp.doctorcom.com/api.php?cmd=send&type=[device|browser|platform|mobile]&value=xxxxx
 
 # 获取业务身份和发送
-# get http://omp.cn/api.php?cmd=listplats
-# get http://omp.cn/api.php?cmd=listrole&plat=tencent_qq
-# post http://omp.cn/api.php?cmd=sendrole&plat=tencent_qq&username=xxxx&nickname=xxxx
+# get http://omp.doctorcom.com/api.php?cmd=listplats
+# get http://omp.doctorcom.com/api.php?cmd=listrole&plat=tencent_qq
+# post http://omp.doctorcom.com/api.php?cmd=sendrole&plat=tencent_qq&username=xxxx&nickname=xxxx
 ?>

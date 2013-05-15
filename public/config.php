@@ -1,5 +1,5 @@
 <?php
-define('PUSHER_DOMAIN', 'omp.cn');
+define('PUSHER_DOMAIN', 'omp.doctorcom.com');
 define('PUSHER_HOST', 'localhost');
 define('PUSHER_PORT', 3128);
 define('MEMC_HOST', '127.0.0.1');

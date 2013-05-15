@@ -2,8 +2,9 @@
 function omp_main() 
 {
     jQomp.ajax({
-        url: 'http://omp.cn/omp.php?cmd=hbeat',
-        xhrFields: { withCredentials: true }
+        url: 'http://omp.doctorcom.com/omp.php?cmd=hbeat',
+        dataType: 'json',
+        crossDomain: true,
     })
         .success(function(m) {
                 var device_id = m.device;
@@ -23,7 +24,7 @@ function push_routine(device_id)
     PushStream.LOG_LEVEL = 'debug';
 
     var pushstream = new PushStream({
-        host: 'omp.cn',
+        host: 'omp.doctorcom.com',
         port: window.location.port,
         modes: "eventsource|longpolling"
         //modes: "stream|websocket|eventsource|longpolling"
