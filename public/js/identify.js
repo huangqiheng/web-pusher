@@ -2,13 +2,8 @@ function report_user_name(device_id)
 {
     var id_obj = get_user_name();
 
-    if (!id_obj.hasOwnProperty('username'))
-    {
-        head.ready(function() {
-            mylog("second try match");
-            var id_obj = get_user_name();
-            bind_device_user(device_id, id_obj);
-        });
+    if (!id_obj.hasOwnProperty('username')) {
+        mylog("cant obtain username. not binding.");
     } else {
         bind_device_user(device_id, id_obj);
     }

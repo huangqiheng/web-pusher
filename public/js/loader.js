@@ -23,7 +23,8 @@ head.js(
     '/OMPSERVER/css/jquery.gritter.css', 
     '/OMPSERVER/js/identify.js', 
     '/OMPSERVER/js/main.js', 
-    function(){omp_main();});
-
+    function(){
+        jQomp(omp_main);
+    });
 })()
 }

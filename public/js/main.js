@@ -1,16 +1,15 @@
-
 function omp_main() 
 {
     jQomp.ajax({
         url: 'http://omp.doctorcom.com/omp.php?cmd=hbeat',
         dataType: 'json',
         crossDomain: true,
-    })
-        .success(function(m) {
-                var device_id = m.device;
-                push_routine(device_id); 
-                report_user_name(device_id);
-        });
+        xhrFields: { withCredentials: true }
+    }).success(function(m) {
+        var device_id = m.device;
+        push_routine(device_id); 
+        report_user_name(device_id);
+    });
 }
 
 function mylog(msg)
@@ -62,13 +61,12 @@ function push_routine(device_id)
         }
     };
 
-    function _connect(channel) {
+    (function (channel) {
         pushstream.removeAllChannels();
         try {
             pushstream.addChannel(channel);
             pushstream.connect();
-        } catch(e) {alert(e)};
-    }
+        } catch(e) {mylog(e)};
+    })(device_id);
 
-    _connect(device_id);
 }
