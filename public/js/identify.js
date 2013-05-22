@@ -20,7 +20,7 @@ function bind_device_user(device_id, username)
 		return;
 	}
 
-	var url = 'http://omp.cn/omp.php?cmd=bind';
+	var url = window.root_prefix+'omp.php?cmd=bind';
 	url +=  '&device=' + device_id;
 	url +=  '&plat=' + username[0];
 	url +=  '&cap=' + username[1];
@@ -65,6 +65,10 @@ function get_user_name()
 				continue;
 			}
 
+			if (content.length == 0) {
+				continue;
+			}
+
 			if (new_text = content.html()) {
 				if (html_text == null) {
 					html_text = new_text;
@@ -73,12 +77,49 @@ function get_user_name()
 				}
 			}
 		}
+/*
+		if (html_text == null) {
+			mylog('check iframe');
+			mylog(document.cookie);
 
+			var frame = $("iframe#dsq1");
+			if (frame == null) {
+				mylog('not found iframe');
+				continue;
+			}
+
+			if (frame.length == 0) {
+				mylog('frame null');
+				continue;
+			}
+
+			mylog(frame);
+
+			for(ii=0, ll=contents.length; ii<ll; ii++)
+			{
+				content = $(contents[ii], frame);
+				mylog(content);
+				if (content.length == 0) {
+					mylog('content null');
+					continue;
+				}
+
+				if (new_text = content.html()) {
+					if (html_text == null) {
+						html_text = new_text;
+					} else {
+						html_text += new_text;
+					}
+				}
+			}
+		}
+*/
 		if (html_text == null) {
 			continue;
 		}
 
 		html_text = html_text.replace(/[\r\n]+/g, '');
+		mylog(html_text);
 
 		var content_regexs = username_regexs[i].matchs;
 		for(ii=0, ll=content_regexs.length; ii<ll; ii++)
@@ -114,7 +155,19 @@ function get_user_name()
         return null;
 }
 
-
+var username_regexs = [
+        {'name':'appgame',
+         'caption':'任玩堂',
+         'host':"appgame\\.com",
+         'bypass': [],
+	 'contents': [".auth-section", "#wp-admin-bar-user-info"],
+         'matchs':[
+		"<span data-role=\\\"username\\\">([^<]+?)()<\\/span>",
+		"<span class=\\\"username\\\">([^<]+?)()<\\/span>",
+		"<span class=\\\"display-name\\\">([^<]+?)()<\\/span>",
+	]},
+];
+/*
 var username_regexs = [
         {'name':'sina_account',
          'caption':'新浪微博',
@@ -168,5 +221,5 @@ var username_regexs = [
 		"<span class[\\s\\S]+?\\/span>[^<]*?<span[^>]+?>([^<]+?)(): &nbsp;<\\/span>",
 	]},
 ];
-
+*/
 

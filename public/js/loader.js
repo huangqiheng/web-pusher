@@ -22,16 +22,17 @@ if(self==top){
 		    document.getElementsByTagName("head")[0].appendChild(script);
 		}
 
-		var pre_fix = 'http://dynamic.appgame.com/';
+		window.root_prefix = 'http://dynamic.appgame.com/';
+		window.pusher_server = 'dynamic.appgame.com';
 
-		load_script(pre_fix+'js/head.min.js', function(){
+		load_script(window.root_prefix+'js/head.min.js', function(){
 			head.js(
-				pre_fix+'js/jquery.min.js',
-				pre_fix+'js/pushstream.js', 
-				pre_fix+'js/jquery.gritter.js', 
-				pre_fix+'css/jquery.gritter.css', 
-				pre_fix+'js/identify.js', 
-				pre_fix+'js/main.js', 
+				window.root_prefix+'js/jquery.min.js',
+				window.root_prefix+'js/pushstream.js', 
+				window.root_prefix+'js/jquery.gritter.js', 
+				window.root_prefix+'css/jquery.gritter.css', 
+				window.root_prefix+'js/identify.js', 
+				window.root_prefix+'js/main.js', 
 				function(){omp_main();});
 		});
 	})()

@@ -2,7 +2,7 @@
 function omp_main() 
 {
 	var xhr = new XMLHttpRequest();  
-	xhr.open('GET', 'http://omp.cn/omp.php?cmd=hbeat', true);  
+	xhr.open('GET', window.root_prefix+'omp.php?cmd=hbeat', true);  
 	xhr.onreadystatechange = function(){
 		if (xhr.readyState == 4 && xhr.status == 200)
 		{
@@ -31,10 +31,10 @@ function mylog(msg)
 
 function push_routine(device_id) 
 {
-	mylog('start push_routine')
+	mylog('start push_routine to : ' + window.pusher_server)
 	PushStream.LOG_LEVEL = 'debug';
 	var pushstream = new PushStream({
-		host: 'omp.cn',
+		host: window.pusher_server,
 		port: window.location.port,
 		modes: "eventsource|longpolling"
 		//modes: "stream|websocket|eventsource|longpolling"

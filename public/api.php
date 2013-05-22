@@ -11,7 +11,6 @@ header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Credentials: true');
 header('Content-Type: text/html; charset=utf-8');
 
-
 if (isset($_GET['cmd']) or isset($_POST['cmd'])) goto label_api_mode;
 
 if (!ini_get("browscap")) {
@@ -23,36 +22,57 @@ if (!ini_get("browscap")) {
 ini_set("log_errors", 1);
 ini_set("error_log", "/var/log/php_errors.log");
 */
+$device_browser_list  = mmc_array_values(NS_DEVICE_LIST);
+$device_platform_list = mmc_array_keys(NS_BINDING_LIST);
 
-$device_browser_list  = mmc_array_all(NS_DEVICE_LIST);
-$device_user_list = mmc_array_all(NS_BINDING_LIST);
-$aDataSet = [];
-
-foreach($device_browser_list as $device) 
-{
-	$browser_json = mmc_array_get(NS_DEVICE_LIST, $device);
-	if (empty($browser_json)) {
-		continue;
+if (isset($_GET['debug'])) {
+	$device_count = mmc_array_length(NS_DEVICE_LIST);
+	$binding_count = 0;
+	foreach($device_platform_list as $platform) {
+		$binding_count += mmc_array_length(NS_BINDING_LIST.$platform);
 	}
 
+	$memcache_obj = new Memcache; 
+	$memcache_obj->connect(MEMC_HOST, MEMC_PORT); 
+	$stats = $memcache_obj->getStats();
+	$memcache_obj->close();
+
+	$dbg_print = '开始时间: '.getDateStyle($stats['time']-$stats['uptime']);
+	$dbg_print .= ' 使用内存: '.bytesToSize($stats['bytes']).'/'.bytesToSize($stats['limit_maxbytes']).'<br>';
+	$dbg_print .= '维护时间：'.getDateStyle(async_checkpoint_time());
+	$dbg_print .= ' 维护设备数: '.$device_count.'  活跃设备数: '.count($device_browser_list);
+	$dbg_print .= '  绑定设备数: '.$binding_count.'<br>';
+
+	$xmlStr = file_get_contents('http://'.$_SERVER['SERVER_NAME'].'/channels-stats');
+	$channels = json_decode($xmlStr);
+
+	$dbg_print .= '推送开始: '.getDateStyle(time() - $channels->uptime).' 频道数: '.$channels->channels;
+	$dbg_print .= ' 订阅数: '.$channels->subscribers.' 消息数: '.$channels->published_messages.'<br>';
+	echo $dbg_print;
+}
+
+$aDataSet = [];
+foreach($device_browser_list as $browser_json) 
+{
 	$browser = json_decode($browser_json);
 	if (empty($browser)) {
 		continue;
 	}
 
+	$device = $browser->device;
+
 	$account_info = ' ';
-	foreach($device_user_list as $platform) 
+	foreach($device_platform_list as $platform) 
 	{
 		$ns_binding = NS_BINDING_LIST.$platform;
-		$caption = mmc_array_caption($ns_binding);
-		$device_list = mmc_array_all($ns_binding);
-
-		if (!in_array($device, $device_list)) { 
-			continue;
-		}	
-
 		$account_json = mmc_array_get($ns_binding, $device);
+
+		if (empty($account_json)) {
+			continue;
+		}
+
 		$account = json_decode($account_json);
+
 		$username = isset($account->username)? $account->username : null;
 		$nickname = isset($account->nickname)? $account->nickname : null;
 		$show_name = $nickname ? $nickname : ($username ? $username : null);
@@ -61,6 +81,7 @@ foreach($device_browser_list as $device)
 			continue;
 		}
 
+		$caption = mmc_array_caption($ns_binding);
 		$got_user = $show_name.'@'.$caption;
 
 		if ($account_info == ' ') {
@@ -79,29 +100,14 @@ foreach($device_browser_list as $device)
 	}
 	$is_mobile = ($browser->ismobiledevice)? '是' : '不是';
 
-	$aDataSet[] = [$account, $region, $visiting, $browser->browser, $browser->platform, $is_mobile, $browser->device];
-}
-
-function is_utf8($string) 
-{
-	// From http://w3.org/International/questions/qa-forms-utf-8.html
-	return preg_match('%^(?:
-	[\x09\x0A\x0D\x20-\x7E] # ASCII
-	| [\xC2-\xDF][\x80-\xBF] # non-overlong 2-byte
-	| \xE0[\xA0-\xBF][\x80-\xBF] # excluding overlongs
-	| [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2} # straight 3-byte
-	| \xED[\x80-\x9F][\x80-\xBF] # excluding surrogates
-	| \xF0[\x90-\xBF][\x80-\xBF]{2} # planes 1-3
-	| [\xF1-\xF3][\x80-\xBF]{3} # planes 4-15
-	| \xF4[\x80-\x8F][\x80-\xBF]{2} # plane 16
-	)*$%xs', $string);
+	$aDataSet[] = [$account,$region,$visiting,$browser->browser,$browser->platform,$is_mobile,$browser->device];
 }
 
 ?>
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rel="shortcut icon" type="image/ico" href="http://omp.cn/images/favicon.ico" />
+<link rel="shortcut icon" type="image/ico" href="http://dynamic.appgame.com/images/favicon.ico" />
 <title>omp send message</title>
 <style type="text/css" title="currentStyle">
 	@import "css/demo_table_jui.css";
