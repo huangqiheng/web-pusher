@@ -7,7 +7,7 @@ function api_ui_init(aDataSet)
 		'sPaginationType': 'full_numbers',
 		'iDisplayLength': 50,
 		'aaData': aDataSet,
-
+		'aaSorting': [[0,'desc']],
 		'aoColumns': [
 			{ 'sTitle': '在线账户'},
 			{ 'sTitle': '来源地区'},
@@ -98,9 +98,11 @@ function api_ui_init(aDataSet)
 			}
 	);});
 
-	$("input[name='notify-ttl']").css("cssText", "height: 26px !important;");
-	$("table#example").css("cssText", "font-size:13px !important;");
-	$('#example_wrapper').css('cssText', "font-size:13px !important;");
+	$("input[name='notify-ttl']").css('cssText', 'height: 26px !important;');
+	$('table#example').css('cssText', 'font-size:13px !important;');
+	$('#example_wrapper').css('cssText', 'font-size:13px !important;');
+	$('div#example_filter input').css('cssText', 'width: 260px !important;');
+
     });
 }
 

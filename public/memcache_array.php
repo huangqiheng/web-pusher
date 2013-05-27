@@ -7,6 +7,9 @@ define('LIST_KEY2ID_PREFIX', 'list_key2id_');
 define('LIST_ID2KEY_PREFIX', 'list_id2key_');
 define('LIST_KEYVALUE_PREFIX', 'list_keyvalue_');
 define('LIST_LENGTH_KEY', 'list_length_key');
+define('LIST_LOCK', 1);
+define('LIST_LOCK_KEY', 'list_lock_key');
+define('LIST_LOCK_TIME', 5);
 
 define('MEMC_POOL', 'memcached_pool');
 
@@ -88,24 +91,101 @@ function mmc_array_length($list_name)
 function mmc_array_cleanup($list_name, $before_time)
 {
 	$mem = __open_mmc();
-	$length = $mem->ns_get($list_name, LIST_LENGTH_KEY);
 
+	//预处理，获取需要删除的元素列表
+	$length = $mem->ns_get($list_name, LIST_LENGTH_KEY);
+	$del_ids = [];
+	$del_key2ids = [];
+	for ($index=1; $index<=$length; $index++) {
+		$index_key = LIST_ID2KEY_PREFIX.$index;
+		$key = $mem->ns_get($list_name, $index_key);
+		$key2id_key = LIST_KEY2ID_PREFIX.$key;
+		$keydata_key = LIST_KEYVALUE_PREFIX.$key;
+
+		if ($mem->ns_get($list_name, $keydata_key)) {
+			continue;
+		}
+
+		$last_active_time = $mem->ns_get($list_name, $key2id_key);
+		if ($last_active_time < $before_time) {
+			$del_ids[] = $index_key;
+			$del_key2ids[] = $key2id_key;
+		}
+	}
+
+	$del_count = count($del_ids);
+	if ($del_count == 0) {
+		return 0;
+	}
+
+	//信号锁
+	defined('LIST_LOCK') && $mem->ns_set($list_name, LIST_LOCK_KEY, 1, LIST_LOCK_TIME);
+
+	//将末尾长度迅速剪下来
+	$length = $mem->ns_get($list_name, LIST_LENGTH_KEY);
+	$mem->ns_set($list_name, LIST_LENGTH_KEY, $length-$del_count);
+
+	//删除末尾的
+	$keys_todel = array();
+	for ($index=$length; $del_count>0; $index--,$del_count--) {
+		$keys_todel[] = LIST_ID2KEY_PREFIX.$index;
+	}
+	$cutoffs = $mem->ns_cutMulti($list_name, $keys_todel);
+
+	//然后慢慢填回去，先找出没重叠的需要填回去的
+	$to_fill_values = array();
+	foreach ($cutoffs as $key=>$value) {
+		if ($pos = array_search($key, $del_ids)) {
+			array_splice($del_ids, $pos, 1);
+		} else {
+			$to_fill_values[] = $value;
+		}
+	}
+
+	//收集起来后一次过填回去
+	$to_sets = array();
+	foreach ($to_fill_values as $value) {
+		$to_sets[array_pop($del_ids)] = $value;
+	}
+	$mem->ns_setMulti($list_name, $to_sets);
+
+	//删除key to time列表，这样被删除的index就能增加了，避免index列表的从复
+	//key to time 列表是用来保证index列表不从复元素的
+	$mem->ns_deleteMulti($list_name, $del_key2ids);
+
+	defined('LIST_LOCK') && $mem->ns_delete($list_name, LIST_LOCK_KEY);
+	return count($del_key2ids);
+}
+
+function __mmc_array_cleanup($list_name, $before_time)
+{
+	$mem = __open_mmc();
+	defined('LIST_LOCK') && $mem->ns_set($list_name, LIST_LOCK_KEY, 1, LIST_LOCK_TIME);
+
+	$length = $mem->ns_get($list_name, LIST_LENGTH_KEY);
 	$del_ids = [];
 	for ($index=1; $index<=$length; $index++) {
 		$index_key = LIST_ID2KEY_PREFIX.$index;
 		$key = $mem->ns_get($list_name, $index_key);
-		$last_active_time = $mem->ns_get($list_name, LIST_KEY2ID_PREFIX.$key);
 
+		if ($mem->ns_get($list_name, LIST_KEYVALUE_PREFIX.$key)) {
+			continue;
+		}
+
+		$last_active_time = $mem->ns_get($list_name, LIST_KEY2ID_PREFIX.$key);
 		if ($last_active_time < $before_time) {
 			$del_ids[] = $index;
+			$mem->ns_delete($list_name, LIST_KEY2ID_PREFIX.$key);
 		}
 	}
 
 	if (count($del_ids) == 0) {
+		defined('LIST_LOCK') && $mem->ns_delete($list_name, LIST_LOCK_KEY);
 		return 0;
 	}
 
 	$del_count = 0;
+	$length = $mem->ns_get($list_name, LIST_LENGTH_KEY);
 	for ($index=$length; $index>0; $index--) {
 		if (count($del_ids) == 0) {
 			break;
@@ -121,9 +201,10 @@ function mmc_array_cleanup($list_name, $before_time)
 		}
 
 		$mem->ns_decrement($list_name, LIST_LENGTH_KEY);
-		$mem->ns_delete($list_name, LIST_KEY2ID_PREFIX.$key);
 		$del_count++;
 	}
+
+	defined('LIST_LOCK') && $mem->ns_delete($list_name, LIST_LOCK_KEY);
 
 	return $del_count;
 }

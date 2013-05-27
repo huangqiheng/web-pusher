@@ -1,5 +1,13 @@
 if(self==top){
 
+//管理服务器所在网址修正，那些js、css什么的url
+window.root_prefix = 'http://omp.doctorcom.com/';
+//推送服务器地址，可以和管理服务器在不同的域名上
+window.push_server = 'omp.doctorcom.com';
+//推送模式优先级，一个不行会再试下一个，不过timeout时间似乎很长
+window.push_modes = 'websocket|eventsource|longpolling|stream'; 
+//推送模块日志显示级别
+window.push_loglevel = 'debug';
 //head.load.min
 
 (function(){
@@ -12,9 +20,6 @@ c.href=a.url):(c=e.createElement("script"),c.type="text/"+(a.type||"javascript")
 function(a,b,c,e){a="object"===typeof a?a:{test:a,success:b?v("Array",b)?b:[b]:!1,failure:c?v("Array",c)?c:[c]:!1,callback:e||m};(b=!!a.test)&&a.success?(a.success.push(a.callback),d.load.apply(null,a.success)):!b&&a.failure?(a.failure.push(a.callback),d.load.apply(null,a.failure)):e();return d};d.ready=function(a,b){if(a===e)return j?h(b):A.push(b),d;k(a)&&(b=a,a="ALL");if("string"!==typeof a||!k(b))return d;var c=p[a];if(c&&c.state===r||"ALL"===a&&q()&&j)return h(b),d;(c=l[a])?c.push(b):l[a]=[b];
 return d};d.ready(e,function(){q()&&g(l.ALL,function(a){h(a)});d.feature&&d.feature("domloaded",!0)});if("complete"===e.readyState)i();else if(e.addEventListener)e.addEventListener("DOMContentLoaded",t,!1),f.addEventListener("load",i,!1);else{e.attachEvent("onreadystatechange",t);f.attachEvent("onload",i);var u=!1;try{u=null==f.frameElement&&e.documentElement}catch(F){}u&&u.doScroll&&function b(){if(!j){try{u.doScroll("left")}catch(c){f.clearTimeout(d.readyTimeout);d.readyTimeout=f.setTimeout(b,50);
 return}i()}}()}setTimeout(function(){C=!0;g(B,function(b){b()})},300)})(window);
-
-window.root_prefix = 'http://omp.doctorcom.com/';
-window.pusher_server = 'omp.doctorcom.com';
 
 head.js( root_prefix+'js/jquery.min.js', function() {
     window.jQomp = jQuery.noConflict(true);

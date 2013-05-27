@@ -32,7 +32,7 @@ function handle_heartbeat_cmd()
 	$device = isset($_COOKIE[COOKIE_DEVICE_ID]) ? $_COOKIE[COOKIE_DEVICE_ID] : null;
 	if (empty($device)) {
 		$device = gen_uuid();
-		setcookie(COOKIE_DEVICE_ID, $device, time()+COOKIE_TIMEOUT, '/', PUSHER_DOMAIN);
+		setcookie(COOKIE_DEVICE_ID, $device, time()+COOKIE_TIMEOUT, '/', COOKIE_DOMAIN);
 	}
 
 	$browser_json = mmc_array_get(NS_DEVICE_LIST, $device);

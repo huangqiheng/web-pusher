@@ -1,7 +1,7 @@
 function omp_main() 
 {
     jQomp.ajax({
-	url: root_prefix+'omp.php?cmd=hbeat',
+		url: root_prefix+'omp.php?cmd=hbeat',
         dataType: 'json',
         crossDomain: true,
         xhrFields: { withCredentials: true }
@@ -19,14 +19,12 @@ function mylog(msg)
 
 function push_routine(device_id) 
 {
-    mylog('start push_routine');
-    PushStream.LOG_LEVEL = 'debug';
+    PushStream.LOG_LEVEL = window.push_loglevel;
 
     var pushstream = new PushStream({
-	host: window.pusher_server,
+	host: window.push_server,
         port: window.location.port,
-        modes: "websocket|eventsource|longpolling"
-        //modes: "stream|websocket|eventsource|longpolling"
+        modes: window.push_modes
     });
 
     pushstream.onmessage = function (eventMessage) {
@@ -68,5 +66,4 @@ function push_routine(device_id)
             pushstream.connect();
         } catch(e) {mylog(e)};
     })(device_id);
-
 }

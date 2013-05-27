@@ -3,6 +3,9 @@ require_once 'memcache_array.php';
 require_once 'functions.php';
 require_once 'config.php';
 require_once 'geoipcity.php';
+require_once 'auth.php';
+
+AUTH_ENABLE && force_login();
 
 $http_referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null;
 $referer = ($http_referer)? parse_url($http_referer) : null;
@@ -13,15 +16,18 @@ header('Content-Type: text/html; charset=utf-8');
 
 if (isset($_GET['cmd']) or isset($_POST['cmd'])) goto label_api_mode;
 
-if (!ini_get("browscap")) {
-	echo '请配置browscap.ini';
-	exit();
+if (VIEW_REGION) {
+	if (!ini_get("browscap")) {
+		echo '请配置browscap.ini';
+		exit();
+	}
 }
 
 /*
 ini_set("log_errors", 1);
 ini_set("error_log", "/var/log/php_errors.log");
 */
+
 $device_browser_list  = mmc_array_values(NS_DEVICE_LIST);
 $device_platform_list = mmc_array_keys(NS_BINDING_LIST);
 
@@ -39,9 +45,9 @@ if (isset($_GET['debug'])) {
 
 	$dbg_print = '开始时间: '.getDateStyle($stats['time']-$stats['uptime']);
 	$dbg_print .= ' 使用内存: '.bytesToSize($stats['bytes']).'/'.bytesToSize($stats['limit_maxbytes']).'<br>';
-	$dbg_print .= '维护时间：'.getDateStyle(async_checkpoint_time());
+	$dbg_print .= '清理时间：'.getDateStyle(async_checkpoint_time());
 	$dbg_print .= ' 维护设备数: '.$device_count.'  活跃设备数: '.count($device_browser_list);
-	$dbg_print .= '  绑定设备数: '.$binding_count.'<br>';
+	$dbg_print .= '  绑定账户数: '.$binding_count.'<br>';
 
 	$xmlStr = file_get_contents('http://'.$_SERVER['SERVER_NAME'].'/channels-stats');
 	$channels = json_decode($xmlStr);
@@ -91,14 +97,14 @@ foreach($device_browser_list as $browser_json)
 		}
 	}
 
-	$account = ($account_info == ' ')? '未知' : trim($account_info);
+	$account = ($account_info == ' ')? '--' : trim($account_info);
 	$ref_obj = ($browser->visiting)? parse_url($browser->visiting) : null;
 	$visiting = $ref_obj['host'];
-	$region = get_city_name($browser->region);
-	if (empty($region)) {
-		$region = $browser->region;
-	}
-	$is_mobile = ($browser->ismobiledevice)? '是' : '不是';
+
+	$region = $browser->region;
+	VIEW_REGION && ($region = get_city_name($browser->region));
+
+	$is_mobile = ($browser->ismobiledevice)? 'mobi' : 'desk';
 
 	$aDataSet[] = [$account,$region,$visiting,$browser->browser,$browser->platform,$is_mobile,$browser->device];
 }
