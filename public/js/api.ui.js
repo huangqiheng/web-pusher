@@ -3,23 +3,37 @@ function api_ui_init(aDataSet)
     $(document).ready(function() {
 	$('#dynamic').html('<table cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>');
 	var oTable = $('#example').dataTable( {
-		"bJQueryUI": true,
-		"sPaginationType": "full_numbers",
-		"aaData": aDataSet,
-		"bAutoWidth": false,
-		"aoColumns": [
+		'bJQueryUI': true,
+		'sPaginationType': 'full_numbers',
+		'iDisplayLength': 50,
+		'aaData': aDataSet,
+
+		'aoColumns': [
+			{ 'sTitle': '在线账户'},
+			{ 'sTitle': '来源地区'},
+			{ 'sTitle': '正在访问'},
+			{ 'sTitle': '浏览器', 'sClass': 'center'},
+			{ 'sTitle': '操作系统', 'sClass': 'center'},
+			{ 'sTitle': '移动', 'sClass': 'center'},
+			{ 'sTitle': '设备ID',   'bVisible': false},
+		]
+/*
+		'bAutoWidth': false,
+		'aoColumns': [
 			{ 'sTitle': '在线账户', 'sWidth': '320px'},
-			{ 'sTitle': '访问来源', 'sWidth': '100px'},
+			{ 'sTitle': '来源地区', 'sWidth': '100px'},
 			{ 'sTitle': '正在访问', 'sWidth': '150px'},
 			{ 'sTitle': '浏览器',   'sWidth': '90px', 'sClass': 'center'},
 			{ 'sTitle': '操作系统', 'sWidth': '90px', 'sClass': 'center'},
 			{ 'sTitle': '移动', 	'sWidth': '50px', 'sClass': 'center'},
 			{ 'sTitle': '设备ID',   'bVisible': false},
 		]
+*/
 	});	
-	        
+
 	$("#example").on('click','tr',function(event) {
 		$(this).toggleClass('row_selected');
+
 		var sData = oTable.fnGetData(this);
 
 		if ($(this).hasClass('row_selected')) {
@@ -30,7 +44,6 @@ function api_ui_init(aDataSet)
 			console.log(list);
 		}
 	});
-
 
 	var theme = '';
 	var source = ['通知','活动通知','抽奖活动','紧急通知','会议通知'];

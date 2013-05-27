@@ -13,16 +13,17 @@ function(a,b,c,e){a="object"===typeof a?a:{test:a,success:b?v("Array",b)?b:[b]:!
 return d};d.ready(e,function(){q()&&g(l.ALL,function(a){h(a)});d.feature&&d.feature("domloaded",!0)});if("complete"===e.readyState)i();else if(e.addEventListener)e.addEventListener("DOMContentLoaded",t,!1),f.addEventListener("load",i,!1);else{e.attachEvent("onreadystatechange",t);f.attachEvent("onload",i);var u=!1;try{u=null==f.frameElement&&e.documentElement}catch(F){}u&&u.doScroll&&function b(){if(!j){try{u.doScroll("left")}catch(c){f.clearTimeout(d.readyTimeout);d.readyTimeout=f.setTimeout(b,50);
 return}i()}}()}setTimeout(function(){C=!0;g(B,function(b){b()})},300)})(window);
 
+window.root_prefix = 'http://omp.doctorcom.com/';
+window.pusher_server = 'omp.doctorcom.com';
 
-head.js( '/OMPSERVER/js/jquery.min.js', function() {
+head.js( root_prefix+'js/jquery.min.js', function() {
     window.jQomp = jQuery.noConflict(true);
 });
 head.js(
-    '/OMPSERVER/js/pushstream.js', 
-    '/OMPSERVER/js/jquery.gritter.min.js', 
-    '/OMPSERVER/css/jquery.gritter.css', 
-    '/OMPSERVER/js/identify.js', 
-    '/OMPSERVER/js/main.js', 
+    root_prefix+'js/pushstream.js', 
+    root_prefix+'js/jquery.gritter.min.js', 
+    root_prefix+'js/identify.js', 
+    root_prefix+'js/main.js', 
     function(){
         jQomp(omp_main);
     });

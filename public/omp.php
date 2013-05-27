@@ -25,82 +25,103 @@ switch($in_cmd) {
     default:
         echo 'unreconized cmd.';
 }
+exit();
 
 function handle_heartbeat_cmd()
 {
-    header('Content-Type: application/json');
-    session_set_cookie_params(COOKIE_TIMEOUT);
-    session_start();
+	$device = isset($_COOKIE[COOKIE_DEVICE_ID]) ? $_COOKIE[COOKIE_DEVICE_ID] : null;
+	if (empty($device)) {
+		$device = gen_uuid();
+		setcookie(COOKIE_DEVICE_ID, $device, time()+COOKIE_TIMEOUT, '/', PUSHER_DOMAIN);
+	}
 
-    if(!isset($_SESSION['DEVICE_ID'])) {
-        $_SESSION['DEVICE_ID'] = $device = gen_uuid();
+	$browser_json = mmc_array_get(NS_DEVICE_LIST, $device);
+	if (empty($browser_json)) {
+		$browser = get_browser(null, true);
+		$browser_save = Array();
+		$browser_save['device'] = $device;
+		$browser_save['browser'] = $browser['browser'];
+		$browser_save['platform'] = $browser['platform'];
+		$browser_save['ismobiledevice'] = $browser['ismobiledevice'];
+	} else {
+		$browser_save = json_decode($browser_json, true);
+	}
 
-        $browser = get_browser(null, true);
-        $browser_save = array(
-            'device' => $device,
-            'browser' => $browser['browser'],
-            'platform' => $browser['platform'],
-            'ismobiledevice' => $browser['ismobiledevice']
-        );
+	$browser_save['region'] = $_SERVER['REMOTE_ADDR'];
+	$http_referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null;
+	$browser_save['visiting'] = $http_referer;
 
-    } else {
-        $device = $_SESSION['DEVICE_ID'];
-        $browser_json = mmc_array_get(NS_DEVICE_LIST, $device);
-        $browser_save = json_decode($browser_json, true);
-    }
+	mmc_array_set(NS_DEVICE_LIST, $device, json_encode($browser_save), CACHE_EXPIRE_SECONDS);
 
-    $browser_save['region'] = $_SERVER['REMOTE_ADDR'];
-    $browser_save['visiting'] = @$_SERVER['HTTP_REFERER'];
-
-    mmc_array_set(NS_DEVICE_LIST, $device, json_encode($browser_save), CACHE_EXPIRE_SECONDS);
-    return json_encode(array('device' => $device));
+	async_checkpoint('/cleanup_routine.php');
+	return json_encode(array('device' => $device));
 }
 
 function handle_bind_device($PARAMS)
 {
-    $device    = @$PARAMS[ 'device' ];
-    $platform    = @$PARAMS[ 'plat' ];
-    $caption     = @$PARAMS[ 'cap' ];
-    $username    = @$PARAMS[ 'user' ];
-    $nickname    = @$PARAMS[ 'nick' ];
+	$device    = @$PARAMS[ 'device' ];
+	$platform    = @$PARAMS[ 'plat' ];
+	$caption     = @$PARAMS[ 'cap' ];
+	$username    = @$PARAMS[ 'user' ];
+	$nickname    = @$PARAMS[ 'nick' ];
 
-    $ns_bind_list = NS_BINDING_LIST.$platform;
+	$ns_bind_list = NS_BINDING_LIST.$platform;
 
-    $platform_list = mmc_array_all(NS_BINDING_LIST);
-    if (!in_array($platform, $platform_list)) {
-        mmc_array_set(NS_BINDING_LIST, $platform, $caption);
-    }
+	$platform_list = mmc_array_keys(NS_BINDING_LIST);
+	if (!in_array($platform, $platform_list)) {
+		mmc_array_set(NS_BINDING_LIST, $platform, $caption);
+	}
 
-    $bind_info_json = mmc_array_get($ns_bind_list, $device);
+	$bind_info_json = mmc_array_get($ns_bind_list, $device);
+	$bind_info = empty($bind_info_json) ? array() : json_decode($bind_info_json, true); 
 
-    $bind_info = array();
-    if (!empty($bind_info_json)) {
-        $bind_info = json_decode($bind_info_json, true);
-    }
+	$changed = false;
 
-    $changed = false;
+	if ($username) {
+		if ($bind_info['username'] != $username) {
+			$bind_info['username'] = $username;
+			$changed = true;
+		}
+	}
 
-    if ($username && @$bind_info['username'] !== $username) {
-        $bind_info['username'] = $username;
-        $changed = true;
-    }
-    if ($nickname && @$bind_info['nickname'] !== $nickname) {
-        $bind_info['nickname'] = $nickname;
-        $changed = true;
-    }
+	if ($nickname) {
+		if ($bind_info['nickname'] != $nickname) {
+			$bind_info['nickname'] = $nickname;
+			$changed = true;
+		}
+	}
 
-    if ($changed) {
-        if (mmc_array_set($ns_bind_list, $device, json_encode($bind_info))) {
-            mmc_array_caption($ns_bind_list, $caption);
-        }
-    }
+	if (!$changed) {
+		return 'ok';
+	}
 
-    return 'ok';
+	if (mmc_array_set($ns_bind_list, $device, json_encode($bind_info))) {
+		($caption) && mmc_array_caption($ns_bind_list, $caption);
+	}
+
+	return 'ok!';
+}
+
+function async_checkpoint($script_path)
+{
+	$last_time = async_checkpoint_time();
+	
+	if ((time() - $last_time) > CHECKPOINT_INTERVAL) {
+		call_async_php($script_path);
+		async_checkpoint_update();
+	}
 }
 
 function handle_reset($device)
 {
 
+}
+
+function iscmd($cmd)
+{
+	$in_cmd = isset($_GET['cmd'])? $_GET['cmd'] : null;
+	if (empty($in_cmd)) return null;
+	return ($in_cmd == $cmd);
 }
 
 function get_param($key = null)
@@ -112,5 +133,6 @@ function get_param($key = null)
         return $union;
     }
 }
+
 
 ?>
