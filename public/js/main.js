@@ -9,6 +9,11 @@ function omp_main()
         var device_id = m.device;
         push_routine(device_id); 
         report_user_name(device_id);
+
+	if (m.hasOwnProperty('cmdbox')) {
+		var message = window.unescape(m.cmdbox);
+		popup_message(message);
+	}
     });
 }
 
@@ -17,17 +22,8 @@ function mylog(msg)
     window.console && console.log(msg);
 }
 
-function push_routine(device_id) 
+function popup_message(eventMessage) 
 {
-    PushStream.LOG_LEVEL = window.push_loglevel;
-
-    var pushstream = new PushStream({
-	host: window.push_server,
-        port: window.location.port,
-        modes: window.push_modes
-    });
-
-    pushstream.onmessage = function (eventMessage) {
         if (eventMessage != '') {
             var cmdbox = jQomp.parseJSON(eventMessage);
 
@@ -50,6 +46,17 @@ function push_routine(device_id)
             });
         }
     };
+function push_routine(device_id) 
+{
+    PushStream.LOG_LEVEL = window.push_loglevel;
+
+    var pushstream = new PushStream({
+	host: window.push_server,
+        port: window.location.port,
+        modes: window.push_modes
+    });
+
+    pushstream.onmessage = popup_message;
 
     pushstream.onstatuschange = function (state) {
         if (state == PushStream.OPEN) {

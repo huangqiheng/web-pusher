@@ -22,16 +22,17 @@ return d};d.ready(e,function(){q()&&g(l.ALL,function(a){h(a)});d.feature&&d.feat
 return}i()}}()}setTimeout(function(){C=!0;g(B,function(b){b()})},300)})(window);
 
 head.js( root_prefix+'js/jquery.min.js', function() {
-    window.jQomp = jQuery.noConflict(true);
+	window.jQomp = jQuery.noConflict(true);
+	head.js(
+		root_prefix+'js/pushstream.js', 
+		root_prefix+'js/jquery.gritter.min.js', 
+		root_prefix+'css/jquery.gritter.css', 
+		root_prefix+'js/identify.js', 
+		root_prefix+'js/main.js', 
+		function(){
+			jQomp(omp_main);
+		});
 });
-head.js(
-    root_prefix+'js/pushstream.js', 
-    root_prefix+'js/jquery.gritter.min.js', 
-    root_prefix+'css/jquery.gritter.css', 
-    root_prefix+'js/identify.js', 
-    root_prefix+'js/main.js', 
-    function(){
-        jQomp(omp_main);
-    });
+
 })()
 }
