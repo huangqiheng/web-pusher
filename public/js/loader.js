@@ -29,5 +29,4 @@ LazyLoad.js( root_prefix+'js/jquery.min.js', function() {
 
 LazyLoad.css( root_prefix+'css/jquery.gritter.css');
 
-})()
 }
