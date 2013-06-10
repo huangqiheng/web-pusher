@@ -1,15 +1,56 @@
 <?php
-require_once 'memcache_array.php';
+require_once 'functions/memcached_namespace.php';
+require_once 'functions/memcache_array.php';
+require_once 'functions/async_call.php';
 require_once 'config.php';
-require_once 'async_call.php';
 
-function async_checkpoint_time()
+function is_valid_jsonp_callback($subject)
 {
-	$mem = new Memcached(CHECKPOINT_POOL);
+	$identifier_syntax = '/^[$_\p{L}][$_\p{L}\p{Mn}\p{Mc}\p{Nd}\p{Pc}\x{200C}\x{200D}]*+$/u';
+	$reserved_words = array('break', 'do', 'instanceof', 'typeof', 'case',
+			'else', 'new', 'var', 'catch', 'finally', 'return', 'void', 'continue', 
+			'for', 'switch', 'while', 'debugger', 'function', 'this', 'with', 
+			'default', 'if', 'throw', 'delete', 'in', 'try', 'class', 'enum', 
+			'extends', 'super', 'const', 'export', 'import', 'implements', 'let', 
+			'private', 'public', 'yield', 'interface', 'package', 'protected', 
+			'static', 'null', 'true', 'false');
+	return preg_match($identifier_syntax, $subject)
+		&& ! in_array(mb_strtolower($subject, 'UTF-8'), $reserved_words);
+}
+
+function jsonp($data)
+{
+	header('content-type: application/json; charset=utf-8');
+	$json = json_encode($data);
+
+	if(!isset($_GET['callback']))
+	    return $json;
+
+	if(is_valid_jsonp_callback($_GET['callback']))
+	    return "{$_GET['callback']}($json)";
+
+	return false;
+}
+
+
+function loglocal($object)
+{
+	file_put_contents('debug.log', print_r($object,true)."\n", FILE_APPEND);
+}
+
+function api_open_mmc()
+{
+	$mem = new NSMemcached(API_MEMC_POOL);
 	$ss = $mem->getServerList();
 	if (empty($ss)) {
 		$mem->addServer(MEMC_HOST, MEMC_PORT);
 	}
+	return $mem;
+}
+
+function async_checkpoint_time()
+{
+	$mem = api_open_mmc();
 
 	$last_time = $mem->get(CHECKPOINT_TIME_KEY);
 	if (empty($last_time)) {
@@ -21,12 +62,7 @@ function async_checkpoint_time()
 
 function async_checkpoint_update()
 {
-	$mem = new Memcached(CHECKPOINT_POOL);
-	$ss = $mem->getServerList();
-	if (empty($ss)) {
-		$mem->addServer(MEMC_HOST, MEMC_PORT);
-	}
-
+	$mem = api_open_mmc();
 	$mem->set(CHECKPOINT_TIME_KEY, time());
 }
 
@@ -151,6 +187,25 @@ function bytesToSize($bytes, $precision = 2)
 	} else {
 		return $bytes . ' B';
 	}
+}
+
+$time_record = Array();
+$last_time = microtime(true);
+$first_time = $last_time;
+
+function time_print($descript=null)
+{
+	global $time_record;
+	global $last_time, $first_time;
+	$now_time = microtime(true);
+
+	if ($descript) {
+		array_push($time_record, $descript.intval(($now_time-$last_time)*1000).'ms');
+		$last_time = $now_time;
+	} else {
+		return implode(', ', $time_record).' (共'.intval(($now_time-$first_time)*1000).'ms)';
+	}
+	
 }
 
 ?>

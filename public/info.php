@@ -1,16 +1,10 @@
 <?php 
 
 require_once 'config.php';
+require_once 'FSM.php';
 
-$memcache_obj = new Memcache; 
-$memcache_obj->connect(MEMC_HOST, MEMC_PORT); 
-$stats = $memcache_obj->getStats();
-$memcache_obj->close();
-
-print_r2($stats);
-
-$xmlStr = file_get_contents('http://'.$_SERVER['SERVER_NAME'].'/channels-stats');
-$channels = json_decode($xmlStr);
+$stack = array();
+$fsm = new FSM('START', $stack);
 
 print_r2($channels);
 

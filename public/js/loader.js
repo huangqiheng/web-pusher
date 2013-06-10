@@ -1,11 +1,31 @@
 if(self==top){
 
+var push_bypass_regexp = [
+	'-homemini$',
+];
+
+var need_bypass = false;
+for (var index in push_bypass_regexp) {
+	var patt_str = push_bypass_regexp[index];
+	var patt = new RegExp(patt_str, 'i');
+	if (patt.test(window.location.href)) {
+		need_bypass = true;
+		console.log('bypass url: '+window.location.href+' as '+patt_str);
+		break;
+	}
+}
+
+if (!need_bypass) {
+
+//判断是不是ie
+var msie = /msie/.test(navigator.userAgent.toLowerCase());
 //管理服务器所在网址修正，那些js、css什么的url
 window.root_prefix = 'http://dynamic.appgame.com/';
 //推送服务器地址，可以和管理服务器在不同的域名上
 window.push_server = 'dynamic.appgame.com';
 //推送模式优先级，一个不行会再试下一个，不过timeout时间似乎很长
-window.push_modes = 'websocket|eventsource|longpolling|stream'; 
+//window.push_modes = (msie)? 'stream|longpolling' : 'websocket|eventsource|longpolling|stream'; 
+window.push_modes = (msie)? 'stream' : 'websocket|eventsource|longpolling|stream'; 
 //推送模块日志显示级别
 window.push_loglevel = 'debug';
 //head.load.min
@@ -17,13 +37,17 @@ LazyLoad.js( root_prefix+'js/jquery.min.js', function() {
 
 	LazyLoad.js([ root_prefix+'js/pushstream.js',
             root_prefix+'js/jquery.gritter.min.js',
-            root_prefix+'js/identify.js',
-            root_prefix+'js/main.js'
-        ],
-		function(){ jQomp(omp_main);}
+            root_prefix+'js/identify.js'
+        ], function() {
+		LazyLoad.js( root_prefix+'js/main.js', function(){ 
+			jQomp(omp_main);
+		});
+	}
     );
+
 });
 
 LazyLoad.css( root_prefix+'css/jquery.gritter.css');
 
+}
 }

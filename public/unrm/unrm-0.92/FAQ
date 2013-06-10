@@ -1,0 +1,54 @@
+unrm version 0.9 FAQ
+
+1. What is unrm?
+
+unrm is a small but powerfull shell utility which can help you recover
+erased data.His origins can be found in the Linux Ext2fs Undeletion
+Mini-HOWTO (which should be right in your /usr/doc/Linux-mini-HOWTOs/
+directory),written by Aaron Crane, <aaronc@pobox.com>
+
+2. What is not unrm?
+
+Recycle Bin
+
+3. A malicious,evil hacker has erased all the log files in the system.Can
+I bring them back?
+
+If the inodes where the logs used to be,are still free (not overwritten by
+any other files) - yes,you can recover them!
+
+Examples:
+
+./unrm /dev/hda1 - searches for all the erased files on /dev/hda1
+./unrm /dev/hda3 -u guest - searches /dev/hda3 for files previously owned by
+'guest'
+./unrm /dev/hdc1 -u any -s not so long string in here - searches /dev/hdc1
+for all the erased data,containing the "not so long string in here" string.
+
+4. Is it 100% sure that unrm will recover all of my files?
+
+No,but if you respect some basic rules,the chances can get very high:
+
+- stop immediately all the processes that write data on your hard-disk
+(syslogd,sendmail etc) 
+- if the partition where the erased data used to be isn't mounted on
+/,umount it and remount it read-only. (and try not to launch unrm from it)
+- think positively about unrm!
+
+5. Ok,so where are the erased files?
+
+unrm.recovered/unrm.inode#
+Look through those strange files (dumped inodes) with a (regular) file viewer 
+and (maybe) you'll be able to find your erased data.
+ 
+6. Who can run unrm?
+
+Since unrm needs full access to the filesystem,it can be run only by root.
+
+7. Who are you?
+
+SIGQUIT@Undernet (http://hideout.art.ro)
+If you desperately feel the urge of (constructive) criticizing unrm,feel
+free to do it via e-mail - tiger@hideout.art.ro
+
+Enjoy!

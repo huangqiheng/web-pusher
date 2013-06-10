@@ -1,0 +1,10 @@
+0.1 - initial release
+0.2 - some minor bugfixes
+0.3 - 0.8 - unreleased versions
+0.9 - lots of bugfixes,enhanced command-line support,man page,some cosmetic changes
+0.91 - for more accuracy,searches your data among all the erased data in
+that day
+0.92 - fixed a bug that allowed only 6 digits inode numbers to be
+dumped.Thanks chief <chief@tifr.res.in> for pointing it out.
+     - added a few variables containing the common used program locations
+(mount,debugfs)

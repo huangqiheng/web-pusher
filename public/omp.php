@@ -1,6 +1,4 @@
 <?php
-require_once 'memcache_array.php';
-require_once 'config.php';
 require_once 'functions.php';
 
 $PARAMS = get_param();
@@ -27,34 +25,58 @@ switch($in_cmd) {
 }
 exit();
 
-function handle_heartbeat_cmd()
+function get_device_id()
 {
 	$device = isset($_COOKIE[COOKIE_DEVICE_ID]) ? $_COOKIE[COOKIE_DEVICE_ID] : null;
+	$is_new = false;
+
 	if (empty($device)) {
 		$device = gen_uuid();
 		setcookie(COOKIE_DEVICE_ID, $device, time()+COOKIE_TIMEOUT, '/', COOKIE_DOMAIN);
+		$is_new = true;
 	}
+	return array($is_new, $device);
+}
 
-	$browser_json = mmc_array_get(NS_DEVICE_LIST, $device);
-	if (empty($browser_json)) {
-		$browser = get_browser(null, true);
-		$browser_save = Array();
-		$browser_save['device'] = $device;
-		$browser_save['browser'] = $browser['browser'];
-		$browser_save['platform'] = $browser['platform'];
-		$browser_save['ismobiledevice'] = $browser['ismobiledevice'];
-	} else {
-		$browser_save = json_decode($browser_json, true);
-	}
-
+function handle_heartbeat_cmd()
+{
+	list($is_new, $device) = get_device_id();
+	$browser_save = array();
+	$browser_save['device'] = $device;
+	$browser_save['new_visitor'] = $is_new;
+	$browser_save['useragent'] = $_SERVER['HTTP_USER_AGENT'];
 	$browser_save['region'] = $_SERVER['REMOTE_ADDR'];
-	$http_referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null;
-	$browser_save['visiting'] = $http_referer;
+	$browser_save['visiting'] = $_SERVER['HTTP_REFERER'];
 
-	mmc_array_set(NS_DEVICE_LIST, $device, json_encode($browser_save), CACHE_EXPIRE_SECONDS);
+	//更新心跳
+	if (mmc_array_set(NS_DEVICE_LIST, $device, $browser_save, CACHE_EXPIRE_SECONDS)) {
+		//异步执行重量级的处理过程
+		call_async_php('/on_device_active.php', $browser_save);
+	}
 
-	async_checkpoint('/cleanup_routine.php');
-	return json_encode(array('device' => $device));
+	//触发定期维护的异步过程
+	async_checkpoint('/on_cleanup_list.php');
+
+	$result = array('device' => $device);
+
+	//检查看看有没有异步消息，顺便返回客户端
+	$mem = api_open_mmc();
+	if ($cmdbox_list = $mem->ns_get(NS_HEARTBEAT_MESSAGE, $device)) {
+		$cmdbox = array_shift($cmdbox_list);
+		$result['cmdbox'] = $cmdbox;
+		if (count($cmdbox_list) == 0) {
+			$mem->ns_delete(NS_HEARTBEAT_MESSAGE, $device);
+		} else {
+			$mem->ns_set(NS_HEARTBEAT_MESSAGE, $device, $cmdbox_list, CACHE_EXPIRE_SECONDS); 
+		}
+	}
+
+	//检查看看该账户有没有绑定信息，通知客户端有变则再次提交
+	if ($binded_list = $mem->ns_get(NS_BINDED_LIST, $device)) {
+		$result['binded'] = $binded_list;
+	}
+
+	return jsonp($result);
 }
 
 function handle_bind_device($PARAMS)
@@ -65,41 +87,51 @@ function handle_bind_device($PARAMS)
 	$username    = @$PARAMS[ 'user' ];
 	$nickname    = @$PARAMS[ 'nick' ];
 
-	$ns_bind_list = NS_BINDING_LIST.$platform;
-
 	$platform_list = mmc_array_keys(NS_BINDING_LIST);
 	if (!in_array($platform, $platform_list)) {
 		mmc_array_set(NS_BINDING_LIST, $platform, $caption);
 	}
 
-	$bind_info_json = mmc_array_get($ns_bind_list, $device);
-	$bind_info = empty($bind_info_json) ? array() : json_decode($bind_info_json, true); 
+	$ns_bind_list = NS_BINDING_LIST.$platform;
+	$bind_info = mmc_array_get($ns_bind_list, $device);
 
 	$changed = false;
 
-	if ($username) {
-		if ($bind_info['username'] != $username) {
-			$bind_info['username'] = $username;
-			$changed = true;
+	if ($bind_info) {
+		if ($username) {
+			if ($bind_info['username'] != $username) {
+				$bind_info['username'] = $username;
+				$changed = true;
+			}
 		}
-	}
 
-	if ($nickname) {
-		if ($bind_info['nickname'] != $nickname) {
-			$bind_info['nickname'] = $nickname;
-			$changed = true;
+		if ($nickname) {
+			if ($bind_info['nickname'] != $nickname) {
+				$bind_info['nickname'] = $nickname;
+				$changed = true;
+			}
 		}
+	} else {
+		$bind_info =  array();
+		$bind_info['username'] = $username;
+		$bind_info['nickname'] = $nickname;
+		$changed = true;
 	}
 
 	if (!$changed) {
-		return 'ok';
+		return jsonp(array('res'=>'ok'));
 	}
 
-	if (mmc_array_set($ns_bind_list, $device, json_encode($bind_info))) {
+	if (mmc_array_set($ns_bind_list, $device, $bind_info) == 1) {
 		($caption) && mmc_array_caption($ns_bind_list, $caption);
 	}
 
-	return 'ok!';
+	$bind_info['device'] = $device;
+	$bind_info['platform'] = $platform;
+	$bind_info['caption'] = $caption;
+	call_async_php('/on_account_binding.php', $bind_info);
+
+	return jsonp(array('res'=>'ok!'));
 }
 
 function async_checkpoint($script_path)
