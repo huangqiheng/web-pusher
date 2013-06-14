@@ -1,8 +1,8 @@
 <?php
 require_once 'functions.php';
 require_once 'functions/geoipcity.php';
-require_once 'functions/auth.php';
 require_once 'functions/device_name.php';
+require_once 'functions/auth.php';
 
 AUTH_ENABLE && force_login();
 
@@ -160,7 +160,7 @@ function get_locale_cached($ip)
 $account_list = [];
 foreach($device_platform_list as $platform) {
 	$ns_binding = NS_BINDING_LIST.$platform;
-	$account_list[mmc_array_caption($ns_binding)] = mmc_array_all($ns_binding);
+	$account_list[mmc_array_caption($ns_binding)] = mmc_array_gets($ns_binding, $device_online_list);
 }
 
 function get_binding_name($device)

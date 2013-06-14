@@ -1,9 +1,8 @@
 <?php
+
 require_once 'functions.php';
 require_once 'functions/device_name.php';
 require_once 'functions/geoipcity.php';
-require_once 'config.php';
-
 /*
 $DATA['device']
 $DATA['useragent']

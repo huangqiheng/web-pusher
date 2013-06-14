@@ -63,11 +63,26 @@ function mmc_array_caption($list_name, $caption=null)
 	return $result;
 }
 
-
 function mmc_array_get($list_name, $key)
 {
 	$mem = __open_mmc();
 	return $mem->ns_get($list_name, LIST_KEYVALUE_PREFIX.$key);
+}
+
+function mmc_array_gets($list_name, $keys)
+{
+	$mem = __open_mmc();
+	$keys2 = array_map('make_data_keys', $keys);
+	$indexs = $mem->ns_getMulti($list_name, $keys2);
+
+	$returns = [];
+	foreach ($indexs as $key=>$value) {
+		if (preg_match("/^".LIST_KEYVALUE_PREFIX."([\S]+$)/", $key, $matchs)) {
+			$returns[$matchs[1]] = $value;
+		}
+	}
+
+	return $returns;
 }
 
 function mmc_array_del($list_name, $key)
@@ -78,7 +93,7 @@ function mmc_array_del($list_name, $key)
 
 function make_data_keys($item)
 {
-	return LIST_KEYVALUE_PREFIX.$item;
+	return is_string($item)? LIST_KEYVALUE_PREFIX.$item : '';
 }
 
 function mmc_array_length($list_name)
@@ -221,17 +236,8 @@ function mmc_array_all($list_name)
 
 	$indexs = $mem->ns_getMulti($list_name, $index_keys);
 	$id_values = array_values($indexs);
-	$keys = array_map('make_data_keys', $id_values);
 
-	$indexs = $mem->ns_getMulti($list_name, $keys);
-	$returns = [];
-	foreach ($indexs as $key=>$value) {
-		if (preg_match("/^".LIST_KEYVALUE_PREFIX."([\S]+$)/", $key, $matchs)) {
-			$returns[$matchs[1]] = $value;
-		}
-	}
-
-	return $returns;
+	return mmc_array_gets($list_name, $id_values);
 }
 
 function mmc_array_keys($list_name)
