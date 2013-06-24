@@ -11,6 +11,7 @@ $DATA['visiting']
 $DATA['new_visitor']
 */
 $DATA = array_merge($_GET, $_POST); 
+counter(COUNT_IN_ACTIVE);
 
 $mem = api_open_mmc();
 
@@ -42,5 +43,6 @@ if (VIEW_REGION) {
 
 
 
+die();
 
 ?>

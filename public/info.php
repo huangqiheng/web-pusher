@@ -1,5 +1,13 @@
 <?php 
 
+require_once 'functions/async_call.php';
+
+echo call_async_fsockopen('/on_test.php', array('stata'=>'adfadsf', 'fasasdf'=>'adfsdfsdf'));
+exit();
+
+
+
+
 require_once 'config.php';
 require_once 'FSM.php';
 

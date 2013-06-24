@@ -3,7 +3,7 @@
 require_once 'memcached_namespace.php';
 
 define('LIST_NAME_KEY', 'list_name_key');
-define('LIST_KEY2ID_PREFIX', 'list_key2id_');
+define('LIST_KEY2TIME_PREFIX', 'list_key2time_');
 define('LIST_ID2KEY_PREFIX', 'list_id2key_');
 define('LIST_KEYVALUE_PREFIX', 'list_keyvalue_');
 define('LIST_LENGTH_KEY', 'list_length_key');
@@ -38,14 +38,14 @@ function mmc_array_set($list_name, $key, $value, $expired=0)
 	$mem = __open_mmc();
 	$result = false;
 
-	$ok = $mem->ns_add($list_name, LIST_KEY2ID_PREFIX.$key, time());
+	$ok = $mem->ns_add($list_name, LIST_KEY2TIME_PREFIX.$key, time());
 	if ($ok) {
 		$index = __new_index($mem, $list_name);
 		$mem->ns_set($list_name, LIST_ID2KEY_PREFIX.$index, $key); 
 		//如果是第一个元素，则返回提示true
-		$result = ($index==1)? true : false;
+		$result = ($index==1)? 1 : 2;
 	} else {
-		$mem->ns_set($list_name, LIST_KEY2ID_PREFIX.$key, time());
+		$mem->ns_set($list_name, LIST_KEY2TIME_PREFIX.$key, time());
 	}
 
 	$mem->ns_set($list_name, LIST_KEYVALUE_PREFIX.$key, $value, $expired);
@@ -114,7 +114,7 @@ function mmc_array_cleanup($list_name, $before_time)
 	for ($index=1; $index<=$length; $index++) {
 		$index_key = LIST_ID2KEY_PREFIX.$index;
 		$key = $mem->ns_get($list_name, $index_key);
-		$key2id_key = LIST_KEY2ID_PREFIX.$key;
+		$key2id_key = LIST_KEY2TIME_PREFIX.$key;
 		$keydata_key = LIST_KEYVALUE_PREFIX.$key;
 
 		if ($mem->ns_get($list_name, $keydata_key)) {
@@ -170,58 +170,6 @@ function mmc_array_cleanup($list_name, $before_time)
 
 	defined('LIST_LOCK') && $mem->ns_delete($list_name, LIST_LOCK_KEY);
 	return count($del_key2ids);
-}
-
-function __mmc_array_cleanup($list_name, $before_time)
-{
-	$mem = __open_mmc();
-	defined('LIST_LOCK') && $mem->ns_set($list_name, LIST_LOCK_KEY, 1, LIST_LOCK_TIME);
-
-	$length = $mem->ns_get($list_name, LIST_LENGTH_KEY);
-	$del_ids = [];
-	for ($index=1; $index<=$length; $index++) {
-		$index_key = LIST_ID2KEY_PREFIX.$index;
-		$key = $mem->ns_get($list_name, $index_key);
-
-		if ($mem->ns_get($list_name, LIST_KEYVALUE_PREFIX.$key)) {
-			continue;
-		}
-
-		$last_active_time = $mem->ns_get($list_name, LIST_KEY2ID_PREFIX.$key);
-		if ($last_active_time < $before_time) {
-			$del_ids[] = $index;
-			$mem->ns_delete($list_name, LIST_KEY2ID_PREFIX.$key);
-		}
-	}
-
-	if (count($del_ids) == 0) {
-		defined('LIST_LOCK') && $mem->ns_delete($list_name, LIST_LOCK_KEY);
-		return 0;
-	}
-
-	$del_count = 0;
-	$length = $mem->ns_get($list_name, LIST_LENGTH_KEY);
-	for ($index=$length; $index>0; $index--) {
-		if (count($del_ids) == 0) {
-			break;
-		}
-
-		$key = $mem->ns_get($list_name, LIST_ID2KEY_PREFIX.$index);
-		if (in_array($index, $del_ids)) {
-			$pos = array_search($index, $del_ids);
-			array_splice($del_ids, $pos, 1);
-		} else {
-			$pop_index = array_pop($del_ids);
-			$mem->ns_set($list_name, LIST_ID2KEY_PREFIX.$pop_index, $key);
-		}
-
-		$mem->ns_decrement($list_name, LIST_LENGTH_KEY);
-		$del_count++;
-	}
-
-	defined('LIST_LOCK') && $mem->ns_delete($list_name, LIST_LOCK_KEY);
-
-	return $del_count;
 }
 
 function mmc_array_all($list_name)

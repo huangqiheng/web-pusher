@@ -39,4 +39,8 @@ define('LOCAL_LOG_FILE', 'debug.log');
 define('NS_HEARTBEAT_MESSAGE', 'ns_heartbeat_message');
 define('NS_BINDED_LIST', 'ns_binded_list');
 
+define('NS_HEARTBEAT_SCHEDULE', 'ns_heartbeat_schedule');
+define('NS_HEARTBEAT_SCHEDULE_ITEM', 'ns_heartbeat_schedule_item');
+
+
 ?>

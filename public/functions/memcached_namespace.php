@@ -5,11 +5,11 @@ if (!class_exists('NSMemcached')) {
 class NSMemcached extends Memcached
 {
 	private function ns_keyid($ns) {
-		return '__ns2_'.$ns;
+		return 'NSKEYID_'.$ns;
 	}
 
 	private function restore_key($nskey) {
-		if (preg_match("/^__[\S]+_[\d]+_([\S]+$)/", $nskey, $matchs)) {
+		if (preg_match("/^NSNAME_[\S]+_IDNUM_[\d]+_ORIKEY_([\S]+$)/", $nskey, $matchs)) {
 			return $matchs[1];
 		}
 		return null;
@@ -30,7 +30,7 @@ class NSMemcached extends Memcached
 		if(!$this->add($ns_keyid, $id)) {
 			$id = $this->get($ns_keyid);
 		}
-		return '__'.$ns.'_'.$id.'_'.$key;
+		return 'NSNAME_'.$ns.'_IDNUM_'.$id.'_ORIKEY_'.$key;
 	}
 
 	private function build_keyvalues($ns, $keyvalues) {

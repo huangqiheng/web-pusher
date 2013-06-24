@@ -48,8 +48,12 @@ function handle_heartbeat_cmd()
 	$browser_save['region'] = $_SERVER['REMOTE_ADDR'];
 	$browser_save['visiting'] = $_SERVER['HTTP_REFERER'];
 
+	counter(COUNT_ON_HEARTBEAT);
+	call_async_php('/on_heartbeat.php', $browser_save);
+
 	//更新心跳
 	if (mmc_array_set(NS_DEVICE_LIST, $device, $browser_save, CACHE_EXPIRE_SECONDS)) {
+		counter(COUNT_ON_ACTIVE);
 		//异步执行重量级的处理过程
 		call_async_php('/on_device_active.php', $browser_save);
 	}
@@ -58,6 +62,13 @@ function handle_heartbeat_cmd()
 	async_checkpoint('/on_cleanup_list.php');
 
 	$result = array('device' => $device);
+
+	//看看有没有计划任务消息
+	if (mmc_array_length(NS_HEARTBEAT_SCHEDULE) > 0) {
+		$schedule_list = mmc_array_values(NS_HEARTBEAT_SCHEDULE); 
+
+
+	}
 
 	//检查看看有没有异步消息，顺便返回客户端
 	$mem = api_open_mmc();
@@ -81,11 +92,16 @@ function handle_heartbeat_cmd()
 
 function handle_bind_device($PARAMS)
 {
+	counter(COUNT_BINDING);
 	$device    = @$PARAMS[ 'device' ];
 	$platform    = @$PARAMS[ 'plat' ];
 	$caption     = @$PARAMS[ 'cap' ];
 	$username    = @$PARAMS[ 'user' ];
 	$nickname    = @$PARAMS[ 'nick' ];
+
+	if ((empty($username)) && (empty($nickname))) {
+		return jsonp(array('res'=>'no'));
+	}
 
 	$platform_list = mmc_array_keys(NS_BINDING_LIST);
 	if (!in_array($platform, $platform_list)) {
@@ -129,6 +145,7 @@ function handle_bind_device($PARAMS)
 	$bind_info['device'] = $device;
 	$bind_info['platform'] = $platform;
 	$bind_info['caption'] = $caption;
+	counter(COUNT_ON_BINDING);
 	call_async_php('/on_account_binding.php', $bind_info);
 
 	return jsonp(array('res'=>'ok!'));

@@ -4,6 +4,66 @@ require_once 'functions/memcache_array.php';
 require_once 'functions/async_call.php';
 require_once 'config.php';
 
+define('COUNT_NS', 'COUNT_NS');
+define('COUNT_ON_HEARTBEAT', 1);
+define('COUNT_IN_HEARTBEAT', 2);
+define('COUNT_ON_ACTIVE', 3);
+define('COUNT_IN_ACTIVE', 4);
+define('COUNT_BINDING', 5);
+define('COUNT_ON_BINDING', 6);
+define('COUNT_IN_BINDING', 7);
+
+function counter($count_type = 0, $recursive = false)
+{
+	$mem = api_open_mmc();
+
+	switch($count_type) {
+		case COUNT_ON_HEARTBEAT:
+			$result = $mem->ns_increment(COUNT_NS, 'COUNT_ON_HEARTBEAT');
+			break;
+		case COUNT_IN_HEARTBEAT:
+			$result = $mem->ns_increment(COUNT_NS, 'COUNT_IN_HEARTBEAT');
+			break;
+		case COUNT_ON_ACTIVE:
+			$result = $mem->ns_increment(COUNT_NS, 'COUNT_ON_ACTIVE');
+			break;
+		case COUNT_IN_ACTIVE:
+			$result = $mem->ns_increment(COUNT_NS, 'COUNT_IN_ACTIVE');
+			break;
+		case COUNT_BINDING:
+			$result = $mem->ns_increment(COUNT_NS, 'COUNT_BINDING');
+			break;
+		case COUNT_ON_BINDING:
+			$result = $mem->ns_increment(COUNT_NS, 'COUNT_ON_BINDING');
+			break;
+		case COUNT_IN_BINDING:
+			$result = $mem->ns_increment(COUNT_NS, 'COUNT_IN_BINDING');
+			break;
+		default:
+			$on_heartbeat = $mem->ns_get(COUNT_NS, 'COUNT_ON_HEARTBEAT');
+			$in_heartbeat = $mem->ns_get(COUNT_NS, 'COUNT_IN_HEARTBEAT');
+			$on_active = $mem->ns_get(COUNT_NS, 'COUNT_ON_ACTIVE');
+			$in_active = $mem->ns_get(COUNT_NS, 'COUNT_IN_ACTIVE');
+			$binding = $mem->ns_get(COUNT_NS, 'COUNT_BINDING');
+			$on_binding = $mem->ns_get(COUNT_NS, 'COUNT_ON_BINDING');
+			$in_binding = $mem->ns_get(COUNT_NS, 'COUNT_IN_BINDING');
+			$result = "心跳({$on_heartbeat}>{$in_heartbeat}) 活跃({$on_active}>{$in_active}) 绑定({$binding}>{$on_binding}>{$in_binding})";
+	}
+
+	if ((!$result) && (!$recursive)) {
+		$mem->ns_set(COUNT_NS, 'COUNT_ON_HEARTBEAT', 0);
+		$mem->ns_set(COUNT_NS, 'COUNT_IN_HEARTBEAT', 0);
+		$mem->ns_set(COUNT_NS, 'COUNT_ON_ACTIVE', 0);
+		$mem->ns_set(COUNT_NS, 'COUNT_IN_ACTIVE', 0);
+		$mem->ns_set(COUNT_NS, 'COUNT_BINDING', 0);
+		$mem->ns_set(COUNT_NS, 'COUNT_ON_BINDING', 0);
+		$mem->ns_set(COUNT_NS, 'COUNT_IN_BINDING', 0);
+		return counter($count_type, true);
+	}
+
+	return $result;
+}
+
 function is_valid_jsonp_callback($subject)
 {
 	$identifier_syntax = '/^[$_\p{L}][$_\p{L}\p{Mn}\p{Mc}\p{Nd}\p{Pc}\x{200C}\x{200D}]*+$/u';

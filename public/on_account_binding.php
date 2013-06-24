@@ -2,6 +2,8 @@
 require_once 'config.php';
 require_once 'functions.php';
 
+counter(COUNT_IN_BINDING);
+
 /*
 $DATA['device']
 $DATA['platform']
@@ -33,5 +35,7 @@ if ($binded_list = $mem->ns_get(NS_BINDED_LIST, $device)) {
 if ($changed) {
 	$mem->ns_set(NS_BINDED_LIST, $device, $binded_list); 
 }
+
+die();
 
 ?>

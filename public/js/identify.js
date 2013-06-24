@@ -20,6 +20,7 @@ function disqus_report(omp_obj)
 			var userdata = remote_auth_s3.split(' ')[0];
 			userdata = jQomp.base64.decode(userdata);
 			userdata = jQomp.parseJSON(userdata);
+mylog(d);
 
 			var id_obj = {};
 			id_obj['name'] = 'disqus';

@@ -50,6 +50,7 @@ if (isset($_GET['debug'])) {
 
 	$dbg_print .= '推送开始：'.getDateStyle(time() - $channels->uptime).' 频道数: '.$channels->channels;
 	$dbg_print .= ' 订阅数: '.$channels->subscribers.' 消息数: '.$channels->published_messages.'<br>';
+	$dbg_print .= '流程计数： '.counter().'<br>';
 	echo $dbg_print;
 }
 
