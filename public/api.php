@@ -44,6 +44,30 @@ if ($cmd == 'sendmessage') {
 			}
 		}
 	}
+} elseif ($cmd == 'sched_message') {
+
+/*
+$item['new_user']
+$item['new_visitor']
+$item['ismobiledevice']
+$item['browser']
+$item['platform']
+$item['device_name']
+$item['region']
+$item['UserAgent']
+
+$item['finish_time']
+$item['start_time']
+$item['times']
+$item['time_last']
+$item['time_interval']
+$item['repel']
+$item['Visiting']
+$item['binded']
+$item['bind_account']
+$item['sched_msg']
+*/
+
 } else {
 	echo print_r($_POST, true);
 	echo print_r($_GET, true);

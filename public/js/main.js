@@ -5,8 +5,8 @@ function omp_main()
 			push_routine(omp_obj.device); 
 			report_user_name(omp_obj);
 
-			if (!omp_obj.hasOwnProperty('cmdbox')) {return;}
-			popup_message(omp_obj.cmdbox);
+			if (!omp_obj.hasOwnProperty('async_msg')) {return;}
+			popup_message(omp_obj.async_msg);
 	     });
 }
 

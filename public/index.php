@@ -1,7 +1,5 @@
 <?php
 require_once 'functions.php';
-require_once 'functions/geoipcity.php';
-require_once 'functions/device_name.php';
 require_once 'functions/auth.php';
 
 AUTH_ENABLE && force_login();
@@ -41,7 +39,7 @@ if (isset($_GET['debug'])) {
 
 	$dbg_print = '开始时间：'.getDateStyle($stats['time']-$stats['uptime']);
 	$dbg_print .= ' 使用内存: '.bytesToSize($stats['bytes']).'/'.bytesToSize($stats['limit_maxbytes']).'<br>';
-	$dbg_print .= '清理时间：'.getDateStyle(async_checkpoint_time());
+	$dbg_print .= '清理时间：'.getDateStyle(async_timer('/on_cleanup_list.php'));
 	$dbg_print .= ' 维护设备数: '.$device_count.'  活跃设备数: '.count($device_browser_list);
 	$dbg_print .= '  绑定账户数: '.$binding_count.'<br>';
 
@@ -52,105 +50,6 @@ if (isset($_GET['debug'])) {
 	$dbg_print .= ' 订阅数: '.$channels->subscribers.' 消息数: '.$channels->published_messages.'<br>';
 	$dbg_print .= '流程计数： '.counter().'<br>';
 	echo $dbg_print;
-}
-
-
-/******************************************************
-预处理：获取user agent得到的get_browser对象
-******************************************************/
-$ua_browser_md5 = array();
-
-foreach($device_browser_list as $browser) 
-{
-	$digest = md5(@$browser['useragent']);
-	if (!$digest) {
-		continue;
-	}
-
-	if (in_array($digest, $ua_browser_md5)) {
-		continue;
-	}
-	$ua_browser_md5[] = $digest;
-}
-
-$mem = api_open_mmc();
-$ua_browser_cache = $mem->ns_getMulti(GET_BROWSER, $ua_browser_md5);
-
-function get_browser_cached($useragent)
-{
-	global $ua_browser_cache;
-	$digest = md5($useragent);
-	$res_cached = @$ua_browser_cache[$digest];
-	if ($res_cached) {
-		return $res_cached;
-	}
-
-	$browser_o = get_browser($useragent);
-	$mem = api_open_mmc();
-	$mem->ns_set(GET_BROWSER, $digest, $browser_o, GET_BROWSER_EXPIRE);
-	return $browser_o;
-}
-time_print('UA表('.count($ua_browser_cache).'/'.count($ua_browser_md5).')：');
-
-
-/******************************************************
-预处理：获取user agent对应的设备名称
-******************************************************/
-
-$device_name_list = [];
-$ua_device_cache = $mem->ns_getMulti(GET_DEVICE, $ua_browser_md5);
-
-function get_device_cached($useragent)
-{
-	$digest = md5($useragent);
-	global $ua_device_cache;
-	$res_cached = @$ua_device_cache[$digest];
-	if ($res_cached) {
-		return $res_cached;
-	}
-
-	$device_name  = get_device_name($useragent);
-	$mem = api_open_mmc();
-	$mem->ns_set(GET_DEVICE, $digest, $device_name, GET_DEVICE_EXPIRE);
-	return $device_name;
-}
-
-time_print('设备表('.count($ua_device_cache).'/'.count($ua_browser_md5).')：');
-
-/******************************************************
-预处理：ip地区映射列表
-******************************************************/
-
-if (VIEW_REGION) {
-	$ip_list = array();
-
-	foreach($device_browser_list as $browser) 
-	{
-		$ip = $browser['region'];
-
-		if (in_array($ip, $ip_list)) {
-			continue;
-		}
-
-		$ip_list[] = $ip;
-	}
-
-	$ip_locale_cache = $mem->ns_getMulti(GET_LOCALE, $ip_list);
-	time_print('地区表('.count($ip_locale_cache).'/'.count($ip_list).')：');
-}
-
-function get_locale_cached($ip)
-{
-	global $ip_locale_cache;
-	$res_cached = @$ip_locale_cache[$ip];
-	if ($res_cached) {
-		return $res_cached;
-	}
-
-	$res = get_city_name($ip);
-	$mem = api_open_mmc();
-	$mem->ns_set(GET_LOCALE, $ip, $res, GET_LOCALE_EXPIRE);
-	return $res;
 }
 
 
@@ -204,26 +103,20 @@ foreach($device_browser_list as $browser)
 	}
 	$device = $browser['device'];
 	$useragent = $browser['useragent'];
-	$browser_o = get_browser_cached($useragent);
-	$device_name = get_device_cached($useragent);
 	$account = get_binding_name($device);
 
 	$ref_obj = ($browser['visiting'])? parse_url($browser['visiting']) : null;
 	$visiting = $ref_obj['host'];
-	$is_mobile = ($browser_o->ismobiledevice)? 'mobi' : 'desk';
+	$is_mobile = ($browser['ismobiledevice'])? 'mobi' : 'desk';
 
-	VIEW_REGION ? ($region = get_locale_cached($browser['region'])) : ($region = $browser['region']);
-	empty($region) && ($region = $browser['region']);
-
-	$aDataSet[] = [$account,$region,$visiting,$browser_o->browser,$browser_o->platform,
-			$is_mobile,$device_name,$browser['device']];
+	$aDataSet[] = [$account,$browser['region'],$visiting,$browser['browser'],$browser['platform'],
+			$is_mobile,$browser['device_name'],$browser['device']];
 }
 
 time_print('整合：');
 if (isset($_GET['debug'])) {
 	echo time_print();
 }
-
 ?>
 <html>
 <head>
@@ -240,18 +133,14 @@ if (isset($_GET['debug'])) {
 	@import "datatables/TableTools.css";
 </style>
 <link rel="stylesheet" href="jqwidgets/styles/jqx.base.css" type="text/css" />
+
+<script type="text/javascript" language="javascript" src="js/omp_ui.js"></script>
 <script type="text/javascript" language="javascript" src="js/jquery.min.js"></script>
-<script type="text/javascript" src="jqwidgets/jqxcore.js"></script>
-<script type="text/javascript" src="jqwidgets/jqxinput.js"></script>
-<script type="text/javascript" src="jqwidgets/jqxscrollbar.js"></script>
-<script type="text/javascript" src="jqwidgets/jqxbuttons.js"></script>
-<script type="text/javascript" src="jqwidgets/jqxpanel.js"></script>
-<script type="text/javascript" src="jqwidgets/jqxlistbox.js"></script>
-<script type="text/javascript" src="jqwidgets/jqxcombobox.js"></script>
-<script type="text/javascript" src="jqwidgets/jqxnumberinput.js"></script>
-<script type="text/javascript" src="jqwidgets/jqxtooltip.js"></script>
-<script type="text/javascript" src="jqwidgets/jqxdropdownlist.js"></script>
-<script type="text/javascript" src="jqwidgets/jqxtabs.js"></script>
+<script type="text/javascript" src="jqwidgets/jqx-all.js"></script> 
+
+<script type="text/javascript" src="jqwidgets/globalization/globalize.js"></script>
+<script type="text/javascript" src="jqwidgets/globalization/globalize.culture.zh-CN.js"></script> 
+
 <script type="text/javascript" language="javascript" src="datatables/jquery.dataTables.min.js"></script>
 <script type="text/javascript" language="javascript" src="datatables/TableTools.js"></script>
 <script type="text/javascript" language="javascript" src="datatables/ZeroClipboard.js"></script>
@@ -260,186 +149,6 @@ var aDataSet = <?php echo json_encode($aDataSet); ?>;
 var nTotalItem = <?php echo count($aDataSet); ?>;
 api_ui_init(aDataSet);
 
-function api_ui_init(aDataSet)
-{
-	$(document).ready(function() {
-		$('#dynamic').html('<table cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>');
-		var oTable = $('#example').dataTable( {
-			'bJQueryUI': true,
-			//'sPaginationType': 'full_numbers',
-			//'iDisplayLength': nTotalItem,
-			"bLengthChange": false,
-			"bPaginate": false,
-			'aaData': aDataSet,
-			'aaSorting': [[0,'desc']],
-			'bStateSave': true,
-			'aoColumns': [
-				{ 'sTitle': '在线账户'},
-				{ 'sTitle': '来源地区'},
-				{ 'sTitle': '正在访问'},
-				{ 'sTitle': '浏览器', 'sClass': 'center'},
-				{ 'sTitle': '操作系统', 'sClass': 'center'},
-				{ 'sTitle': '移动', 'sClass': 'center'},
-				{ 'sTitle': '设备', 'sClass': 'center'},
-				{ 'sTitle': '设备ID',   'bVisible': false},
-			],
-
-			"sDom": '<"H"Tfr>t<"F"ip>',
-			//"sDom": 'T<"clear">lfrtip',
-			'oTableTools': {
-				'sRowSelect': 'multi',
-				'aButtons': [
-				{
-					"sExtends":    "select",
-					"sButtonText": "全选",
-					"fnClick": function (nButton, oConfig, oFlash) {
-						var oTT = TableTools.fnGetInstance('example');
-						oTT.fnSelectAll(true); 					
-					}
-
-				},
-				{
-					"sExtends":    "select_none",
-					"sButtonText": "不选",
-				},
-				{
-					"sExtends":    "text",
-					"sButtonText": "刷新",
-					"fnClick": function (nButton, oConfig, oFlash) {
-						window.location.href = window.location.href;
-					}
-
-				},
-				],
-			},
-			"oLanguage": {
-				"oPaginate": {
-					'sFirst': '首页',
-					'sLast': '尾页',
-					'sNext': '下页',
-					'sPrevious': '前页',
-				},
-				'sSearch': '搜索: ',
-				'sEmptyTable': '没人在线',
-				'sInfoFiltered': '，过滤自_MAX_条记录',
-				'sInfo': '共_TOTAL_个设备，显示从第_START_个到第_END_个',
-			}
-
-		});	
-
-		$("#example").on('click','tr',
-			function(event) {
-				var oTT = TableTools.fnGetInstance( 'example' );
-				var obj = $(this);
-
-				if (oTT.fnIsSelected(this)) {
-				oTT.fnDeselect(obj);
-				} else {
-				oTT.fnSelect(obj);
-				}
-			});
-
-		var theme = '';
-
-		var source = ['通知','活动通知','抽奖活动','紧急通知','会议通知'];
-		$("#notify-title").jqxComboBox({theme: theme,source: source, selectedIndex:0, width:80, height:28});
-
-		var countries = new Array();
-		$("#notify-content").jqxInput({theme: theme,placeHolder:"请输入通知内容",source:countries,width:445,height:28});
-		$("#send-button").jqxButton({ width: 76, height:30, theme: theme });
-
-		$("#send-button").on('click', send_omp_message);
-
-		$("#property-panel").jqxPanel({theme: theme, height: 30, width:431, theme: theme });
-
-		var source = ['实时消息','异步消息'];
-		$("#message-mode").jqxDropDownList({source:source, selectedIndex:1,width: 76, height: 28, theme: theme });
-
-		$("#notify-ttl").jqxNumberInput({theme: theme,symbol:'秒',symbolPosition:'right',min:1,decimal:8,decimalDigits:0,width:55,height:28, inputMode:'simple',spinButtons:true});
-		$("#notify-ttl").jqxTooltip({theme: theme, content: '通知延迟关闭时间', position: 'mouse'});
-
-		var source = ['自动消退','固定显示'];
-		$("#issticky").jqxDropDownList({source:source, selectedIndex:0,width: 76, height: 28, theme: theme });
-
-		var source = ['没有警示','强制警示'];
-		$("#iswarnning").jqxDropDownList({source:source, selectedIndex:0,width: 76, height: 28, theme: theme });
-
-		var source_posi = ['左上方','左下方','右上方','右下方'];
-		$("#viewposi").jqxDropDownList({source:source_posi, selectedIndex:2,width: 62, height: 28, theme: theme });
-
-		$('#jqxTabs').jqxTabs({
-			width:'100%',position:'top',theme:theme,
-			animationType: 'fade',
-			contentTransitionDuration: 500,
-			scrollable:false,
-			});
-	});
-
-	function send_omp_message() {
-		var oTT = TableTools.fnGetInstance( 'example' );
-
-		var aData = oTT.fnGetSelectedData();
-		var target_devices = new Array();
-		$.each(aData, function() {
-			target_devices.push(this[7]);
-			});
-
-		if (target_devices.length == 0) {
-			console.log('no target');
-			return;
-		}
-
-		var title = $('#notify-title').jqxComboBox('val');
-		var content = $('#notify-content').val();
-		var issticky = $("#issticky").jqxDropDownList('getSelectedIndex'); 
-		var iswarnning = $("#iswarnning").jqxDropDownList('getSelectedIndex'); 
-		var viewposi = $("#viewposi").jqxDropDownList('getSelectedIndex'); 
-		var ttl = $('#notify-ttl').jqxNumberInput('getDecimal');
-		var msgmod = $("#message-mode").jqxDropDownList('getSelectedIndex');
-
-		var source_posi = ['top-left','bottom-left','top-right','bottom-right'];
-		var source_bool = [false,true];
-		var source_msgmod = ['realtime', 'heartbeat'];
-		var device_id = document.cookie.match(new RegExp("(^| )device_id=([^;]*)(;|$)"));
-		device_id = device_id? device_id[2] : 'null';
-
-		var cmdbox = new Object();
-		cmdbox.title = title;
-		cmdbox.text = content;
-		cmdbox.sticky = source_bool[issticky];
-		cmdbox.before_open = source_bool[iswarnning];
-		cmdbox.msgmod = source_msgmod[msgmod];
-		cmdbox.time = 	ttl*1000;
-		cmdbox.position = source_posi[viewposi];
-/*
-		$.post("api.php", {
-				cmd: 	'sendmessage',
-				target: escape(JSON.stringify(target_devices)),
-				cmdbox: escape(JSON.stringify(cmdbox)),
-			}, function(data,status) {
-				console.log(status + ': ' +  data);
-			}
-		);
-*/
-		jQuery.ajax({
-			type: 'POST',
-			url: 'api.php',
-			beforeSend: function(xhrObj){
-				xhrObj.setRequestHeader("Content-Type","application/x-www-form-urlencoded; charset=utf-8");
-				xhrObj.setRequestHeader("Accept","application/json");
-			},
-			dataType:"text", 
-			data: {
-				cmd: 	'sendmessage',
-				target: target_devices,
-				cmdbox: cmdbox,
-			},
-			success: function(msg) {
-				console.log(msg);
-			}
-		});
-	};
-}
 
 </script>
 <style type='text/css'>
@@ -478,6 +187,15 @@ function api_ui_init(aDataSet)
 	.jqx-widget-header {
 		background: rgb(173, 173, 173);
 	}
+	input.jqx-input-content {
+		height: auto !important;
+	}
+	.jqx-window-modal {
+		height: auto !important;
+	}
+	.jqx-popup {
+		z-index: 20000 !important;
+	}
 </style>
 </head>
 <body background="images/bg_tile.jpg">
@@ -491,9 +209,22 @@ function api_ui_init(aDataSet)
 
 				<li>
 					<img style='float: left;' width='16' height='16' src="/images/calendarIcon.png" alt="" class="small-image" />
-					<div style="float: left;">计划任务消息</div>
+					<div style="float: left;">发送任务管理</div>
 				</li>
 
+				<li>
+					<img style='float: left;' width='16' height='16' src="/images/people.png" alt="" class="small-image" />
+					<div style="float: left;">终端分类库</div>
+				</li>
+
+				<li>
+					<img style='float: left;' width='16' height='16' src="/images/message.png" alt="" class="small-image" />
+					<div style="float: left;">预设消息库</div>
+				</li>
+				<li>
+					<img style='float: left;' width='16' height='16' src="/images/chart.png" alt="" class="small-image" />
+					<div style="float: left;">详细报表</div>
+				</li>
 				<li>
 					<img style='float: left;' width='16' height='16' src="/images/settings.png" alt="" class="small-image" />
 					<div style="float: left;">系统配置</div>
@@ -516,12 +247,224 @@ function api_ui_init(aDataSet)
 				<div id='dynamic'></div>
 			</div>
 
+			<div> <!-- tab标签 -->
+				<div style="margin-right: 5px; float: right;">
+					<input id="addrowbutton_sched" type="button" value="添加" />
+					<input id="updaterowbutton_sched" type="button" value="修改" />
+					<input id="deleterowbutton_sched" type="button" value="删除" />
+				</div>
+				<div id='jqxgrid_sched_list'></div>
+
+				<div id="popupWindow_sched">
+					<div>编辑发送任务</div>
+					<div style="overflow: hidden;">
+					<table>
+					<tr>
+						<td align="right">任务名称：</td>
+						<td align="left"><input id="sched_name" /></td>
+					</tr>
+					<tr>
+						<td align="right">发送人群：</td>
+						<td align="left">
+							<div id="sched_target">
+								<div style="border: none;" id="sched_target_grid"></div>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td align="right">发送消息：</td>
+						<td align="left">
+							<div id="sched_message">
+								<div style="border: none;" id="sched_message_grid"></div>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td align="right">运行状态：</td>
+						<td align="left"><div id="sched_status" /></td>
+					</tr>
+					<tr>
+						<td align="right">开始时间：</td>
+						<td align="left"><div id="sched_start" /></td>
+					</tr>
+					<tr>
+						<td align="right">结束时间：</td>
+						<td align="left"><div id="sched_end" /></td>
+					</tr>
+					<tr>
+						<td align="right">执行次数：</td>
+						<td align="left"><div id="sched_times"></textarea></td>
+					</tr>
+					<tr>
+						<td align="right">每次间隔：</td>
+						<td align="left"><div id="sched_interval"></div></td>
+					</tr>
+					<tr>
+						<td align="right">间隔模式：</td>
+						<td align="left"><div id="sched_interval_mode"></div></td>
+					</tr>
+					<tr>
+						<td align="right">消息顺序：</td>
+						<td align="left"><div id="sched_sequence"></div></td>
+					</tr>
+					<tr>
+						<td align="right">任务互斥：</td>
+						<td align="left"><div id="sched_repel"></div></td>
+					</tr>
+					<tr>
+						<td align="right"></td>
+						<td style="padding-top: 10px;" align="right">
+							<input id="Save_sched" style="margin-right: 5px;" type="button" value="保存" />
+							<input id="Cancel_sched" type="button" value="取消" /></td>
+					</tr>
+					</table>
+					</div>
+				</div>
+			</div> <!-- tab标签 -->
+
+			<div> <!-- tab标签 -->
+				<div style="margin-right: 5px; float: right;">
+					<input id="addrowbutton_user" type="button" value="添加" />
+					<input id="updaterowbutton_user" type="button" value="修改" />
+					<input id="deleterowbutton_user" type="button" value="删除" />
+				</div>
+				<div id='jqxgrid_user_list'></div>
+
+				<div id="popupWindow_user">
+					<div>编辑终端设备分类规则</div>
+					<div style="overflow: hidden;">
+					<table>
+					<tr>
+						<td align="right">规则名称：</td>
+						<td align="left"><input id="usr_name" /></td>
+					</tr>
+					<tr>
+						<td align="right">分类标签：</td>
+						<td align="left"><input id="usr_tags" /></td>
+					</tr>
+					<tr>
+						<td align="right">新用户：</td>
+						<td align="left"><div id="usr_newuser" /></td>
+					</tr>
+					<tr>
+						<td align="right">新来访：</td>
+						<td align="left"><div id="usr_visitor"></textarea></td>
+					</tr>
+					<tr>
+						<td align="right">移动应用：</td>
+						<td align="left"><div id="usr_mobile"></div></td>
+					</tr>
+					<tr>
+						<td align="right">已注册：</td>
+						<td align="left"><div id="usr_binded"></div></td>
+					</tr>
+					<tr>
+						<td align="right">浏览器：</td>
+						<td align="left"><input id="usr_browser"></div></td>
+					</tr>
+					<tr>
+						<td align="right">操作系统：</td>
+						<td align="left"><input id="usr_platform"></div></td>
+					</tr>
+					<tr>
+						<td align="right">设备名：</td>
+						<td align="left"><input id="usr_device"></div></td>
+					</tr>
+					<tr>
+						<td align="right">地区：</td>
+						<td align="left"><input id="usr_region"></div></td>
+					</tr>
+					<tr>
+						<td align="right">账户名：</td>
+						<td align="left"><input id="usr_account"></div></td>
+					</tr>
+					<tr>
+						<td align="right">浏览器特征：</td>
+						<td align="left"><input id="usr_useragent"></div></td>
+					</tr>
+					<tr>
+						<td align="right">访问网址：</td>
+						<td align="left"><input id="usr_visiting"></div></td>
+					</tr>
+					<tr>
+						<td align="right"></td>
+						<td style="padding-top: 10px;" align="right">
+							<input id="Save_user" style="margin-right: 5px;" type="button" value="保存" />
+							<input id="Cancel_user" type="button" value="取消" /></td>
+					</tr>
+					</table>
+					</div>
+				</div>
+
+			</div> <!-- tab标签 -->
+
+			<div> <!-- tab标签 -->
+				<div style="margin-right: 5px; float: right;">
+					<input id="addrowbutton" type="button" value="添加" />
+					<input id="updaterowbutton" type="button" value="修改" />
+					<input id="deleterowbutton" type="button" value="删除" />
+				</div>
+				<div id='jqxgrid_msg_list'></div>
+
+				<div id="popupWindow_msg">
+					<div>编辑消息</div>
+					<div style="overflow: hidden;">
+					<table>
+					<tr>
+						<td align="right">消息名称：</td>
+						<td align="left"><input id="msg_name" /></td>
+					</tr>
+					<tr>
+						<td align="right">分类标签：</td>
+						<td align="left"><input id="msg_tags" /></td>
+					</tr>
+					<tr>
+						<td align="right">消息标题：</td>
+						<td align="left"><div id="msg_title" /></td>
+					</tr>
+					<tr>
+						<td align="right">消息内容：</td>
+						<td align="left"><textarea id="msg_content"></textarea></td>
+					</tr>
+					<tr>
+						<td align="right">消息类型：</td>
+						<td align="left"><div id="msg_msgmode"></div></td>
+					</tr>
+					<tr>
+						<td align="right">显示位置：</td>
+						<td align="left"><div id="msg_position"></div></td>
+					</tr>
+					<tr>
+						<td align="right">固定显示：</td>
+						<td align="left"><div id="msg_sticky"></div></td>
+					</tr>
+					<tr>
+						<td align="right">显示时长：</td>
+						<td align="left"><div id="msg_time"></div></td>
+					</tr>
+					<tr>
+						<td align="right">弹窗警示：</td>
+						<td align="left"><div id="msg_before_open"></div></td>
+					</tr>
+					<tr>
+						<td align="right"></td>
+						<td style="padding-top: 10px;" align="right">
+							<input id="Save_msg" style="margin-right: 5px;" type="button" value="保存" />
+							<input id="Cancel_msg" type="button" value="取消" /></td>
+					</tr>
+					</table>
+					</div>
+				</div>
+
+			</div>
+
 			<div style='height:380px;'>
 			</div>
 
 			<div style='height:380px;'>
 			</div>
 		</div>
+
 	</div>
 </body>
 </html>

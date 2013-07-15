@@ -2,7 +2,63 @@
 require_once 'functions/memcached_namespace.php';
 require_once 'functions/memcache_array.php';
 require_once 'functions/async_call.php';
+require_once 'functions/geoipcity.php';
+require_once 'functions/device_name.php';
 require_once 'config.php';
+
+function sched_changed()
+{
+	$mem = api_open_mmc();
+	$mem->set(SCHEDUAL_UPDATE_KEY, time());
+}
+
+function is_sched_changed()
+{
+	$mem = api_open_mmc();
+	if ($mem->get(SCHEDUAL_UPDATE_KEY)) {
+		$mem->delete(SCHEDUAL_UPDATE_KEY);
+		return true;
+	}
+	return false;
+}
+
+function get_browser_mem($useragent)
+{
+	$mem = api_open_mmc();
+	$digest = md5($useragent);
+	if ($browser_o = $mem->ns_get(GET_BROWSER, $digest)) {
+		return $browser_o;
+	}
+
+	$browser_o = get_browser($useragent);
+	$mem->ns_set(GET_BROWSER, $digest, $browser_o, GET_BROWSER_EXPIRE);
+	return $browser_o;
+}
+
+function get_device_mem($useragent)
+{
+	$digest = md5($useragent);
+	$mem = api_open_mmc();
+	if ($device_name = $mem->ns_get(GET_DEVICE, $digest)) {
+		return $device_name;
+	}
+
+	$device_name  = get_device_name($useragent);
+	$mem->ns_set(GET_DEVICE, $digest, $device_name, GET_DEVICE_EXPIRE);
+	return $device_name;
+}
+
+function get_locale_mem($ip)
+{
+	$mem = api_open_mmc();
+	if ($city_name = $mem->ns_get(GET_DEVICE, $ip)) {
+		return $city_name;
+	}
+
+	$city_name = get_city_name($ip);
+	$mem->ns_set(GET_LOCALE, $ip, $city_name, GET_LOCALE_EXPIRE);
+	return $city_name;
+}
 
 define('COUNT_NS', 'COUNT_NS');
 define('COUNT_ON_HEARTBEAT', 1);
@@ -108,22 +164,33 @@ function api_open_mmc()
 	return $mem;
 }
 
-function async_checkpoint_time()
+define('SCRIPT_TIMER', 'SCRIPT_TIMER');
+
+function async_timer($script_path, $time_interval=null)
 {
 	$mem = api_open_mmc();
+	$item = $mem->ns_get(SCRIPT_TIMER, $script_path);
+	$now_time = time();
 
-	$last_time = $mem->get(CHECKPOINT_TIME_KEY);
-	if (empty($last_time)) {
-		$last_time = time();
-		async_checkpoint_update();
+	do {
+		if (empty($item)) {break;}
+
+		if (is_null($time_interval)) {
+			$time_interval = $item['interval'];
+		}
+
+		if ($now_time - $item['lasttime'] > $time_interval) {break;}
+		return $item['lasttime'];
+	} while(false);
+	
+	if (is_null($time_interval)) {
+		return $now_time;
 	}
-	return $last_time;
-}
 
-function async_checkpoint_update()
-{
-	$mem = api_open_mmc();
-	$mem->set(CHECKPOINT_TIME_KEY, time());
+	$new_item = array('interval'=>$time_interval, 'lasttime'=>$now_time);
+	$mem->ns_set(SCRIPT_TIMER, $script_path, $new_item);
+	call_async_php($script_path);
+	return $new_item;
 }
 
 function send_message($device_id, $message)
