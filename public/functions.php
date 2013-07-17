@@ -6,6 +6,12 @@ require_once 'functions/geoipcity.php';
 require_once 'functions/device_name.php';
 require_once 'config.php';
 
+function print_r2($val){
+	echo '<pre>';
+	print_r($val);
+	echo  '</pre>';
+}
+
 function sched_changed()
 {
 	$mem = api_open_mmc();
@@ -190,7 +196,7 @@ function async_timer($script_path, $time_interval=null)
 	$new_item = array('interval'=>$time_interval, 'lasttime'=>$now_time);
 	$mem->ns_set(SCRIPT_TIMER, $script_path, $new_item);
 	call_async_php($script_path);
-	return $new_item;
+	return $now_time;
 }
 
 function send_message($device_id, $message)

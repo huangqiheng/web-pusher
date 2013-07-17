@@ -354,14 +354,30 @@ $item['repel']
 				$("#sched_message").jqxDropDownButton(base_opt);
 			},
 			fill_form : function(data_record) {
-				$("#sched_status").jqxDropDownList({selectedIndex: source_sched_status_cn.indexOf(data_record.status)}); 
-			    	$('#sched_start').jqxDateTimeInput('setDate', data_record.start_time);
-			    	$('#sched_end').jqxDateTimeInput('setDate', data_record.finish_time);
-				$('#sched_times').jqxNumberInput('setDecimal', data_record.times);
-				$("#sched_interval").jqxDropDownList({selectedIndex: source_sched_inval_cn.indexOf(data_record.time_interval)}); 
-				$("#sched_interval_mode").jqxDropDownList({selectedIndex: source_schedmode_cn.indexOf(data_record.time_interval_mode)}); 
-				$("#sched_sequence").jqxDropDownList({selectedIndex: source_sequence_cn.indexOf(data_record.msg_sequence)}); 
-				$("#sched_repel").jqxDropDownList({selectedIndex: source_repel_cn.indexOf(data_record.repel)}); 
+				if (data_record.hasOwnProperty('status')) {
+					$("#sched_status").jqxDropDownList({selectedIndex: source_sched_status_cn.indexOf(data_record.status)}); 
+				}
+				if (data_record.hasOwnProperty('start_time')) {
+					$('#sched_start').jqxDateTimeInput('setDate', data_record.start_time);
+				}
+				if (data_record.hasOwnProperty('finish_time')) {
+					$('#sched_end').jqxDateTimeInput('setDate', data_record.finish_time);
+				}
+				if (data_record.hasOwnProperty('times')) {
+					$('#sched_times').jqxNumberInput('setDecimal', data_record.times);
+				}
+				if (data_record.hasOwnProperty('time_interval')) {
+					$("#sched_interval").jqxDropDownList({selectedIndex: source_sched_inval_cn.indexOf(data_record.time_interval)}); 
+				}
+				if (data_record.hasOwnProperty('time_interval_mode')) {
+					$("#sched_interval_mode").jqxDropDownList({selectedIndex: source_schedmode_cn.indexOf(data_record.time_interval_mode)}); 
+				}
+				if (data_record.hasOwnProperty('msg_sequence')) {
+					$("#sched_sequence").jqxDropDownList({selectedIndex: source_sequence_cn.indexOf(data_record.msg_sequence)}); 
+				}
+				if (data_record.hasOwnProperty('repel')) {
+					$("#sched_repel").jqxDropDownList({selectedIndex: source_repel_cn.indexOf(data_record.repel)}); 
+				}
 
 				var get_nametags = function(g) {
 					var a = $(g).jqxGrid('getrows');
@@ -624,6 +640,18 @@ $item['repel']
 			},
 
 			fill_form : function(data_record) {
+				if (!data_record.hasOwnProperty('new_user')) {
+					data_record.new_user = source_newuser_cn[0];
+				}
+				if (!data_record.hasOwnProperty('new_visitor')) {
+					data_record.new_visitor = source_newvisitor_cn[0];
+				}
+				if (!data_record.hasOwnProperty('ismobiledevice')) {
+					data_record.ismobiledevice = source_mobile_cn[0];
+				}
+				if (!data_record.hasOwnProperty('binded')) {
+					data_record.binded = source_binded_cn[0];
+				}
 				$('#usr_tags').val(data_record.tags);
 				$("#usr_newuser").jqxDropDownList({selectedIndex: source_newuser_cn.indexOf(data_record.new_user)}); 
 				$("#usr_visitor").jqxDropDownList({selectedIndex: source_newvisitor_cn.indexOf(data_record.new_visitor)}); 
@@ -640,12 +668,13 @@ $item['repel']
 
 			extra_form : function () {
 				var check = function(d) {return d?d:'--'};
+				var getid = function(d) {var id = $(d).jqxDropDownList('getSelectedIndex');return (id>=0)?id:0;};
 				var new_raw = {};
-				new_raw['tags'] = $('#usr_tags').val();
-				new_raw['new_user'] = source_newuser_cn[$("#usr_newuser").jqxDropDownList('getSelectedIndex')];
-				new_raw['new_visitor'] = source_newvisitor_cn[$("#usr_visitor").jqxDropDownList('getSelectedIndex')];
-				new_raw['ismobiledevice'] = source_mobile_cn[$("#usr_mobile").jqxDropDownList('getSelectedIndex')];
-				new_raw['binded'] = source_binded_cn[$("#usr_binded").jqxDropDownList('getSelectedIndex')];
+				new_raw['tags'] = rm_comma($('#usr_tags').val());
+				new_raw['new_user'] = source_newuser_cn[getid("#usr_newuser")];
+				new_raw['new_visitor'] = source_newvisitor_cn[getid("#usr_visitor")];
+				new_raw['ismobiledevice'] = source_mobile_cn[getid("#usr_mobile")];
+				new_raw['binded'] = source_binded_cn[getid("#usr_binded")];
 				new_raw['browser'] = check($('#usr_browser').val());
 				new_raw['platform'] = check($('#usr_platform').val());
 				new_raw['device_name'] = check($('#usr_device').val());
@@ -712,6 +741,21 @@ $item['repel']
 			},
 
 			fill_form : function(data_record) {
+			    	if (!data_record.hasOwnProperty('msgmod')) {
+					data_record.msgmod = source_msgmod_cn[1];
+				}
+			    	if (!data_record.hasOwnProperty('position')) {
+					data_record.position = source_posi_cn[2];
+				}
+			    	if (!data_record.hasOwnProperty('sticky')) {
+					data_record.sticky = source_sticky_cn[0];
+				}
+			    	if (!data_record.hasOwnProperty('time')) {
+					data_record.time = 8000;
+				}
+			    	if (!data_record.hasOwnProperty('before_open')) {
+					data_record.before_open = source_warning_cn[0];
+				}
 				$("#msg_tags").val(data_record.tags);
 				$('#msg_title').jqxComboBox('val', data_record.title);
 				$("#msg_content").val(data_record.text);
@@ -723,16 +767,16 @@ $item['repel']
 			},
 
 			extra_form : function () {
-				var rm_space = function(d) {return d.replace(/(\r\n|\n|\r)/gm,"")};
+				var getid = function(d) {var id = $(d).jqxDropDownList('getSelectedIndex');return (id>=0)?id:0;};
 				var new_raw = {};
-				new_raw['tags'] = $('#msg_tags').val();
+				new_raw['tags'] = rm_comma($('#msg_tags').val());
 				new_raw['title'] = $('#msg_title').jqxComboBox('val');
 				new_raw['text'] = rm_space($('#msg_content').val());
-				new_raw['msgmod'] = source_msgmod_cn[$("#msg_msgmode").jqxDropDownList('getSelectedIndex')];
-				new_raw['position'] = source_posi_cn[$("#msg_position").jqxDropDownList('getSelectedIndex')];
-				new_raw['sticky'] = source_sticky_cn[$("#msg_sticky").jqxDropDownList('getSelectedIndex')];
+				new_raw['msgmod'] = source_msgmod_cn[getid("#msg_msgmode")];
+				new_raw['position'] = source_posi_cn[getid("#msg_position")];
+				new_raw['sticky'] = source_sticky_cn[getid("#msg_sticky")];
 				new_raw['time'] = $('#msg_time').jqxNumberInput('getDecimal') * 1000;
-				new_raw['before_open'] = source_warning_cn[$("#msg_before_open").jqxDropDownList('getSelectedIndex')];
+				new_raw['before_open'] = source_warning_cn[getid("#msg_before_open")];
 				return new_raw;
 			}
 		};
@@ -785,7 +829,13 @@ $item['repel']
 			$(p.update_button_id).jqxButton({ theme: theme, width: 70});
 
 			$(p.add_button_id).on('click', function () {
+				var data_record = {};
+				var selectedrowindex = $(p.grid_id).jqxGrid('getselectedrowindex');
+				if (selectedrowindex >= 0) {
+					var data_record = $(p.grid_id).jqxGrid('getrowdata', selectedrowindex);
+				}
 				p.editrow = -1;
+				p.fill_form(data_record);
 				$(p.name_field_id).jqxInput({disabled: false});
 				$(p.name_field_id).select();
 				$(p.pop_win_id).jqxWindow({position:'center'});
@@ -834,7 +884,7 @@ $item['repel']
 				var fixed_name = function (msg_name) {
 					var rows = $(p.grid_id).jqxGrid('getrows');
 					var succeed;
-					var now_name = msg_name.replace(/,/g, '');
+					var now_name = rm_comma(msg_name);
 					do {
 						succeed = true;
 						$.each(rows, function(index, value) {
@@ -869,4 +919,12 @@ $item['repel']
 
 
 	});
+
+	function rm_comma (d) {
+		return d.replace(/,/g, '');
+	}
+
+	function rm_space (d) {
+		return d.replace(/(\r\n|\n|\r)/gm,"");
+	}
 }

@@ -1,4 +1,8 @@
 <?php
+/*********************************************************
+		可修改的配置信息
+*********************************************************/
+
 //是否显示“来源地区”的地理位置
 define('VIEW_REGION', true);
 
@@ -17,16 +21,30 @@ define('COOKIE_DEVICE_SAVED', 'device_sav'); //cookie名称
 define('COOKIE_TIMEOUT', 3600*24*365*100); //cookie超时时间，设一个超大的
 define('COOKIE_DOMAIN', 'appgame.com'); //cookie的域，保证被嵌入网站能访问得到
 
+define('CHECKPOINT_INTERVAL', 60*3); //清理在线列表周期，不要单次清理数量太多
+define('CACHE_EXPIRE_SECONDS', 60*15); //在线列表超时时间
+define('SCHEDUAL_INTERVAL', 60*3); //处理任务列表
+
+//重量级操作的memcached缓存
+define('GET_BROWSER_EXPIRE', 3600*8); 
+define('GET_DEVICE_EXPIRE', 3600*8);
+define('GET_LOCALE_EXPIRE', 3600*8);
+
+//文件名 配置
+define('LOCAL_LOG_FILE', 'debug.log');
+
+
+/*********************************************************
+		下面的不用修改，为程序常量
+*********************************************************/
+
 //定期维护超时的设备列表内容
 define('NS_DEVICE_LIST', 'ns_device_list'); //没必要改
 define('NS_BINDING_LIST', 'ns_binding_list'); //没必要改
 define('NS_BINDED_LIST', 'ns_binded_list');
 define('NS_BINDED_CAPTION', 'ns_binded_caption');
-define('CHECKPOINT_INTERVAL', 60*3); //清理在线列表的周期，不要让单次清理的数量太多
-define('CACHE_EXPIRE_SECONDS', 60*15); //在线列表超时时间
 
 //计划任务发送列表
-define('SCHEDUAL_INTERVAL', 60*3); //处理任务列表
 define('SCHEDUAL_UPDATE_KEY', 'SCHEDUAL_UPDATE_KEY'); //列表被更新标记
 define('DATA_MESSAGE_LIST', '@MESSAGE_LIST');
 define('DATA_USER_LIST', '@USER_LIST');
@@ -37,19 +55,19 @@ define('CHECKPOINT_TIME_KEY', 'async_check_time'); //没必要改
 
 //解释浏览器信息的memcached配置
 define('GET_BROWSER', 'GET_BROWSER');//没必要改
-define('GET_BROWSER_EXPIRE', 3600*8);
 define('GET_DEVICE', 'GET_DEVICE');//没必要改
-define('GET_DEVICE_EXPIRE', 3600*8);
 define('GET_LOCALE', 'GET_LOCALE');//没必要改
-define('GET_LOCALE_EXPIRE', 3600*8);
 define('API_MEMC_POOL', 'api_memcached_pool');//没必要改
 
-define('LOCAL_LOG_FILE', 'debug.log');
-
 define('NS_HEARTBEAT_MESSAGE', 'ns_heartbeat_message');
-
 define('NS_HEARTBEAT_SCHEDULE', 'ns_heartbeat_schedule');
 define('NS_HEARTBEAT_SCHEDULE_ITEM', 'ns_heartbeat_schedule_item');
 
+//计划任务列表的缓存版本
+define('KEY_SCHED_LIST', 'KEY_SCHED_LIST');
+//计划任务列表的命名空间，供各个设备共享访问
+define('NS_SCHED_TASKS', 'NS_SCHED_TASKS');
+//单个设备的执行情况记录块
+define('KEY_SCHED_DEVICE', 'KEY_SCHED_DEVICE');
 
 ?>

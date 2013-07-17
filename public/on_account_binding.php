@@ -13,6 +13,5 @@ $DATA['nickname']
 */
 $DATA = array_merge($_GET, $_POST); 
 
-loglocal(date(DATE_RFC822).' on_account_binding '.@$DATA['username'].' '.$DATA['nickname']);
 
 ?>

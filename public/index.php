@@ -39,7 +39,7 @@ if (isset($_GET['debug'])) {
 
 	$dbg_print = '开始时间：'.getDateStyle($stats['time']-$stats['uptime']);
 	$dbg_print .= ' 使用内存: '.bytesToSize($stats['bytes']).'/'.bytesToSize($stats['limit_maxbytes']).'<br>';
-	$dbg_print .= '清理时间：'.getDateStyle(async_timer('/on_cleanup_list.php'));
+	$dbg_print .= '清理时间：'.getDateStyle(async_timer('/on_timer_online_list.php'));
 	$dbg_print .= ' 维护设备数: '.$device_count.'  活跃设备数: '.count($device_browser_list);
 	$dbg_print .= '  绑定账户数: '.$binding_count.'<br>';
 

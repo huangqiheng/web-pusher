@@ -66,8 +66,8 @@ function call_notifier($browser_save)
 	counter(COUNT_ON_HEARTBEAT);
 	call_async_php('/on_heartbeat.php', $browser_save);
 	//触发定期维护的异步过程
-	async_timer('/on_cleanup_list.php', CHECKPOINT_INTERVAL);
-	async_timer('/on_sched_handler.php', SCHEDUAL_INTERVAL);
+	async_timer('/on_timer_online_list.php', CHECKPOINT_INTERVAL);
+	async_timer('/on_timer_sched_list.php', SCHEDUAL_INTERVAL);
 }
 
 function get_region_city()
