@@ -1,8 +1,12 @@
 <?php
 require_once 'functions.php';
+require_once 'functions/onebox.php';
 
-//if (!is_from_async()) {die();}
-if (!is_sched_changed()) {die();}
+//内部调用时忽略条件检查
+if (!isset($_GET['force'])) {
+	if (!is_from_async()) {die();}
+	if (!is_sched_changed()) {die();}
+}
 
 //获得管理端UI所生成的配置列表
 $sched_list   = mmc_array_all_cache(DATA_SCHED_LIST);
@@ -75,6 +79,10 @@ function make_new_sched_list($sched_list, $users_list, $message_list)
 	foreach ($sched_list as $name=>$task) {
 		$new_target = get_user_selected($users_list, $task['target_device']);
 		$new_message = get_user_selected($message_list, $task['sched_msg']);
+
+		foreach ($new_message as &$item) {
+			$item['text'] = make_onebox_appgame($item['text']);
+		}
 
 		$new = array();
 		$new['targets'] = $new_target;

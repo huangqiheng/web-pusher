@@ -34,6 +34,7 @@ if ($cmd == 'sendmessage') {
 		}
 	}
 
+	//发送实时消息
 	if ($msgmod == 'realtime') {
 		$cmdbox_send = rawurlencode(json_encode($cmdbox));
 		foreach($device_list as $device) {

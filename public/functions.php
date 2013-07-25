@@ -62,6 +62,10 @@ function get_locale_mem($ip)
 	}
 
 	$city_name = get_city_name($ip);
+	if (empty($city_name)) {
+		$city_name = $ip;
+	}
+
 	$mem->ns_set(GET_LOCALE, $ip, $city_name, GET_LOCALE_EXPIRE);
 	return $city_name;
 }
@@ -333,12 +337,11 @@ function time_print($descript=null)
 	$now_time = microtime(true);
 
 	if ($descript) {
-		array_push($time_record, $descript.intval(($now_time-$last_time)*1000).'ms');
+		array_push($time_record, $descript.' '.intval(($now_time-$last_time)*1000).'ms');
 		$last_time = $now_time;
 	} else {
-		return implode(', ', $time_record).' (共'.intval(($now_time-$first_time)*1000).'ms)';
+		return implode('; ', $time_record).' (total:'.intval(($now_time-$first_time)*1000).'ms)';
 	}
-	
 }
 
 ?>

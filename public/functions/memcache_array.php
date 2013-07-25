@@ -38,17 +38,22 @@ function mmc_array_set($list_name, $key, $value, $expired=0)
 	$mem = __open_mmc();
 	$result = false;
 
-	$ok = $mem->ns_add($list_name, LIST_KEY2TIME_PREFIX.$key, time());
-	if ($ok) {
+	$time_ok = $mem->ns_replace($list_name, LIST_KEY2TIME_PREFIX.$key, time());
+	if (!$time_ok) {
 		$index = __new_index($mem, $list_name);
 		$mem->ns_set($list_name, LIST_ID2KEY_PREFIX.$index, $key); 
-		//如果是第一个元素，则返回提示true
-		$result = ($index==1)? 1 : 2;
-	} else {
 		$mem->ns_set($list_name, LIST_KEY2TIME_PREFIX.$key, time());
+		//返回1，表示这是系统启动以来的第一个上线
+		//返回2，表示这是系统启动以来了，某设备第一次上线
+		$result = ($index==1)? 1 : 2;
 	}
 
-	$mem->ns_set($list_name, LIST_KEYVALUE_PREFIX.$key, $value, $expired);
+	$value_ok = $mem->ns_replace($list_name, LIST_KEYVALUE_PREFIX.$key, $value, $expired);
+	if (!$value_ok) {
+		$mem->ns_set($list_name, LIST_KEYVALUE_PREFIX.$key, $value, $expired);
+		//返回3，表示这是某设备超时后，再次上线
+		$result = 3;
+	}
 	return $result;
 }
 
@@ -110,21 +115,21 @@ function mmc_array_cleanup($list_name, $before_time)
 	//预处理，获取需要删除的元素列表
 	$length = $mem->ns_get($list_name, LIST_LENGTH_KEY);
 	$del_ids = [];
-	$del_key2ids = [];
+	$del_key2time = [];
 	for ($index=1; $index<=$length; $index++) {
 		$index_key = LIST_ID2KEY_PREFIX.$index;
 		$key = $mem->ns_get($list_name, $index_key);
-		$key2id_key = LIST_KEY2TIME_PREFIX.$key;
+		$key2time = LIST_KEY2TIME_PREFIX.$key;
 		$keydata_key = LIST_KEYVALUE_PREFIX.$key;
 
 		if ($mem->ns_get($list_name, $keydata_key)) {
 			continue;
 		}
 
-		$last_active_time = $mem->ns_get($list_name, $key2id_key);
+		$last_active_time = $mem->ns_get($list_name, $key2time);
 		if ($last_active_time < $before_time) {
 			$del_ids[] = $index_key;
-			$del_key2ids[] = $key2id_key;
+			$del_key2time[] = $key2time;
 		}
 	}
 
@@ -166,10 +171,10 @@ function mmc_array_cleanup($list_name, $before_time)
 
 	//删除key to time列表，这样被删除的index就能增加了，避免index列表的从复
 	//key to time 列表是用来保证index列表不从复元素的
-	$mem->ns_deleteMulti($list_name, $del_key2ids);
+	$mem->ns_deleteMulti($list_name, $del_key2time);
 
 	defined('LIST_LOCK') && $mem->ns_delete($list_name, LIST_LOCK_KEY);
-	return count($del_key2ids);
+	return count($del_key2time);
 }
 
 function mmc_array_all($list_name)
@@ -183,7 +188,7 @@ function mmc_array_all($list_name)
 	}
 
 	$indexs = $mem->ns_getMulti($list_name, $index_keys);
-	$id_values = array_values($indexs);
+	$id_values = array_unique(array_values($indexs));
 
 	return mmc_array_gets($list_name, $id_values);
 }

@@ -20,7 +20,10 @@ function disqus_report(omp_obj)
 			var userdata = remote_auth_s3.split(' ')[0];
 			userdata = jQomp.base64.decode(userdata);
 			userdata = jQomp.parseJSON(userdata);
-mylog(d);
+
+			if (!userdata.username) {
+				return;
+			}
 
 			var id_obj = {};
 			id_obj['name'] = 'disqus';
@@ -56,9 +59,10 @@ function bind_device_user(omp_obj, id_obj)
 	var new_val = md5(id_obj.username+'('+id_obj.nickname+')@'+device_id);
 
 	if (omp_obj.hasOwnProperty('binded')) {
-			if (omp_obj.binded[new_key] === new_val) {
-				return;
-			}
+		if (omp_obj.binded[new_key] === new_val) {
+			mylog('had been reported');
+			return;
+		}
 	}
 
     jQomp.post(root_prefix+'omp.php?callback=?', {
@@ -121,8 +125,7 @@ var username_selector = [
         username: [{selector:"div#um strong.vwmy a:first"}],
         nickname: []
     }
-}
-,
+},
 {
     'name':'appgame',
     'caption':'任玩堂',

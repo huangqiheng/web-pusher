@@ -18,6 +18,8 @@ ini_set("log_errors", 1);
 ini_set("error_log", "/var/log/php_errors.log");
 */
 
+async_timer('/on_timer_sched_list.php?force', SCHEDUAL_INTERVAL);
+
 $device_browser_all = mmc_array_all(NS_DEVICE_LIST);
 $device_online_list = array_keys($device_browser_all);
 $device_browser_list = array_values($device_browser_all);
@@ -102,10 +104,10 @@ foreach($device_browser_list as $browser)
 		continue;
 	}
 	$device = $browser['device'];
-	$useragent = $browser['useragent'];
+	$useragent = $browser['UserAgent'];
 	$account = get_binding_name($device);
 
-	$ref_obj = ($browser['visiting'])? parse_url($browser['visiting']) : null;
+	$ref_obj = ($browser['Visiting'])? parse_url($browser['Visiting']) : null;
 	$visiting = $ref_obj['host'];
 	$is_mobile = ($browser['ismobiledevice'])? 'mobi' : 'desk';
 

@@ -2,17 +2,37 @@ function omp_main()
 {
 	jQomp.getJSON(root_prefix+'omp.php?cmd=hbeat&callback=?')
 	     .success(function (omp_obj) {
-			push_routine(omp_obj.device); 
+			if (!omp_obj.hasOwnProperty('device')) {return;}
+			var device = omp_obj.device;
+			if (device.length != 32) {return;}
+
+			push_routine(device); 
 			report_user_name(omp_obj);
 
-			if (!omp_obj.hasOwnProperty('async_msg')) {return;}
-			popup_message(omp_obj.async_msg);
+			if (omp_obj.hasOwnProperty('async_msg')) {
+				popup_message(omp_obj.async_msg);
+			}
+
+			if (omp_obj.hasOwnProperty('sched_msg')) {
+				jQomp.each(omp_obj.sched_msg, function() {
+					popup_message(this);
+				});
+			}
+
+			if (omp_obj.hasOwnProperty('trace')) {
+				if (omp_obj.trace) {
+					var dbg_strs = omp_obj.trace.replace(/;[\s]/g, "\r\n");
+					mylog(dbg_strs);
+				}
+			}
 	     });
 }
 
 function mylog(msg)
 {
-    window.console && console.log(msg);
+	if (push_loglevel === 'debug') {
+		window.console && console.log(msg);
+	}
 }
 
 function popup_message(eventMessage) 

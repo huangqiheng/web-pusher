@@ -14,18 +14,18 @@ function api_ui_init(aDataSet)
 	//发送任务管理
 	var source_sched_status = ['start', 'stop', 'waiting', 'running', 'timeout'];
 	var source_sched_status_cn = ['开始', '停止', '待命','运行', '过时'];
-	var source_sched_inval    = [60+'', 60*5+'', 60*10+'', 60*15+'', 60*30+'', 
+	var source_sched_inval    = [60+'', 60*3+'', 60*5+'', 60*10+'', 60*15+'', 60*30+'', 
 		3600+'', 3600+1800+'', 3600*2+'', 3600*3+'', 3600*4+'', 3600*5+'', 3600*6+'', 3600*8+'', 3600*10+'', 3600*12+'', 3600*16+'', 
 		3600*24*1+'', 3600*24*2+'', 3600*24*3+'', 3600*24*4+'', 3600*24*5+'', 3600*24*6+'', 3600*24*7+'', 
 		3600*24*10+'', 3600*24*14+'', 3600*24*20+'', 3600*24*21+'', 3600*24*28+'', 3600*24*30+''];
-	var source_sched_inval_cn = ['1分钟', '5分钟', '10分钟', '15分钟', '30分钟', 
+	var source_sched_inval_cn = ['1分钟', '3分钟', '5分钟', '10分钟', '15分钟', '30分钟', 
 		'1小时', '1.5小时','2小时', '3小时', '4小时', '5小时', '6小时', '8小时', '10小时', '12小时', '16小时', 
 		'1天', '2天', '3天', '4天', '5天', '6天', '7天', 
 		'10天', '14天', '20天', '21天', '28天', '30天'];
 	var source_schedmode = ['absolute', 'relative'];
 	var source_schedmode_cn = ['绝对间隔', '相对间隔'];
-	var source_sequence = ['sequence', 'ramdon'];
-	var source_sequence_cn = ['顺序消息', '随机消息'];
+	var source_sequence = ['sequence', 'random', 'confusion'];
+	var source_sequence_cn = ['顺序消息', '随机消息', '乱序消息'];
 	var source_repel = ['false', 'true'];
 	var source_repel_cn = ['同屏显示', '单独显示'];
 
@@ -502,6 +502,7 @@ $item['repel']
 							var old_val = $(drop_id).jqxDropDownButton('getContent');
 							var arr = old_val.split(',');
 							var localdatas = source_adpt.source_ori.localdata;
+							var new_val = [];
 							$.each(arr, function(i, target) {
 								$.each(localdatas, function(index, line) {
 									var found = false;
@@ -512,9 +513,14 @@ $item['repel']
 											return false;
 										}
 									});
-									if (found) {return false;}
+									if (found) {
+										new_val.push(target);
+										return false;
+									}
 								});
 							});
+							var new_text = new_val.join(',');
+							$(drop_id).jqxDropDownButton('setContent', new_text);
 						});
 						$(drop_id).bind('close', function () { 
 							var old_val = $(drop_id).jqxDropDownButton('getContent');
@@ -884,7 +890,8 @@ $item['repel']
 				var fixed_name = function (msg_name) {
 					var rows = $(p.grid_id).jqxGrid('getrows');
 					var succeed;
-					var now_name = rm_comma(msg_name);
+					var now_name = rm_space(rm_comma(msg_name));
+					
 					do {
 						succeed = true;
 						$.each(rows, function(index, value) {
