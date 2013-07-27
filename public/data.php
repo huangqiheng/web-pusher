@@ -1,5 +1,6 @@
 <?php
 require_once 'functions.php';
+require_once 'sched_list.php';
 
 switch($_GET['cmd']) {
 	case 'message': die(handle_list_command(DATA_MESSAGE_LIST, $_GET['opt']));
@@ -9,20 +10,20 @@ switch($_GET['cmd']) {
 }
 exit();
 
+function result_ok($obj)
+{
+	update_sched_tasks();
+	sched_changed();
+	return  jsonp(['status'=>'ok', 'result'=>$obj]);
+}
 
 function handle_list_command($list_name, $cmd_name) 
 {
 	switch($cmd_name) {
 		case 'list':   return jsonp(mmc_array_values($list_name));
-		case 'create': 
-			sched_changed();
-			return jsonp(mmc_array_set($list_name, $_POST['name'], $_POST));
-		case 'update': 
-			sched_changed();
-			return jsonp(mmc_array_set($list_name, $_POST['name'], $_POST));
-		case 'delete': 
-			sched_changed();
-			return jsonp(mmc_array_del($list_name, $_POST['name']));
+		case 'create': return result_ok(mmc_array_set($list_name, md5($_POST['name']), $_POST));
+		case 'update': return result_ok(mmc_array_set($list_name, md5($_POST['name']), $_POST));
+		case 'delete': return result_ok(mmc_array_del($list_name, md5($_POST['name'])));
 		case 'flush':  
 			sched_changed();
 			return '{"res": false}';
@@ -45,5 +46,7 @@ function handle_list_command($list_name, $cmd_name)
 			die('{"res": false}');
 	}
 }
+
+
 
 ?>

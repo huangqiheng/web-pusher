@@ -2,21 +2,22 @@
 require_once 'functions.php';
 require_once 'functions/onebox.php';
 
-//内部调用时忽略条件检查
-if (!isset($_GET['force'])) {
-	if (!is_from_async()) {die();}
-	if (!is_sched_changed()) {die();}
+if (isset($_GET['force'])) {
+	update_sched_tasks();
 }
 
-//获得管理端UI所生成的配置列表
-$sched_list   = mmc_array_all_cache(DATA_SCHED_LIST);
-$users_list   = mmc_array_all_cache(DATA_USER_LIST);
-$message_list = mmc_array_all_cache(DATA_MESSAGE_LIST);
+function update_sched_tasks()
+{
+	//获得管理端UI所生成的配置列表
+	$sched_list   = mmc_array_all_cache(DATA_SCHED_LIST);
+	$users_list   = mmc_array_all_cache(DATA_USER_LIST);
+	$message_list = mmc_array_all_cache(DATA_MESSAGE_LIST);
 
-//生成新的配置，并同步给设备去识别
-$new_sched_list = make_new_sched_list($sched_list, $users_list, $message_list);
-$del_sched_list = array_diff_key(used_sched_list(), $new_sched_list);
-update_new_sched_list($new_sched_list, $del_sched_list);
+	//生成新的配置，并同步给设备去识别
+	$new_sched_list = make_new_sched_list($sched_list, $users_list, $message_list);
+	$del_sched_list = array_diff_key(used_sched_list(), $new_sched_list);
+	update_new_sched_list($new_sched_list, $del_sched_list);
+}
 
 //---------------------------------------------------------------------
 
@@ -30,8 +31,9 @@ function mmc_array_all_cache($name)
 		if (empty($list)) {
 			return array();
 		}
+		mmc_array_clear($name);
 		foreach ($list as $key=>$value) {
-			mmc_array_set($name, $key, $value);
+			$res = mmc_array_set($name, $key, $value);
 		}
 	} else {
 		file_put_contents($file_name, serialize($list));
@@ -73,6 +75,17 @@ function trans_time($time_str)
 	return strtotime(preg_replace('/\(.+\)/', '',  $time_str));
 }
 
+function onebox_cached($content)
+{
+	$mem = api_open_mmc();
+	$result = $mem->ns_get(NS_ONEBOX_CACHE, md5($content));
+	if (empty($result)) {
+		$result = make_onebox_appgame($content);
+		$mem->ns_set(NS_ONEBOX_CACHE, md5($content), $result);
+	}
+	return $result;
+}
+
 function make_new_sched_list($sched_list, $users_list, $message_list)
 {
 	$result = array();
@@ -81,7 +94,7 @@ function make_new_sched_list($sched_list, $users_list, $message_list)
 		$new_message = get_user_selected($message_list, $task['sched_msg']);
 
 		foreach ($new_message as &$item) {
-			$item['text'] = make_onebox_appgame($item['text']);
+			$item['text'] = onebox_cached($item['text']);
 		}
 
 		$new = array();
@@ -111,7 +124,7 @@ function tag2names($list, $tag_name)
 	$names = array();
 	foreach ($list as $key=>$item) {
 		if (strpos($item['tags'], $tag_name) !== false) {
-			$names[] = $key;
+			$names[] = $item['name'];
 		}
 	}
 	return $names;
@@ -140,7 +153,7 @@ function get_user_selected($list, $user_selected)
 	$result = array();
 	foreach($item_names as $name) {
 		foreach ($list as $key=>$item) {
-			if ($key == $name) {
+			if ($item['name']== $name) {
 				$result[] = $item;
 			}
 		}
@@ -149,47 +162,5 @@ function get_user_selected($list, $user_selected)
 	return $result;
 }
 
-
-/*
-	sched_list
-{name: 'name', type: 'string'},
-{name: 'status', type: 'string'},
-{name: 'start_time', type: 'date'},
-{name: 'finish_time', type: 'date'},
-{name: 'times', type: 'string'},
-{name: 'time_interval', type: 'string'},
-{name: 'time_interval_mode', type: 'string'},
-{name: 'msg_sequence', type: 'string'},
-{name: 'repel', type: 'string'},
-{name: 'target_device', type: 'string'},
-{name: 'sched_msg', type: 'string'}
-
-	users_list
-{name: 'name', type: 'string'},
-{name: 'tags', type: 'string'},
-{name: 'new_user', type: 'string'},
-{name: 'new_visitor', type: 'string'},
-{name: 'ismobiledevice', type: 'string'},
-{name: 'binded', type: 'string'},
-{name: 'browser', type: 'string'},
-{name: 'platform', type: 'string'},
-{name: 'device_name', type: 'string'},
-{name: 'UserAgent', type: 'string'},
-{name: 'region', type: 'string'},
-{name: 'bind_account', type: 'string'},
-{name: 'Visiting', type: 'string'}
-
-	message_list
-{name: 'name', type: 'string'},
-{name: 'tags', type: 'string'},
-{name: 'title', type: 'string'},
-{name: 'text', type: 'string'},
-{name: 'msgmod', type: 'string'},
-{name: 'position', type: 'string'},
-{name: 'sticky', type: 'string'},
-{name: 'time', type: 'string'},
-{name: 'before_open', type: 'string'}
-
-*/
 
 ?>

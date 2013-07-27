@@ -302,6 +302,10 @@ api_ui_init(aDataSet);
 						<td align="left"><div id="sched_interval"></div></td>
 					</tr>
 					<tr>
+						<td align="right">前距时间：</td>
+						<td align="left"><div id="sched_interval_pre"></div></td>
+					</tr>
+					<tr>
 						<td align="right">间隔模式：</td>
 						<td align="left"><div id="sched_interval_mode"></div></td>
 					</tr>
@@ -345,22 +349,6 @@ api_ui_init(aDataSet);
 						<td align="left"><input id="usr_tags" /></td>
 					</tr>
 					<tr>
-						<td align="right">新用户：</td>
-						<td align="left"><div id="usr_newuser" /></td>
-					</tr>
-					<tr>
-						<td align="right">新来访：</td>
-						<td align="left"><div id="usr_visitor"></textarea></td>
-					</tr>
-					<tr>
-						<td align="right">移动应用：</td>
-						<td align="left"><div id="usr_mobile"></div></td>
-					</tr>
-					<tr>
-						<td align="right">已注册：</td>
-						<td align="left"><div id="usr_binded"></div></td>
-					</tr>
-					<tr>
 						<td align="right">浏览器：</td>
 						<td align="left"><input id="usr_browser"></div></td>
 					</tr>
@@ -377,12 +365,40 @@ api_ui_init(aDataSet);
 						<td align="left"><input id="usr_region"></div></td>
 					</tr>
 					<tr>
-						<td align="right">账户名：</td>
-						<td align="left"><input id="usr_account"></div></td>
-					</tr>
-					<tr>
 						<td align="right">浏览器特征：</td>
 						<td align="left"><input id="usr_useragent"></div></td>
+					</tr>
+					<tr>
+						<td align="right">访问停留秒数：</td>
+						<td align="left"><div id="usr_stay_time"></div></td>
+					</tr>
+					<tr>
+						<td align="right">总访次数区间：</td>
+						<td align="left"><div id="usr_all_times_range"></div></td>
+					</tr>
+					<tr>
+						<td align="right">访问次数区间：</td>
+						<td align="left"><div id="usr_times_range"></div></td>
+					</tr>
+					<tr>
+						<td align="right">移动设备：</td>
+						<td align="left"><div id="usr_mobile"></div></td>
+					</tr>
+					<tr>
+						<td align="right">新用户：</td>
+						<td align="left"><div id="usr_newuser" /></td>
+					</tr>
+					<tr>
+						<td align="right">新来访：</td>
+						<td align="left"><div id="usr_visitor"></textarea></td>
+					</tr>
+					<tr>
+						<td align="right">已注册：</td>
+						<td align="left"><div id="usr_binded"></div></td>
+					</tr>
+					<tr>
+						<td align="right">账户名：</td>
+						<td align="left"><input id="usr_account"></div></td>
 					</tr>
 					<tr>
 						<td align="right">访问网址：</td>

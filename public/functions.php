@@ -18,14 +18,10 @@ function sched_changed()
 	$mem->set(SCHEDUAL_UPDATE_KEY, time());
 }
 
-function is_sched_changed()
+function sched_changed_time()
 {
 	$mem = api_open_mmc();
-	if ($mem->get(SCHEDUAL_UPDATE_KEY)) {
-		$mem->delete(SCHEDUAL_UPDATE_KEY);
-		return true;
-	}
-	return false;
+	return $mem->get(SCHEDUAL_UPDATE_KEY);
 }
 
 function get_browser_mem($useragent)

@@ -60,11 +60,11 @@ define('GET_DEVICE', 'GET_DEVICE');//没必要改
 define('GET_LOCALE', 'GET_LOCALE');//没必要改
 define('API_MEMC_POOL', 'api_memcached_pool');//没必要改
 
-//客户端跟踪标记
-define('CLIENT_DEBUG', true);
-
 //异步消息的命令空间
 define('NS_HEARTBEAT_MESSAGE', 'ns_heartbeat_message');
+
+//客户端跟踪标记
+define('CLIENT_DEBUG', true);
 
 //计划任务列表的缓存版本
 define('KEY_SCHED_LIST', 'KEY_SCHED_LIST');
@@ -73,5 +73,6 @@ define('NS_SCHED_TASKS', 'NS_SCHED_TASKS');
 //单个设备的执行情况记录块
 define('NS_SCHED_DEVICE', 'NS_SCHED_DEVICE');
 
+define('NS_ONEBOX_CACHE', 'NS_ONEBOX_CACHE');
 
 ?>

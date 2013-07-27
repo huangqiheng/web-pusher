@@ -318,6 +318,7 @@ $item['repel']
 				{name: 'finish_time', type: 'date'},
 				{name: 'times', type: 'string'},
 				{name: 'time_interval', type: 'string'},
+				{name: 'time_interval_pre', type: 'string'},
 				{name: 'time_interval_mode', type: 'string'},
 				{name: 'msg_sequence', type: 'string'},
 				{name: 'repel', type: 'string'},
@@ -331,22 +332,26 @@ $item['repel']
 				{text: '结束时间', datafield: 'finish_time', width: 190},
 				{text: '次数', datafield: 'times', width: 40},
 				{text: '每次', datafield: 'time_interval', width: 32},
+				{text: '前距', datafield: 'time_interval_pre', width: 32},
 				{text: '模式', datafield: 'time_interval_mode', width: 32},
 				{text: '顺序', datafield: 'msg_sequence', width: 32},
 				{text: '互斥', datafield: 'repel', width: 32},
-				{text: '发送目标', datafield: 'target_device', width: 150},
-				{text: '发送消息', datafield: 'sched_msg', width: 150}
+				{text: '发送目标', datafield: 'target_device', width: 133},
+				{text: '发送消息', datafield: 'sched_msg', width: 133}
 			],
 			create_form: function(){
 				var base_opt = {theme: theme, width: 400, height: this.elemHeight};
 				var drop_opt = {theme: theme, width: 100, height: this.elemHeight};
-				var numb_opt = $.extend({inputMode: 'simple',decimalDigits:0,  spinButtons: true}, drop_opt);
+				var numb_base = $.extend({inputMode: 'simple', decimalDigits:0,  spinButtons: true,symbolPosition: 'right'}, drop_opt);
+				var numb_opt  = $.extend({symbol:'次', decimal:8},  numb_base);
+				var numb_opt2 = $.extend({symbol:'秒', decimal:30}, numb_base);
 				var date_opt = {culture:'zh-CN', formatString: 'F', theme:theme, width:200, height:this.elemHeight};
 				$("#sched_status").jqxDropDownList($.extend({source:source_sched_status_cn, selectedIndex:0}, drop_opt));
 				$("#sched_start").jqxDateTimeInput(date_opt);
 				$("#sched_end").jqxDateTimeInput(date_opt);
 				$("#sched_times").jqxNumberInput(numb_opt);
 				$("#sched_interval").jqxDropDownList($.extend({source:source_sched_inval_cn, selectedIndex:2}, drop_opt));
+				$("#sched_interval_pre").jqxNumberInput(numb_opt2);
 				$("#sched_interval_mode").jqxDropDownList($.extend({source:source_schedmode_cn, selectedIndex:0}, drop_opt));
 				$("#sched_sequence").jqxDropDownList($.extend({source:source_sequence_cn, selectedIndex:0}, drop_opt));
 				$("#sched_repel").jqxDropDownList($.extend({source:source_repel_cn, selectedIndex:0}, drop_opt));
@@ -368,6 +373,9 @@ $item['repel']
 				}
 				if (data_record.hasOwnProperty('time_interval')) {
 					$("#sched_interval").jqxDropDownList({selectedIndex: source_sched_inval_cn.indexOf(data_record.time_interval)}); 
+				}
+				if (data_record.hasOwnProperty('time_interval_pre')) {
+					$('#sched_interval_pre').jqxNumberInput('setDecimal', data_record.time_interval_pre);
 				}
 				if (data_record.hasOwnProperty('time_interval_mode')) {
 					$("#sched_interval_mode").jqxDropDownList({selectedIndex: source_schedmode_cn.indexOf(data_record.time_interval_mode)}); 
@@ -560,6 +568,7 @@ $item['repel']
 				new_raw['finish_time'] = $('#sched_end').jqxDateTimeInput('getDate');
 				new_raw['times'] = $('#sched_times').jqxNumberInput('getDecimal');
 				new_raw['time_interval'] = source_sched_inval_cn[$("#sched_interval").jqxDropDownList('getSelectedIndex')];
+				new_raw['time_interval_pre'] = $('#sched_interval_pre').jqxNumberInput('getDecimal');
 				new_raw['time_interval_mode'] = source_schedmode_cn[$("#sched_interval_mode").jqxDropDownList('getSelectedIndex')];
 				new_raw['msg_sequence'] = source_sequence_cn[$("#sched_sequence").jqxDropDownList('getSelectedIndex')];
 				new_raw['repel'] = source_repel_cn[$("#sched_repel").jqxDropDownList('getSelectedIndex')];
@@ -569,8 +578,8 @@ $item['repel']
 			},
 			editrow : -1,
 			elemHeight : 23,
-			popHeight : 410,
-			popWidth : 550,
+			popHeight : 434,
+			popWidth : 520,
 			list_name : 'sched',
 			add_button_id : '#addrowbutton_sched',
 			del_button_id : '#deleterowbutton_sched',
@@ -585,38 +594,44 @@ $item['repel']
 		var userlst_data = {
 			editrow : -1,
 			elemHeight : 23,
-			popHeight : 470,
+			popHeight : 560,
 			popWidth : 550,
 			list_name : 'user',
 			data_fields : [
 				{name: 'name', type: 'string'},
 				{name: 'tags', type: 'string'},
-				{name: 'new_user', type: 'string'},
-				{name: 'new_visitor', type: 'string'},
-				{name: 'ismobiledevice', type: 'string'},
-				{name: 'binded', type: 'string'},
 				{name: 'browser', type: 'string'},
 				{name: 'platform', type: 'string'},
 				{name: 'device_name', type: 'string'},
 				{name: 'region', type: 'string'},
-				{name: 'bind_account', type: 'string'},
 				{name: 'UserAgent', type: 'string'},
+				{name: 'stay_time', type: 'string'},
+				{name: 'all_times_range', type: 'string'},
+				{name: 'times_range', type: 'string'},
+				{name: 'ismobiledevice', type: 'string'},
+				{name: 'new_user', type: 'string'},
+				{name: 'new_visitor', type: 'string'},
+				{name: 'binded', type: 'string'},
+				{name: 'bind_account', type: 'string'},
 				{name: 'Visiting', type: 'string'}
 			],
 			data_columns : [
 				{text: '规则名称', datafield: 'name', width: 100},
-				{text: '分类标签', datafield: 'tags', width: 100},
+				{text: '分类标签', datafield: 'tags', width: 72},
+				{text: '浏览器', datafield: 'browser', width: 72},
+				{text: '操作系统', datafield: 'platform', width: 72},
+				{text: '设备名', datafield: 'device_name', width: 72},
+				{text: '地区', datafield: 'region', width: 72},
+				{text: '浏览器正则', datafield: 'UserAgent', width: 72},
+				{text: '停留', datafield: 'stay_time', width: 37},
+				{text: '总数', datafield: 'all_times_range', width: 37},
+				{text: '次数', datafield: 'times_range', width: 37},
+				{text: '移动', datafield: 'ismobiledevice', width: 32},
 				{text: '新人', datafield: 'new_user', width: 32},
 				{text: '再访', datafield: 'new_visitor', width: 32},
-				{text: '移动', datafield: 'ismobiledevice', width: 32},
 				{text: '注册', datafield: 'binded', width: 32},
-				{text: '浏览器', datafield: 'browser', width: 89},
-				{text: '操作系统', datafield: 'platform', width: 89},
-				{text: '设备名', datafield: 'device_name', width: 80},
-				{text: '地区', datafield: 'region', width: 80},
 				{text: '账户名', datafield: 'bind_account', width: 80},
-				{text: '浏览器特征', datafield: 'UserAgent', width: 106},
-				{text: '访问网址', datafield: 'Visiting', width: 106},
+				{text: '访问网址正则', datafield: 'Visiting', width: 105},
 			],
 
 			add_button_id : '#addrowbutton_user',
@@ -630,12 +645,22 @@ $item['repel']
 
 			create_form: function(){
 				var base_opt = {theme: theme, width: 400, height: this.elemHeight};
-				var list_opt = $.extend({selectedIndex:0, width: 120}, base_opt);
+				var list_opt = $.extend({}, base_opt, {selectedIndex:0, width: 120});
+				var range_opt = $.extend({}, list_opt, {selectedIndex:0, width: 200});
 				$("#usr_tags").jqxInput(base_opt);
 				$("#usr_newuser").jqxDropDownList($.extend({source:source_newuser_cn}, list_opt));
 				$("#usr_visitor").jqxDropDownList($.extend({source:source_newvisitor_cn}, list_opt));
 				$("#usr_mobile").jqxDropDownList($.extend({source:source_mobile_cn}, list_opt));
 				$("#usr_binded").jqxDropDownList($.extend({source:source_binded_cn}, list_opt));
+
+				var source_staytime = ['0-60','61-180','181-300','301-600','601-1200','1201-1800','1801-2700','2701-3600','3601-7200'];
+				var source_alltimesrange = [];
+				var source_timesrange = [];
+
+				$("#usr_stay_time").jqxDropDownList($.extend({checkboxes:true, source:source_staytime}, range_opt));
+				$("#usr_all_times_range").jqxDropDownList($.extend({checkboxes:true,source:source_alltimesrange}, range_opt));
+				$("#usr_times_range").jqxDropDownList($.extend({checkboxes:true,source:source_timesrange}, range_opt));
+
 				$("#usr_browser").jqxInput(base_opt);
 				$("#usr_platform").jqxInput(base_opt);
 				$("#usr_device").jqxInput(base_opt);
@@ -714,10 +739,10 @@ $item['repel']
 				{name: 'before_open', type: 'string'}
 			],
 			data_columns : [
-				{ text: '消息名称', datafield: 'name', width: 110 },
-				{ text: '分类标签', datafield: 'tags', width: 130 },
-				{ text: '消息标题', datafield: 'title', width: 120 },
-				{ text: '消息内容', datafield: 'text', width: 410},
+				{ text: '消息名称', datafield: 'name', width: 130 },
+				{ text: '分类标签', datafield: 'tags', width: 80 },
+				{ text: '消息标题', datafield: 'title', width: 150 },
+				{ text: '消息内容', datafield: 'text', width: 408},
 				{ text: '类型', datafield: 'msgmod', width: 32},
 				{ text: '位置', datafield: 'position', width: 32},
 				{ text: '显退', datafield: 'sticky', width: 32, cellsalign: 'right'},

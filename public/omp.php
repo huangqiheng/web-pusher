@@ -79,7 +79,6 @@ function call_notifier($browser_save)
 	call_async_php('/on_heartbeat.php', $browser_save);
 	//触发定期维护的异步过程
 	async_timer('/on_timer_online_list.php', CHECKPOINT_INTERVAL);
-	async_timer('/on_timer_sched_list.php', SCHEDUAL_INTERVAL);
 }
 
 function get_region_city()
@@ -89,14 +88,6 @@ function get_region_city()
 	} else {
 		return $_SERVER['REMOTE_ADDR'];
 	}
-
-}
-
-function omp_trace($descript=null)
-{
-	if (!CLIENT_DEBUG) {return;}
-	if (!is_debug_client()) {return;}
-	return time_print($descript);
 }
 
 function handle_heartbeat_cmd()
@@ -146,7 +137,8 @@ function handle_heartbeat_cmd()
 	$list_stat = mmc_array_set(NS_DEVICE_LIST, $device, $browser_save, CACHE_EXPIRE_SECONDS);
 	if ($list_stat > 0) {
 		if ($list_stat === 1) {
-			on_list_initial();
+			require_once 'sched_list.php';
+			update_sched_tasks();
 		}
 		$browser_save['new_visitor'] = true;
 	} else {
@@ -194,11 +186,6 @@ function handle_heartbeat_cmd()
 	return jsonp($result);
 }
 
-function on_list_initial()
-{
-	file_get_contents('http://'.$_SERVER['SERVER_NAME'].'/on_timer_sched_list.php?force');
-}
-
 function is_admin($browser_save)
 {
 	return preg_match('/admin/i', @$browser_save['bind_account']);
@@ -215,10 +202,14 @@ function get_sched_messages($browser_save)
 
 	//计划消息列表
 	$mem = api_open_mmc();
-	$exec_items = $mem->ns_get(NS_SCHED_DEVICE, $device);
-	if (!$exec_items) {
-		$exec_items = array();
+	$sched_block = $mem->ns_get(NS_SCHED_DEVICE, $device);
+	if (!$sched_block) {
+		$sched_block = ['items'=>[], 'global'=>['last_time'=>$now, 'run_times'=>0, 'pageviews'=>0]];
 	}
+
+	$exec_items = &$sched_block['items'];
+	$global = &$sched_block['global'];
+	$global['pageviews'] += 1;
 
 	//逐级检查和颁发新任务
 	do {
@@ -229,7 +220,6 @@ function get_sched_messages($browser_save)
 			break;
 		}
 	*/
-
 		//如果任务列表不存在，就不用颁发了
 		$task_items = $mem->get(KEY_SCHED_LIST);
 		if (empty($task_items)) {
@@ -240,7 +230,7 @@ function get_sched_messages($browser_save)
 		//如果对比任务列表并没有发生变化，就不用颁发了
 		$new_tasks = array_diff_key($task_items, $exec_items);
 		if (count($new_tasks) === 0) {
-			omp_trace('break no changed');
+			omp_trace('tasks no changed');
 			break;
 		}
 
@@ -250,152 +240,147 @@ function get_sched_messages($browser_save)
 			if (!targets_matched($item['targets'], $browser_save)) {
 				//不符合条件的，设置一个bypass标志
 				$exec_items[$key] = 'bypass';
-				omp_trace('pass '.$exec_items[$key]);
+				omp_trace('pass '.$item['name']);
 				continue;
 			}
 
 			//现在可以颁发了，
 			//所谓颁发，就是生成一个初始化的任务数组
 			$task_info = array();
+			$task_info['name'] = $item['name']; 
 			$task_info['run_times'] = 0; 
 			$task_info['last_time'] = 0; 
 			remake_msgque($task_info, $item);
 
 			$exec_items[$key] = $task_info;
-			$mem->ns_set(NS_SCHED_DEVICE, $device, $exec_items);
-
-			omp_trace('got '.$exec_items[$key]);
+			omp_trace('got '.$item['name']);
 		}
 	} while(false);
 
 	/*************************************
 		获取计划任务消息
 	*************************************/
-
 	//上面新访时检查和颁发任务，那仅仅是筛选，在这里将从新详细分析
 
-	if (count($exec_items) > 0) {
-		$items_del = array();
-		$items_result = array();
-		$need_save = false;
-		foreach($exec_items as $task_name=>&$task_info) {
-			//如果查不到了，那是管理员删除了，这个任务将被取消
-			$task = mmc_array_get(NS_SCHED_TASKS, $task_name);
-			if (empty($task)) {
-				$items_del[] = $task_name;
-				$need_save = true;
-				omp_trace('del '.$task_name);
+	$items_del = array();
+	$items_result = array();
+	foreach($exec_items as $task_id =>&$task_info) {
+		//如果查不到了，那是管理员删除了，这个任务将被取消
+		$task = mmc_array_get(NS_SCHED_TASKS, $task_id);
+		$task_name = $task_info['name'];
+		if (empty($task)) {
+			$items_del[] = $task_id;
+			omp_trace('del '.$task_name);
+			continue;
+		}
+
+		//忽略不是自己的任务
+		if ($task_info === 'bypass') {
+			omp_trace('pass not mine '.$task_name);
+			continue;
+		}
+
+		$task_print = $task_name.'('.$task_info['run_times'].'/'.$task['times'].')';
+
+		//如果前面已经有了返回信息，这时遇到“互斥”只能忽略掉
+		if (($task['repel'] === 'true') && (count($items_result)>0)) {
+			omp_trace($task_print.' repel');
+			continue;
+		}
+
+		//检查是否在时间区间内，否则忽略
+		$now = time();
+		if (($now<$task['start_time']) or ($now>$task['finish_time'])) {
+			omp_trace($task_print.' not time rigion ');
+			continue;
+		}
+
+		//检查执行次数是否已经达到
+		if ($task_info['run_times'] >= $task['times']) {
+			omp_trace($task_print.' times exceed ('.$task['times'].')');
+			continue;
+		} 
+
+		//检查发送周期，还没到时间的，则忽略
+		if ($task['time_interval_mode']  === 'relative') {
+			$time_point = $task_info['last_time'] + $task['time_interval'];
+			if ($now < $time_point) {
+				omp_trace($task_print.' time relative until '.date(DATE_RFC822,$time_point));
 				continue;
 			}
-
-			//忽略不是自己的任务
-			if ($task_info === 'bypass') {
-				omp_trace('pass not mine '.$task_name);
+		} else {
+			$interval = $task['time_interval'];
+			$base_time = $task['start_time'];
+			$lasttime_pass = $task_info['last_time'] - $base_time;
+			$time_point = $base_time + intval($lasttime_pass/$interval+1)*$interval;
+			if ($now < $time_point) {
+				omp_trace($task_print.' time absolute until '.date(DATE_RFC822,$time_point));
 				continue;
 			}
+		}
 
-			$times_print = '('.$task_info['run_times'].'/'.$task['times'].')';
+		//详细再查条件
+		$matched_target = targets_matched($task['targets'], $browser_save, true);
+		if (!$matched_target) {
+			omp_trace($task_print.' target not match');
+			continue;
+		}
 
-			//如果前面已经有了返回信息，这时遇到“互斥”只能忽略掉
-			if (($task['repel'] === 'true') && (count($items_result)>0)) {
-				omp_trace('repel '.$task_name.$times_print);
-				continue;
-			}
-
-			//检查是否在时间区间内，否则忽略
-			$now = time();
-			if (($now<$task['start_time']) or ($now>$task['finish_time'])) {
-				omp_trace('not time rigion '.$task_name.$times_print);
-				continue;
-			}
-
-			//检查执行次数是否已经达到
-			if ($task_info['run_times'] >= $task['times']) {
-				omp_trace('times exceed ('.$task['times'].')'.$task_name.$times_print);
-				continue;
-			} 
-
-			//检查发送周期，还没到时间的，则忽略
-			if ($task['time_interval_mode']  === 'relative') {
-				$time_point = $task_info['last_time'] + $task['time_interval'];
-				if ($now < $time_point) {
-					omp_trace($task_name.$times_print.' time relative until '.date(DATE_RFC822,$time_point));
-					continue;
-				}
-			} else {
-				$interval = $task['time_interval'];
-				$base_time = $task['start_time'];
-				$lasttime_pass = $task_info['last_time'] - $base_time;
-				$time_point = $base_time + intval($lasttime_pass/$interval+1)*$interval;
-				if ($now < $time_point) {
-					omp_trace($task_name.$times_print.' time absolute until '.date(DATE_RFC822,$time_point));
-					continue;
-				}
-			}
-
-			//详细再查条件
-			$matched_target = targets_matched($task['targets'], $browser_save, true);
-			if (!$matched_target) {
-				omp_trace($task_name.$times_print.' target not match');
-				continue;
-			}
-
-			//处理用户改变消息模式
+		//处理用户改变消息模式
+		$messages = $task['messages'];
+		
+		if (($task_info['ori_seq'] !== $task['msg_sequence']) ||//如果用户改变了排序模式
+		    ($task_info['ori_msglen'] !== count($messages)) || //如果用户改变了消息数量
+		    ($task_info['ori_times'] < $task['times'])) { //如果用户增大了发生次数
+			remake_msgque($task_info, $task);
 			$messages = $task['messages'];
-			
-			if (($task_info['ori_seq'] !== $task['msg_sequence']) ||//如果用户改变了排序模式
-			    ($task_info['ori_msglen'] !== count($messages)) || //如果用户改变了消息数量
-			    ($task_info['ori_times'] < $task['times'])) { //如果用户增大了发生次数
-				remake_msgque($task_info, $task);
-				$messages = $task['messages'];
-			}
-
-			//ok, 条件吻合了，可以发送信息了
-			$msg_queue = $task_info['msg_queue'];
-			$msg_index = $msg_queue[$task_info['run_times']];
-			$selected_message = @$messages[$msg_index];
-
-			//居然取不到消息，那也不用发了
-			if (empty($selected_message)) {
-				omp_trace($task_name.$times_print.' cant fetch message ');
-				continue;
-			}
-
-			//保存要显示到客户端的消息
-			$items_result[] = $selected_message;
-
-			//统计和日志
-
-			//成功取出了消息，设置状态
-			$task_info['run_times'] += 1;
-			$task_info['last_time'] = $now;
-			$need_save = true;
-			omp_trace($task_name.$times_print.' succeed '.$selected_message['name']);
-
-			//如果是互斥的信息，后面不用再匹配了
-			if ($task['repel'] === 'true') {
-				omp_trace($task_name.$times_print.'break for repel');
-				break;
-			}
 		}
 
-		//删除被撤销的任务
-		if (count($items_del)) {
-			foreach($items_del as $item) {
-				unset($exec_items[$item]);
-			}
-			omp_trace('delete '.implode(',', $items_del));
+		//ok, 条件吻合了，可以发送信息了
+		$msg_queue = $task_info['msg_queue'];
+		$msg_index = $msg_queue[$task_info['run_times']];
+		$selected_message = @$messages[$msg_index];
+
+		//居然取不到消息，那也不用发了
+		if (empty($selected_message)) {
+			omp_trace($task_print.' cant fetch message ');
+			continue;
 		}
 
-		//需要保存状态到memcached
-		if ($need_save) {
-			$mem->ns_set(NS_SCHED_DEVICE, $device, $exec_items);
-		}
+		//保存要显示到客户端的消息
+		$items_result[] = $selected_message;
 
-		if (count($items_result)) {
-			return $items_result;
+		//统计和日志
+
+		//成功取出了消息，设置状态
+		$task_info['run_times'] += 1;
+		$task_info['last_time'] = $now;
+		$global['last_time'] = $now;
+		$global['run_times'] += 1;
+		omp_trace($task_print.' succeed '.$selected_message['name']);
+
+		//如果是互斥的信息，后面不用再匹配了
+		if ($task['repel'] === 'true') {
+			omp_trace($task_print.'break for repel');
+			break;
 		}
 	}
+
+	//删除被撤销的任务
+	if (count($items_del)) {
+		foreach($items_del as $item) {
+			unset($exec_items[$item]);
+		}
+		omp_trace('delete '.implode(',', $items_del));
+	}
+
+	//需要保存状态到memcached
+	$mem->ns_set(NS_SCHED_DEVICE, $device, $sched_block);
+
+	if (count($items_result)) {
+		return $items_result;
+	}
+
 	return false;
 }
 
@@ -697,6 +682,13 @@ function handle_debug()
 		setcookie(COOKIE_DEBUG, 'true', time()+COOKIE_TIMEOUT, '/', COOKIE_DOMAIN);
 		return 'on';
 	}
+}
+
+function omp_trace($descript=null)
+{
+	if (!CLIENT_DEBUG) {return;}
+	if (!is_debug_client()) {return;}
+	return time_print($descript);
 }
 
 

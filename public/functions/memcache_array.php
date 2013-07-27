@@ -33,6 +33,24 @@ function __open_mmc()
 	return $mem;
 }
 
+function mmc_array_clear($list_name)
+{
+	$keys = mmc_array_keys($list_name);
+	$mem = __open_mmc();
+	foreach ($keys as $key) {
+		$mem->ns_delete($list_name, LIST_KEYVALUE_PREFIX.$key); 
+		$mem->ns_delete($list_name, LIST_KEY2TIME_PREFIX.$key);
+	}
+
+	$length = $mem->ns_get($list_name, LIST_LENGTH_KEY);
+	for ($index=1; $index<=$length; $index++) {
+		$index_key = LIST_ID2KEY_PREFIX.$index;
+		$mem->ns_delete($list_name, LIST_ID2KEY_PREFIX.$index); 
+	}
+
+	$mem->ns_delete($list_name, LIST_LENGTH_KEY);
+}
+
 function mmc_array_set($list_name, $key, $value, $expired=0)
 {
 	$mem = __open_mmc();
