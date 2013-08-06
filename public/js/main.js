@@ -54,7 +54,7 @@ function popup_message(eventMessage)
 		title: cmdbox.title,
 		text: cmdbox.text,
 		time: cmdbox.time,
-		sticky: cmdbox.sticky==true,
+		sticky: cmdbox.sticky==='true',
 		before_open: function(){
 			do {
 				if (!(cmdbox.before_open==true)) break;

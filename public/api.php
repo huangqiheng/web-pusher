@@ -21,6 +21,9 @@ if ($cmd == 'sendmessage') {
 		$cmdbox['text'] = $new_text;
 	}
 
+	$ok_res = [];
+	$error_res = [];
+
 	//放置异步消息
 	if ($msgmod == 'heartbeat') {
 		$mem = api_open_mmc();
@@ -30,8 +33,14 @@ if ($cmd == 'sendmessage') {
 			} else {
 				$cmdbox_list = array($cmdbox);
 			}
-			$mem->ns_set(NS_HEARTBEAT_MESSAGE, $device, $cmdbox_list, CACHE_EXPIRE_SECONDS); 
+
+			if ($mem->ns_set(NS_HEARTBEAT_MESSAGE, $device, $cmdbox_list, CACHE_EXPIRE_SECONDS)) {
+				$ok_res[] = $device;
+			} else {
+				$error_res[] = $device;
+			}
 		}
+		die(jsonp(['ok'=>$ok_res, 'error'=>$error_res]));
 	}
 
 	//发送实时消息
@@ -39,11 +48,12 @@ if ($cmd == 'sendmessage') {
 		$cmdbox_send = rawurlencode(json_encode($cmdbox));
 		foreach($device_list as $device) {
 			if (send_message($device, $cmdbox_send)) {
-				echo 'ok '.$device;
+				$ok_res[] = $device;
 			} else {
-				echo 'error '.$device;
+				$error_res[] = $device;
 			}
 		}
+		die(jsonp(['ok'=>$ok_res, 'error'=>$error_res]));
 	}
 } elseif ($cmd == 'sched_message') {
 

@@ -6,119 +6,79 @@ AUTH_ENABLE && force_login();
 
 header('Content-Type: text/html; charset=utf-8');
 
-if (VIEW_REGION) {
-	if (!ini_get("browscap")) {
-		echo '请配置browscap.ini';
-		exit();
-	}
-}
-
 /*
 ini_set("log_errors", 1);
 ini_set("error_log", "/var/log/php_errors.log");
 */
 
-async_timer('/on_timer_sched_list.php?force', SCHEDUAL_INTERVAL);
+function get_online_objects()
+{
+	$device_browser_list = mmc_array_values(NS_DEVICE_LIST);
+	time_print('性能分析：取列表：');
 
-$device_browser_all = mmc_array_all(NS_DEVICE_LIST);
-$device_online_list = array_keys($device_browser_all);
-$device_browser_list = array_values($device_browser_all);
-$device_platform_list = mmc_array_keys(NS_BINDING_LIST);
+	if (isset($_GET['debug'])) {
+		$device_count = mmc_array_length(NS_DEVICE_LIST);
 
-time_print('性能分析：取列表：');
+		$memcache_obj = new Memcache; 
+		$memcache_obj->connect(MEMC_HOST, MEMC_PORT); 
+		$stats = $memcache_obj->getStats();
+		$memcache_obj->close();
 
-if (isset($_GET['debug'])) {
-	$device_count = mmc_array_length(NS_DEVICE_LIST);
-	$binding_count = 0;
-	foreach($device_platform_list as $platform) {
-		$binding_count += mmc_array_length(NS_BINDING_LIST.$platform);
+		$dbg_print = '开始时间：'.getDateStyle($stats['time']-$stats['uptime']);
+		$dbg_print .= ' 使用内存: '.bytesToSize($stats['bytes']).'/'.bytesToSize($stats['limit_maxbytes']);
+		$dbg_print .= '<br>清理时间：'.getDateStyle(async_timer('/on_timer_online_list.php'));
+		$dbg_print .= ' 维护设备数: '.$device_count.'  活跃设备数: '.count($device_browser_list);
+
+		$xmlStr = file_get_contents('http://'.$_SERVER['SERVER_NAME'].'/channels-stats');
+		$channels = json_decode($xmlStr);
+
+		$dbg_print .= '<br>推送开始：'.getDateStyle(time() - $channels->uptime).' 频道数: '.$channels->channels;
+		$dbg_print .= ' 订阅数: '.$channels->subscribers.' 消息数: '.$channels->published_messages;
+		$dbg_print .= '<br>流程计数： '.counter().'<br>';
+		echo $dbg_print;
 	}
 
-	$memcache_obj = new Memcache; 
-	$memcache_obj->connect(MEMC_HOST, MEMC_PORT); 
-	$stats = $memcache_obj->getStats();
-	$memcache_obj->close();
+	/******************************************************
+	预处理：账户绑定列表
+	******************************************************/
 
-	$dbg_print = '开始时间：'.getDateStyle($stats['time']-$stats['uptime']);
-	$dbg_print .= ' 使用内存: '.bytesToSize($stats['bytes']).'/'.bytesToSize($stats['limit_maxbytes']).'<br>';
-	$dbg_print .= '清理时间：'.getDateStyle(async_timer('/on_timer_online_list.php'));
-	$dbg_print .= ' 维护设备数: '.$device_count.'  活跃设备数: '.count($device_browser_list);
-	$dbg_print .= '  绑定账户数: '.$binding_count.'<br>';
-
-	$xmlStr = file_get_contents('http://'.$_SERVER['SERVER_NAME'].'/channels-stats');
-	$channels = json_decode($xmlStr);
-
-	$dbg_print .= '推送开始：'.getDateStyle(time() - $channels->uptime).' 频道数: '.$channels->channels;
-	$dbg_print .= ' 订阅数: '.$channels->subscribers.' 消息数: '.$channels->published_messages.'<br>';
-	$dbg_print .= '流程计数： '.counter().'<br>';
-	echo $dbg_print;
-}
-
-
-/******************************************************
-预处理：账户绑定列表
-******************************************************/
-
-$account_list = [];
-foreach($device_platform_list as $platform) {
-	$ns_binding = NS_BINDING_LIST.$platform;
-	$account_list[mmc_array_caption($ns_binding)] = mmc_array_gets($ns_binding, $device_online_list);
-}
-
-function get_binding_name($device)
-{
-	global $account_list;
-	$account_info = ' ';
-	foreach($account_list as $caption=>$bind_platform) {
-		$account = @$bind_platform[$device];
-		if (empty($account)) {
+	$aDataSet = [];
+	foreach($device_browser_list as $browser) 
+	{
+		if (empty($browser)) {
 			continue;
 		}
 
-		$username = $account['username'];
-		$nickname = $account['nickname'];
-		$show_name = $nickname ? $nickname : ($username ? $username : null);
-
-		if (empty($show_name)) {
-			continue;
-		}
-
-		$got_user = $show_name.'@'.$caption;
-
-		if ($account_info == ' ') {
-			$account_info = $got_user;
+		$account_json = @$browser['bind_account'];
+		if (empty($account_json)) {
+			$account = '';
 		} else {
-			$account_info .= '; '.$got_user;
+			$account_arr = json_decode($account_json, true);
+			$account = implode(';', $account_arr);
 		}
+
+		$device = $browser['device'];
+		$useragent = $browser['UserAgent'];
+
+		$ref_obj = ($browser['Visiting'])? parse_url($browser['Visiting']) : null;
+		$visiting = @$ref_obj['host'];
+		$is_mobile = ($browser['ismobiledevice'])? 'mobi' : 'desk';
+
+		$aDataSet[] = [$account,$browser['region'],$visiting,$browser['browser'],$browser['platform'],
+				$is_mobile,$browser['device_name'],$browser['device']];
 	}
 
-	return ($account_info == ' ')? '--' : trim($account_info);
-}
-
-time_print('账户表：');
-
-$aDataSet = [];
-foreach($device_browser_list as $browser) 
-{
-	if (empty($browser)) {
-		continue;
+	time_print('整合：');
+	if (isset($_GET['debug'])) {
+		echo time_print();
 	}
-	$device = $browser['device'];
-	$useragent = $browser['UserAgent'];
-	$account = get_binding_name($device);
 
-	$ref_obj = ($browser['Visiting'])? parse_url($browser['Visiting']) : null;
-	$visiting = $ref_obj['host'];
-	$is_mobile = ($browser['ismobiledevice'])? 'mobi' : 'desk';
-
-	$aDataSet[] = [$account,$browser['region'],$visiting,$browser['browser'],$browser['platform'],
-			$is_mobile,$browser['device_name'],$browser['device']];
+	return $aDataSet;
 }
 
-time_print('整合：');
-if (isset($_GET['debug'])) {
-	echo time_print();
-}
+$aDataSet = get_online_objects();
+
+
 ?>
 <html>
 <head>
@@ -361,35 +321,63 @@ api_ui_init(aDataSet);
 						<td align="left"><input id="usr_device"></div></td>
 					</tr>
 					<tr>
+						<td align="right">移动设备：</td>
+						<td align="left"><div id="usr_mobile"></div></td>
+					</tr>
+					<tr>
 						<td align="right">地区：</td>
 						<td align="left"><input id="usr_region"></div></td>
+					</tr>
+					<tr>
+						<td align="right">语言：</td>
+						<td align="left"><input id="usr_language"></div></td>
 					</tr>
 					<tr>
 						<td align="right">浏览器特征：</td>
 						<td align="left"><input id="usr_useragent"></div></td>
 					</tr>
 					<tr>
-						<td align="right">访问停留秒数：</td>
-						<td align="left"><div id="usr_stay_time"></div></td>
+						<td align="right">来访停留秒数：</td>
+						<td align="left">
+							<div id="usr_stay_time" style='float: left;'></div>
+							<input type="button" value="Button" id='usr_stay_time_btn' style='float: left;'/>
+							<div id="usr_stay_time_low" style='float: left;'></div>
+							<div id="usr_stay_time_high" style='float: left;'></div>
+						</td>
 					</tr>
 					<tr>
-						<td align="right">总访次数区间：</td>
-						<td align="left"><div id="usr_all_times_range"></div></td>
+						<td align="right">来访次数区间：</td>
+						<td align="left">
+							<div   id="usr_visit_times_range" style='float: left;'></div>
+							<input id='usr_visit_times_range_btn' type="button" value="Button" style='float: left;'/>
+							<div   id="usr_visit_times_range_low" style='float: left;'></div>
+							<div   id="usr_visit_times_range_high" style='float: left;'></div>
+						</td>
 					</tr>
 					<tr>
-						<td align="right">访问次数区间：</td>
-						<td align="left"><div id="usr_times_range"></div></td>
+						<td align="right">总页面浏览数：</td>
+						<td align="left">
+							<div id="usr_allpageview_range" style='float: left;'></div>
+							<input id='usr_allpageview_range_btn'  type="button" value="Button" style='float: left;'/>
+							<div id="usr_allpageview_range_low" style='float: left;'></div>
+							<div id="usr_allpageview_range_high" style='float: left;'></div>
+						</td>
 					</tr>
 					<tr>
-						<td align="right">移动设备：</td>
-						<td align="left"><div id="usr_mobile"></div></td>
+						<td align="right">页面浏览数：</td>
+						<td align="left">
+							<div id="usr_pageview_range" style='float: left;'></div>
+							<input type="button" value="Button" id='usr_pageview_range_btn' style='float: left;'/>
+							<div id="usr_pageview_range_low" style='float: left;'></div>
+							<div id="usr_pageview_range_high" style='float: left;'></div>
+						</td>
 					</tr>
 					<tr>
 						<td align="right">新用户：</td>
 						<td align="left"><div id="usr_newuser" /></td>
 					</tr>
 					<tr>
-						<td align="right">新来访：</td>
+						<td align="right">新访第一页：</td>
 						<td align="left"><div id="usr_visitor"></textarea></td>
 					</tr>
 					<tr>

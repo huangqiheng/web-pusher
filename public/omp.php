@@ -4,7 +4,7 @@ error_reporting(0);
 require_once 'functions.php';
 
 $PARAMS = get_param();
-$in_cmd      = @$PARAMS[ 'cmd' ]; // hbeat | bind | reset
+$in_cmd = @$PARAMS['cmd']; // hbeat | bind | reset
 
 $http_referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null;
 $ref_obj = ($http_referer)? parse_url($http_referer) : null;
@@ -30,66 +30,6 @@ switch($in_cmd) {
 }
 exit();
 
-
-function get_device()
-{
-	return isset($_COOKIE[COOKIE_DEVICE_ID]) ? $_COOKIE[COOKIE_DEVICE_ID] : null;
-}
-
-function get_cookie_saved()
-{
-	$device = get_device();
-	$is_new = false;
-
-	if (empty($device)) {
-		$device = gen_uuid();
-		setcookie(COOKIE_DEVICE_ID, $device, time()+COOKIE_TIMEOUT, '/', COOKIE_DOMAIN);
-		$is_new = true;
-	}
-
-	$browser = isset($_COOKIE[COOKIE_DEVICE_SAVED]) ? $_COOKIE[COOKIE_DEVICE_SAVED] : null;
-	$device_saved = null;
-
-	if ($browser) {
-		$device_saved = json_decode(base64_decode($browser), true);
-		$error = json_last_error();
-		if ($error === JSON_ERROR_NONE) {
-			$device_saved[0] = empty($device_saved[0]) ? false : true;
-			return array($is_new, $device, $device_saved);
-		} else {
-			$browser = null;
-		}
-	}
-
-	$useragent = $_SERVER['HTTP_USER_AGENT'];
-	$browser_o = get_browser_mem($useragent);
-	$device_name = get_device_mem($useragent);
-
-	$device_saved = array($browser_o->ismobiledevice, $browser_o->browser, $browser_o->platform, $device_name);
-	$device_saved_encode = base64_encode(json_encode($device_saved));
-
-	setcookie(COOKIE_DEVICE_SAVED, $device_saved_encode, time()+COOKIE_TIMEOUT, '/', COOKIE_DOMAIN);
-	return array($is_new, $device, $device_saved);
-}
-
-function call_notifier($browser_save)
-{
-	//异步调用“访问记录”扩展
-	counter(COUNT_ON_HEARTBEAT);
-	call_async_php('/on_heartbeat.php', $browser_save);
-	//触发定期维护的异步过程
-	async_timer('/on_timer_online_list.php', CHECKPOINT_INTERVAL);
-}
-
-function get_region_city()
-{
-	if (VIEW_REGION) {
-		return get_locale_mem($_SERVER['REMOTE_ADDR']);
-	} else {
-		return $_SERVER['REMOTE_ADDR'];
-	}
-}
-
 function handle_heartbeat_cmd()
 {
 	omp_trace('heartbeat start');
@@ -109,8 +49,10 @@ function handle_heartbeat_cmd()
 	$browser_save['platform'] = $device_saved[2];
 	$browser_save['device_name'] = $device_saved[3];
 	$browser_save['region'] = get_region_city();
+	$browser_save['language'] = get_accept_language();
 	$browser_save['Visiting'] = @$_SERVER['HTTP_REFERER'];
-	$browser_save['UserAgent'] = $_SERVER['HTTP_USER_AGENT'];
+	$browser_save['UserAgent'] = @$_SERVER['HTTP_USER_AGENT'];
+	$browser_save['XRequestWith'] = @$_SERVER['HTTP_X_REQUESTED_WITH'];
 
 	/******************************************
 	  检查看看该账户有没有绑定信息
@@ -186,9 +128,29 @@ function handle_heartbeat_cmd()
 	return jsonp($result);
 }
 
-function is_admin($browser_save)
+function get_accept_language()
 {
-	return preg_match('/admin/i', @$browser_save['bind_account']);
+	$ori = @$_SERVER['HTTP_ACCEPT_LANGUAGE'];
+	if (empty($ori)) {
+		return '';
+	}
+
+	$arr = explode(',', $ori);
+	if (count($arr)>0) {
+		return $arr[0];
+	}
+
+	return '';
+}
+
+function get_init_session()
+{
+	return [
+		'last_time'=>0, 
+		'start_time'=>time(), 
+		'run_times'=>0, 
+		'pageviews'=>0
+		];
 }
 
 function get_sched_messages($browser_save)
@@ -204,33 +166,44 @@ function get_sched_messages($browser_save)
 	$mem = api_open_mmc();
 	$sched_block = $mem->ns_get(NS_SCHED_DEVICE, $device);
 	if (!$sched_block) {
-		$sched_block = ['items'=>[], 'global'=>['last_time'=>$now, 'run_times'=>0, 'pageviews'=>0]];
+		$sched_block = [
+			'items'=>[], 
+			'session'=>get_init_session(),
+			'global'=>['visit_times'=>0, 'pageviews'=>0]
+		];
 	}
 
 	$exec_items = &$sched_block['items'];
+	$session = &$sched_block['session'];
 	$global = &$sched_block['global'];
+	
+	//初始化session
+	if ($browser_save['new_visitor']) {
+		$session = get_init_session();
+		$global['visit_times'] += 1;
+	}
+
+	$session['pageviews'] += 1;
 	$global['pageviews'] += 1;
 
 	//逐级检查和颁发新任务
 	do {
-	/*
-		//如果不是刚到访，就不用颁发了
-		if (!$new_visitor){
-			omp_trace('break not new');
-			break;
-		}
-	*/
-		//如果任务列表不存在，就不用颁发了
+		//检查是否需要清理任务
 		$task_items = $mem->get(KEY_SCHED_LIST);
-		if (empty($task_items)) {
-			omp_trace('break no task');
-			break;
+		$items_del = array_diff_key($exec_items, $task_items);
+		if (!empty($items_del)) {
+			$names = [];
+			foreach($items_del as $key=>$item) {
+				unset($exec_items[$key]);
+				$names[] = $item['name'];
+			}
+			omp_trace(implode(',', $names).' tasks del');
 		}
 
 		//如果对比任务列表并没有发生变化，就不用颁发了
 		$new_tasks = array_diff_key($task_items, $exec_items);
-		if (count($new_tasks) === 0) {
-			omp_trace('tasks no changed');
+		if (empty($new_tasks)) {
+			omp_trace('no new tasks');
 			break;
 		}
 
@@ -253,7 +226,7 @@ function get_sched_messages($browser_save)
 			remake_msgque($task_info, $item);
 
 			$exec_items[$key] = $task_info;
-			omp_trace('got '.$item['name']);
+			omp_trace($item['name'].' new task');
 		}
 	} while(false);
 
@@ -262,21 +235,28 @@ function get_sched_messages($browser_save)
 	*************************************/
 	//上面新访时检查和颁发任务，那仅仅是筛选，在这里将从新详细分析
 
-	$items_del = array();
+	$items_expired = array();
 	$items_result = array();
 	foreach($exec_items as $task_id =>&$task_info) {
-		//如果查不到了，那是管理员删除了，这个任务将被取消
+		//如果查不到了，那是超时删除了，这个任务将被取消
 		$task = mmc_array_get(NS_SCHED_TASKS, $task_id);
 		$task_name = $task_info['name'];
 		if (empty($task)) {
-			$items_del[] = $task_id;
-			omp_trace('del '.$task_name);
+			$items_expired[] = $task_id;
+			omp_trace($task_name.' expired');
 			continue;
 		}
 
 		//忽略不是自己的任务
 		if ($task_info === 'bypass') {
-			omp_trace('pass not mine '.$task_name);
+			omp_trace($task_name.' not mine');
+			continue;
+		}
+
+		//任务是否被用户停止
+		$status = $task['status'];
+		if ($status === 'stop') {
+			omp_trace($task_name.' stopped ');
 			continue;
 		}
 
@@ -288,10 +268,24 @@ function get_sched_messages($browser_save)
 			continue;
 		}
 
-		//检查是否在时间区间内，否则忽略
+		//判断任务的时间状态
 		$now = time();
-		if (($now<$task['start_time']) or ($now>$task['finish_time'])) {
+		$run_status = ($now<$task['start_time'])? 'waiting' : (($now>$task['finish_time'])? 'timeout' : 'running');
+
+		//纠正任务列表中显示的状态
+		if ($run_status !== $status) {
+			call_async_php("/data.php?cmd=status&key=$task_id&val=$run_status");
+		}
+
+		//检查是否在时间区间内，否则忽略
+		if ($run_status !== 'running') {
 			omp_trace($task_print.' not time rigion ');
+			continue;
+		}
+
+		//在时间区间内，但看看前面一个消息距离是否足够
+		if (($now-$session['last_time'])<$task['time_interval_pre']) {
+			omp_trace($task_print.' pre time not reach ');
 			continue;
 		}
 
@@ -318,6 +312,13 @@ function get_sched_messages($browser_save)
 				continue;
 			}
 		}
+
+		//追加必要参数
+
+		$browser_save['sec_staytime'] = $now-$session['start_time'];
+		$browser_save['sec_pageviews'] = $session['pageviews'];
+		$browser_save['all_pageviews'] = $global['pageviews'];
+		$browser_save['visit_times'] = $global['visit_times'];
 
 		//详细再查条件
 		$matched_target = targets_matched($task['targets'], $browser_save, true);
@@ -355,8 +356,8 @@ function get_sched_messages($browser_save)
 		//成功取出了消息，设置状态
 		$task_info['run_times'] += 1;
 		$task_info['last_time'] = $now;
-		$global['last_time'] = $now;
-		$global['run_times'] += 1;
+		$session['last_time'] = $now;
+		$session['run_times'] += 1;
 		omp_trace($task_print.' succeed '.$selected_message['name']);
 
 		//如果是互斥的信息，后面不用再匹配了
@@ -367,23 +368,92 @@ function get_sched_messages($browser_save)
 	}
 
 	//删除被撤销的任务
-	if (count($items_del)) {
-		foreach($items_del as $item) {
-			unset($exec_items[$item]);
-		}
-		omp_trace('delete '.implode(',', $items_del));
+	if (!empty($items_expired)) {
+		omp_trace('expired '.implode(',', $items_expired));
+		async_timer('/sched_list.php?force', 10);
 	}
 
 	//需要保存状态到memcached
 	$mem->ns_set(NS_SCHED_DEVICE, $device, $sched_block);
 
-	if (count($items_result)) {
-		return $items_result;
-	}
-
-	return false;
+	return (count($items_result))? $items_result : false;
 }
 
+function get_device()
+{
+	return isset($_COOKIE[COOKIE_DEVICE_ID]) ? $_COOKIE[COOKIE_DEVICE_ID] : null;
+}
+
+function new_user($expired = null)
+{
+	if ($expired) {
+		setcookie(COOKIE_NEW, 'true', $expired, '/', COOKIE_DOMAIN);
+		return true;
+	} else {
+		return isset($_COOKIE[COOKIE_NEW])? ($_COOKIE[COOKIE_NEW] === 'true') : false;
+	}
+}
+
+function get_cookie_saved()
+{
+	$device = get_device();
+	$is_new = false;
+
+	if (empty($device)) {
+		$device = gen_uuid();
+		setcookie(COOKIE_DEVICE_ID, $device, time()+COOKIE_TIMEOUT, '/', COOKIE_DOMAIN);
+		$is_new = new_user(time()+COOKIE_TIMEOUT_NEW);
+	} else {
+		$is_new = new_user();
+	}
+
+	$browser = isset($_COOKIE[COOKIE_DEVICE_SAVED]) ? $_COOKIE[COOKIE_DEVICE_SAVED] : null;
+	$device_saved = null;
+
+	if ($browser) {
+		$device_saved = json_decode(base64_decode($browser), true);
+		$error = json_last_error();
+		if ($error === JSON_ERROR_NONE) {
+			$device_saved[0] = empty($device_saved[0]) ? false : true;
+			return array($is_new, $device, $device_saved);
+		} else {
+			$browser = null;
+		}
+	}
+
+	$useragent = $_SERVER['HTTP_USER_AGENT'];
+	$browser_o = get_browser_mem($useragent);
+	$device_name = get_device_mem($useragent);
+
+	$device_saved = array($browser_o->ismobiledevice, $browser_o->browser, $browser_o->platform, $device_name);
+	$device_saved_encode = base64_encode(json_encode($device_saved));
+
+	setcookie(COOKIE_DEVICE_SAVED, $device_saved_encode, time()+COOKIE_TIMEOUT, '/', COOKIE_DOMAIN);
+	return array($is_new, $device, $device_saved);
+}
+
+function call_notifier($browser_save)
+{
+	//异步调用“访问记录”扩展
+	counter(COUNT_ON_HEARTBEAT);
+	call_async_php('/on_heartbeat.php', $browser_save);
+	//触发定期维护的异步过程
+	async_timer('/on_timer_online_list.php', CHECKPOINT_INTERVAL);
+}
+
+function get_region_city()
+{
+	if (VIEW_REGION) {
+		return get_locale_mem($_SERVER['REMOTE_ADDR']);
+	} else {
+		return $_SERVER['REMOTE_ADDR'];
+	}
+}
+
+function is_admin($browser_save)
+{
+	return preg_match('/admin/i', @$browser_save['bind_account']);
+}
 function remake_msgque(&$task_info, &$task)
 {
 	$make_step = count($task['messages']); 
@@ -417,6 +487,10 @@ function match_normal($target, $browser_save, $keys)
 			} else {
 
 			}
+		} elseif (is_null($from_device))  {
+			if ($from_config !== '--') {
+				return false;
+			}
 		} else {
 
 		}
@@ -436,8 +510,9 @@ function targets_matched($targets, $browser_save, $is_detail=false)
 			}
 
 			//正则表达式匹配UA，如果不匹配则这条任务略过
-			if (!match_regex($browser_save['UserAgent'], $target['UserAgent'])) {
-				omp_trace('UserAgent substr: '.$browser_save['UserAgent'].'!='.$target['UserAgent']);
+			$UA = $browser_save['UserAgent'].$browser_save['XRequestWith'];
+			if (!match_regex($UA, $target['UserAgent'])) {
+				omp_trace('UserAgent substr: '.$UA.'!='.$target['UserAgent']);
 				break;
 			}
 
@@ -454,6 +529,30 @@ function targets_matched($targets, $browser_save, $is_detail=false)
 					omp_trace('target : '.$browser_save['Visiting'].'!='.$target['Visiting']);
 					break;
 				}
+
+				//访问停留时间
+				if (!match_range($browser_save['sec_staytime'], $target['stay_time'])) {
+					omp_trace('target sec_staytime: '.$browser_save['sec_staytime'].'!='.$target['stay_time']);
+					break;
+				}
+
+				//访问页面次数
+				if (!match_range($browser_save['sec_pageviews'], $target['pageview_range'])) {
+					omp_trace('target sec_pageviews: '.$browser_save['sec_pageviews'].'!='.$target['pageview_range']);
+					break;
+				}
+
+				//总访问页面次数
+				if (!match_range($browser_save['all_pageviews'], $target['allpageview_range'])) {
+					omp_trace('target all_pageviews: '.$browser_save['all_pageviews'].'!='.$target['allpageview_range']);
+					break;
+				}
+
+				//来访次数
+				if (!match_range($browser_save['visit_times'], $target['visit_times_range'])) {
+					omp_trace('target visit_times: '.$browser_save['visit_times'].'!='.$target['visit_times_range']);
+					break;
+				}
 			}
 
 			//过关斩将，最后匹配成功了
@@ -463,6 +562,26 @@ function targets_matched($targets, $browser_save, $is_detail=false)
 		} while(false);
 	}
 	return $matched;
+}
+
+function match_range($current_val, $range_str)
+{
+	$result = true;
+	if ($range_str === '--') {
+		return $result;
+	}
+
+	$ranges = explode(',', $range_str);
+	foreach($ranges as $range_item) {
+		$range_pair = explode('-', $range_item);
+		if (count($range_pair)!==2) {
+			continue;
+		}
+		if (($current_val>=$range_pair[0]) && ($current_val<=$range_pair[1])) {
+			return $result;
+		}
+	}
+	return false;
 }
 
 function make_msgque($step, $count, $mode)
@@ -646,13 +765,22 @@ function handle_bind_device($PARAMS)
 	return jsonp(array('res'=>'ok!'));
 }
 
+function handle_clear()
+{
+	//删除保存了的在线列表
+	mmc_array_del(NS_DEVICE_LIST, $device);
+}
+
 function handle_reset()
 {
 	$device = get_device();
 	if (empty($device)) {return 'no device';}
-	$mem = api_open_mmc();
+
+	//清除本session
+	handle_clear();
 
 	//删除保存了的账户信息
+	$mem = api_open_mmc();
 	$mem->ns_delete(NS_BINDED_LIST, $device); 
 	$mem->ns_delete(NS_BINDED_CAPTION, $device);
 	foreach (mmc_array_keys(NS_BINDING_LIST) as $platform) {
@@ -660,11 +788,10 @@ function handle_reset()
 		mmc_array_del($ns_bind_list, $device);
 	}
 
-	//删除保存了的在线列表
-	mmc_array_del(NS_DEVICE_LIST, $device);
-
 	//删除保存了的计划任务消息记录
 	$mem->ns_delete(NS_SCHED_DEVICE, $device);
+	new_user(time()+COOKIE_TIMEOUT_NEW);
+
 	return 'succeed';
 }
 
@@ -688,6 +815,9 @@ function omp_trace($descript=null)
 {
 	if (!CLIENT_DEBUG) {return;}
 	if (!is_debug_client()) {return;}
+	if (is_array($descript)) {
+		$descript = (json_encode($descript));
+	}
 	return time_print($descript);
 }
 

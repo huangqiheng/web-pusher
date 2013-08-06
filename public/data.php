@@ -6,6 +6,7 @@ switch($_GET['cmd']) {
 	case 'message': die(handle_list_command(DATA_MESSAGE_LIST, $_GET['opt']));
 	case 'user': 	die(handle_list_command(DATA_USER_LIST,    $_GET['opt']));
 	case 'sched': 	die(handle_list_command(DATA_SCHED_LIST,   $_GET['opt']));
+	case 'status':  die(handle_sched_status(DATA_SCHED_LIST,   $_GET['key'], $_GET['val']));
 	default: 	die('{"res": false}');
 }
 exit();
@@ -15,6 +16,13 @@ function result_ok($obj)
 	update_sched_tasks();
 	sched_changed();
 	return  jsonp(['status'=>'ok', 'result'=>$obj]);
+}
+
+function handle_sched_status($list_name, $task_id,  $status)
+{
+	$mod_task = mmc_array_get($list_name, $task_id);
+	$mod_task['status'] = $status;
+	return result_ok(mmc_array_set($list_name, $task_id, $mod_task));
 }
 
 function handle_list_command($list_name, $cmd_name) 

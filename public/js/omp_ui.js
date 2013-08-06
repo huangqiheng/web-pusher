@@ -14,6 +14,7 @@ function api_ui_init(aDataSet)
 	//发送任务管理
 	var source_sched_status = ['start', 'stop', 'waiting', 'running', 'timeout'];
 	var source_sched_status_cn = ['开始', '停止', '待命','运行', '过时'];
+	var source_sched_statuscn = ['开始', '停止'];
 	var source_sched_inval    = [60+'', 60*3+'', 60*5+'', 60*10+'', 60*15+'', 60*30+'', 
 		3600+'', 3600+1800+'', 3600*2+'', 3600*3+'', 3600*4+'', 3600*5+'', 3600*6+'', 3600*8+'', 3600*10+'', 3600*12+'', 3600*16+'', 
 		3600*24*1+'', 3600*24*2+'', 3600*24*3+'', 3600*24*4+'', 3600*24*5+'', 3600*24*6+'', 3600*24*7+'', 
@@ -29,14 +30,13 @@ function api_ui_init(aDataSet)
 	var source_repel = ['false', 'true'];
 	var source_repel_cn = ['同屏显示', '单独显示'];
 
-
 	//目标管理
 	var source_null = '--';
 	var source_bool = ['null', 'true', 'false'];
 	var source_newuser = source_bool;
 	var source_newuser_cn = [source_null, '首次访问', '后续访问'];
 	var source_newvisitor = source_bool;
-	var source_newvisitor_cn = [source_null, '再次到访', '后续访问'];
+	var source_newvisitor_cn = [source_null, '第一页', '后续页面'];
 	var source_mobile = source_bool;
 	var source_mobile_cn = [source_null, '移动设备', '其他设备'];
 	var source_binded = source_bool;
@@ -56,6 +56,7 @@ function api_ui_init(aDataSet)
 			(d.hasOwnProperty('new_visitor')) && (d.new_visitor=trans(d.new_visitor, source_newvisitor_cn, source_newvisitor));
 			(d.hasOwnProperty('ismobiledevice')) && (d.ismobiledevice=trans(d.ismobiledevice, source_mobile_cn, source_mobile));
 			(d.hasOwnProperty('binded')) && (d.binded=trans(d.binded, source_binded_cn, source_binded));
+			(d.hasOwnProperty('status')) && (d.status=trans(d.status, source_sched_status_cn, source_sched_status));
 
 			(d.hasOwnProperty('time_interval')) && (d.time_interval=trans(d.time_interval, source_sched_inval_cn, source_sched_inval));
 			(d.hasOwnProperty('time_interval_mode')) && (d.time_interval_mode=trans(d.time_interval_mode, source_schedmode_cn, source_schedmode));
@@ -79,6 +80,7 @@ function api_ui_init(aDataSet)
 			(d.hasOwnProperty('new_visitor')) && (d.new_visitor=trans(d.new_visitor, source_newvisitor, source_newvisitor_cn));
 			(d.hasOwnProperty('ismobiledevice')) && (d.ismobiledevice=trans(d.ismobiledevice, source_mobile, source_mobile_cn));
 			(d.hasOwnProperty('binded')) && (d.binded=trans(d.binded, source_binded, source_binded_cn));
+			(d.hasOwnProperty('status')) && (d.status=trans(d.status, source_sched_status, source_sched_status_cn));
 
 			(d.hasOwnProperty('time_interval')) && (d.time_interval=trans(d.time_interval, source_sched_inval, source_sched_inval_cn));
 			(d.hasOwnProperty('time_interval_mode')) && (d.time_interval_mode=trans(d.time_interval_mode, source_schedmode, source_schedmode_cn));
@@ -179,6 +181,7 @@ function api_ui_init(aDataSet)
 			'aaData': aDataSet,
 			'aaSorting': [[0,'desc']],
 			'bStateSave': true,
+			"iCookieDuration": 3600*24*30, // 30day
 			'aoColumns': [
 				{ 'sTitle': '在线账户'},
 				{ 'sTitle': '来源地区'},
@@ -257,16 +260,16 @@ function api_ui_init(aDataSet)
 
 		$("#property-panel").jqxPanel({theme: theme, height: 30, width:431, theme: theme });
 
-		$("#message-mode").jqxDropDownList({source:source_msgmod_cn, selectedIndex:1,width: 76, height: 28, theme: theme });
+		$("#message-mode").jqxDropDownList({source:source_msgmod_cn, selectedIndex:1,width: 76, height: 28, theme: theme,autoDropDownHeight:true});
 
 		$("#notify-ttl").jqxNumberInput({theme: theme,symbol:'秒',symbolPosition:'right',min:1,decimal:8,decimalDigits:0,width:55,height:28, inputMode:'simple',spinButtons:true});
 		$("#notify-ttl").jqxTooltip({theme: theme, content: '通知延迟关闭时间', position: 'mouse'});
 
-		$("#issticky").jqxDropDownList({source:source_sticky_cn, selectedIndex:0,width: 76, height: 28, theme: theme });
+		$("#issticky").jqxDropDownList({source:source_sticky_cn, selectedIndex:0,width: 76, height: 28, theme: theme,autoDropDownHeight:true });
 
-		$("#iswarnning").jqxDropDownList({source:source_warning_cn, selectedIndex:0,width: 76, height: 28, theme: theme });
+		$("#iswarnning").jqxDropDownList({source:source_warning_cn, selectedIndex:0,width: 76, height: 28, theme: theme,autoDropDownHeight:true });
 
-		$("#viewposi").jqxDropDownList({source:source_posi_cn, selectedIndex:2,width: 62, height: 28, theme: theme });
+		$("#viewposi").jqxDropDownList({source:source_posi_cn, selectedIndex:2,width: 62, height: 28, theme: theme,autoDropDownHeight:true });
 
 		$('#jqxTabs').jqxTabs({
 			width:958,
@@ -282,34 +285,6 @@ function api_ui_init(aDataSet)
 		/**********************************
 		终端分类库UI代码
 		**********************************/
-/*
-//终端设备分类
-//布尔值 true/false/null
-$item['new_user']
-$item['new_visitor']
-$item['ismobiledevice']
-$item['binded']
-//字符串匹配
-$item['browser']
-$item['platform']
-$item['device_name']
-$item['region']
-$item['bind_account']
-/正则表达式
-$item['UserAgent']
-$item['Visiting']
-
-//消息列表
-$item['sched_msg']
-
-//发送管理
-$item['finish_time']
-$item['start_time']
-$item['times']
-$item['time_last']
-$item['time_interval']
-$item['repel']
-*/
 		var sched_lst_data = {
 			data_fields : [
 				{name: 'name', type: 'string'},
@@ -326,39 +301,43 @@ $item['repel']
 				{name: 'sched_msg', type: 'string'}
 			],
 			data_columns : [
-				{text: '任务名称', datafield: 'name', width: 78},
+				{text: '任务名称', datafield: 'name', width: 86},
 				{text: '状态', datafield: 'status', width: 32},
-				{text: '开始时间', datafield: 'start_time', width: 190},
-				{text: '结束时间', datafield: 'finish_time', width: 190},
+				{text: '开始时间', datafield: 'start_time', width: 90, cellsformat:'yyyy-MM-dd HH:mm:ss'},
+				{text: '结束时间', datafield: 'finish_time', width: 90, cellsformat:'yyyy-MM-dd HH:mm:ss'},
 				{text: '次数', datafield: 'times', width: 40},
-				{text: '每次', datafield: 'time_interval', width: 32},
+				{text: '每次', datafield: 'time_interval', width: 50},
 				{text: '前距', datafield: 'time_interval_pre', width: 32},
 				{text: '模式', datafield: 'time_interval_mode', width: 32},
 				{text: '顺序', datafield: 'msg_sequence', width: 32},
 				{text: '互斥', datafield: 'repel', width: 32},
-				{text: '发送目标', datafield: 'target_device', width: 133},
-				{text: '发送消息', datafield: 'sched_msg', width: 133}
+				{text: '发送目标', datafield: 'target_device', width: 220},
+				{text: '发送消息', datafield: 'sched_msg', width: 220}
 			],
 			create_form: function(){
 				var base_opt = {theme: theme, width: 400, height: this.elemHeight};
 				var drop_opt = {theme: theme, width: 100, height: this.elemHeight};
+				var drop_opt2 = {theme: theme, width: 100, height: this.elemHeight,autoDropDownHeight:true};
 				var numb_base = $.extend({inputMode: 'simple', decimalDigits:0,  spinButtons: true,symbolPosition: 'right'}, drop_opt);
 				var numb_opt  = $.extend({symbol:'次', decimal:8},  numb_base);
 				var numb_opt2 = $.extend({symbol:'秒', decimal:30}, numb_base);
 				var date_opt = {culture:'zh-CN', formatString: 'F', theme:theme, width:200, height:this.elemHeight};
-				$("#sched_status").jqxDropDownList($.extend({source:source_sched_status_cn, selectedIndex:0}, drop_opt));
+				$("#sched_status").jqxDropDownList($.extend({source:source_sched_statuscn, selectedIndex:0}, drop_opt2));
 				$("#sched_start").jqxDateTimeInput(date_opt);
 				$("#sched_end").jqxDateTimeInput(date_opt);
 				$("#sched_times").jqxNumberInput(numb_opt);
 				$("#sched_interval").jqxDropDownList($.extend({source:source_sched_inval_cn, selectedIndex:2}, drop_opt));
 				$("#sched_interval_pre").jqxNumberInput(numb_opt2);
-				$("#sched_interval_mode").jqxDropDownList($.extend({source:source_schedmode_cn, selectedIndex:0}, drop_opt));
-				$("#sched_sequence").jqxDropDownList($.extend({source:source_sequence_cn, selectedIndex:0}, drop_opt));
-				$("#sched_repel").jqxDropDownList($.extend({source:source_repel_cn, selectedIndex:0}, drop_opt));
+				$("#sched_interval_mode").jqxDropDownList($.extend({source:source_schedmode_cn, selectedIndex:0}, drop_opt2));
+				$("#sched_sequence").jqxDropDownList($.extend({source:source_sequence_cn, selectedIndex:0}, drop_opt2));
+				$("#sched_repel").jqxDropDownList($.extend({source:source_repel_cn, selectedIndex:0}, drop_opt2));
 				$("#sched_target").jqxDropDownButton(base_opt);
 				$("#sched_message").jqxDropDownButton(base_opt);
 			},
 			fill_form : function(data_record) {
+				if (data_record == null) {
+					return;
+				}
 				if (data_record.hasOwnProperty('status')) {
 					$("#sched_status").jqxDropDownList({selectedIndex: source_sched_status_cn.indexOf(data_record.status)}); 
 				}
@@ -594,8 +573,8 @@ $item['repel']
 		var userlst_data = {
 			editrow : -1,
 			elemHeight : 23,
-			popHeight : 560,
-			popWidth : 550,
+			popHeight : 620,
+			popWidth : 560,
 			list_name : 'user',
 			data_fields : [
 				{name: 'name', type: 'string'},
@@ -604,10 +583,12 @@ $item['repel']
 				{name: 'platform', type: 'string'},
 				{name: 'device_name', type: 'string'},
 				{name: 'region', type: 'string'},
+				{name: 'language', type: 'string'},
 				{name: 'UserAgent', type: 'string'},
+				{name: 'visit_times_range', type: 'string'},
+				{name: 'allpageview_range', type: 'string'},
+				{name: 'pageview_range', type: 'string'},
 				{name: 'stay_time', type: 'string'},
-				{name: 'all_times_range', type: 'string'},
-				{name: 'times_range', type: 'string'},
 				{name: 'ismobiledevice', type: 'string'},
 				{name: 'new_user', type: 'string'},
 				{name: 'new_visitor', type: 'string'},
@@ -616,22 +597,24 @@ $item['repel']
 				{name: 'Visiting', type: 'string'}
 			],
 			data_columns : [
-				{text: '规则名称', datafield: 'name', width: 100},
+				{text: '规则名称', datafield: 'name', width: 110},
 				{text: '分类标签', datafield: 'tags', width: 72},
-				{text: '浏览器', datafield: 'browser', width: 72},
-				{text: '操作系统', datafield: 'platform', width: 72},
-				{text: '设备名', datafield: 'device_name', width: 72},
-				{text: '地区', datafield: 'region', width: 72},
-				{text: '浏览器正则', datafield: 'UserAgent', width: 72},
-				{text: '停留', datafield: 'stay_time', width: 37},
-				{text: '总数', datafield: 'all_times_range', width: 37},
-				{text: '次数', datafield: 'times_range', width: 37},
+				{text: '浏览器', datafield: 'browser', width: 50},
+				{text: '系统', datafield: 'platform', width: 50},
+				{text: '设备', datafield: 'device_name', width: 50},
+				{text: '地区', datafield: 'region', width: 60},
+				{text: '语言', datafield: 'language', width: 50},
+				{text: 'UA正则', datafield: 'UserAgent', width: 60},
+				{text: '访次', datafield: 'visit_times_range', width: 40},
+				{text: '总PV', datafield: 'allpageview_range', width: 41},
+				{text: '单PV', datafield: 'pageview_range', width: 41},
+				{text: '停留', datafield: 'stay_time', width: 41},
 				{text: '移动', datafield: 'ismobiledevice', width: 32},
 				{text: '新人', datafield: 'new_user', width: 32},
 				{text: '再访', datafield: 'new_visitor', width: 32},
 				{text: '注册', datafield: 'binded', width: 32},
-				{text: '账户名', datafield: 'bind_account', width: 80},
-				{text: '访问网址正则', datafield: 'Visiting', width: 105},
+				{text: '账户名', datafield: 'bind_account', width: 70},
+				{text: '访问网址正则', datafield: 'Visiting', width: 93},
 			],
 
 			add_button_id : '#addrowbutton_user',
@@ -645,32 +628,109 @@ $item['repel']
 
 			create_form: function(){
 				var base_opt = {theme: theme, width: 400, height: this.elemHeight};
-				var list_opt = $.extend({}, base_opt, {selectedIndex:0, width: 120});
-				var range_opt = $.extend({}, list_opt, {selectedIndex:0, width: 200});
+				var btn_opt = {theme: theme, width: 40, height: this.elemHeight+2};
+				var list_opt = $.extend({}, base_opt, {selectedIndex:0, width: 120, autoDropDownHeight: true});
 				$("#usr_tags").jqxInput(base_opt);
 				$("#usr_newuser").jqxDropDownList($.extend({source:source_newuser_cn}, list_opt));
 				$("#usr_visitor").jqxDropDownList($.extend({source:source_newvisitor_cn}, list_opt));
 				$("#usr_mobile").jqxDropDownList($.extend({source:source_mobile_cn}, list_opt));
 				$("#usr_binded").jqxDropDownList($.extend({source:source_binded_cn}, list_opt));
 
-				var source_staytime = ['0-60','61-180','181-300','301-600','601-1200','1201-1800','1801-2700','2701-3600','3601-7200'];
-				var source_alltimesrange = [];
-				var source_timesrange = [];
+				var  create_range_widget= function(dropid) {
+					var btnid = dropid+'_btn';
+					var lowid = dropid+'_low';
+					var highid = dropid+'_high';
+					var range_opt = {height: this.elemHeight, theme: theme, placeHolder:'请添加区间：',
+						checkboxes:true, selectedIndex:0, width: 236};
+					var rangeint_opt = {height: this.elemHeight, theme: theme, 
+						inputMode:'simple', spinButtons:true, decimalDigits:0, width:60};
 
-				$("#usr_stay_time").jqxDropDownList($.extend({checkboxes:true, source:source_staytime}, range_opt));
-				$("#usr_all_times_range").jqxDropDownList($.extend({checkboxes:true,source:source_alltimesrange}, range_opt));
-				$("#usr_times_range").jqxDropDownList($.extend({checkboxes:true,source:source_timesrange}, range_opt));
+					$(dropid).jqxDropDownList($.extend({source:[]}, range_opt));
+					$(btnid).jqxButton(btn_opt);
+					$(btnid).jqxButton('val', '添加');
+					$(lowid).jqxNumberInput(rangeint_opt);
+					$(highid).jqxNumberInput(rangeint_opt);
+
+					$(btnid).on('click', function () {
+						var min = $(lowid).jqxNumberInput('getDecimal');
+						var max = $(highid).jqxNumberInput('getDecimal');
+						if (min > max) {return;}
+						var value = min+'-'+max;
+						var item = $(dropid).jqxDropDownList('getItemByValue', value);
+						if (item) {
+							item.checked = true;
+							return;
+						}
+						$(dropid).jqxDropDownList('addItem', {value: value}); 
+						item = $(dropid).jqxDropDownList('getItemByValue', value);
+						item.checked = true;
+						$(dropid).jqxDropDownList('selectItem', item ); 
+					});
+				};
+				create_range_widget.call(this, '#usr_stay_time');
+				create_range_widget.call(this, '#usr_visit_times_range');
+				create_range_widget.call(this, '#usr_allpageview_range');
+				create_range_widget.call(this, '#usr_pageview_range');
 
 				$("#usr_browser").jqxInput(base_opt);
 				$("#usr_platform").jqxInput(base_opt);
 				$("#usr_device").jqxInput(base_opt);
 				$("#usr_region").jqxInput(base_opt);
+				$("#usr_language").jqxInput(base_opt);
 				$("#usr_account").jqxInput(base_opt);
 				$("#usr_useragent").jqxInput(base_opt);
 				$("#usr_visiting").jqxInput(base_opt);
 			},
 
+			extra_form : function () {
+				var check = function(d) {return d?d:'--'};
+				var getid = function(d) {var id = $(d).jqxDropDownList('getSelectedIndex');return (id>=0)?id:0;};
+				var get_drop = function(d) {
+					var res = $(d).jqxDropDownList('val');
+					return (res==='')? '--' : res;
+				};
+				var new_raw = {};
+				new_raw['tags'] = rm_comma($('#usr_tags').val());
+				new_raw['stay_time'] = get_drop('#usr_stay_time');
+				new_raw['visit_times_range'] = get_drop('#usr_visit_times_range');
+				new_raw['pageview_range'] = get_drop('#usr_pageview_range');
+				new_raw['allpageview_range'] = get_drop('#usr_allpageview_range');
+				new_raw['new_user'] = source_newuser_cn[getid("#usr_newuser")];
+				new_raw['new_visitor'] = source_newvisitor_cn[getid("#usr_visitor")];
+				new_raw['ismobiledevice'] = source_mobile_cn[getid("#usr_mobile")];
+				new_raw['binded'] = source_binded_cn[getid("#usr_binded")];
+				new_raw['browser'] = check($('#usr_browser').val());
+				new_raw['platform'] = check($('#usr_platform').val());
+				new_raw['device_name'] = check($('#usr_device').val());
+				new_raw['region'] = check($('#usr_region').val());
+				new_raw['language'] = check($('#usr_language').val());
+				new_raw['bind_account'] = check($('#usr_account').val());
+				new_raw['UserAgent'] = check($('#usr_useragent').val());
+				new_raw['Visiting'] = check($('#usr_visiting').val());
+				return new_raw;
+			},
+
 			fill_form : function(data_record) {
+				if (data_record === null) {
+					return;
+				}
+				var set_drop = function(d,val) {
+					$(d).jqxDropDownList('clear');
+					if ((val==='') || (val==='--')) {return;}
+					if (val === undefined) {return;}
+					var arr = val.split(',');
+					$.each(arr, function() {
+						$(d).jqxDropDownList('addItem', {value: this}); 
+						item = $(d).jqxDropDownList('getItemByValue', this);
+						item.checked = true;
+						$(d).jqxDropDownList('selectItem', item); 
+					});
+				};
+				set_drop('#usr_stay_time', data_record.stay_time);
+				set_drop('#usr_visit_times_range', data_record.visit_times_range);
+				set_drop('#usr_pageview_range', data_record.pageview_range);
+				set_drop('#usr_allpageview_range', data_record.allpageview_range);
+
 				if (!data_record.hasOwnProperty('new_user')) {
 					data_record.new_user = source_newuser_cn[0];
 				}
@@ -692,28 +752,10 @@ $item['repel']
 				$('#usr_platform').val(data_record.platform);
 				$('#usr_device').val(data_record.device_name);
 				$('#usr_region').val(data_record.region);
+				$('#usr_language').val(data_record.language);
 				$('#usr_account').val(data_record.bind_account);
 				$('#usr_useragent').val(data_record.UserAgent);
 				$('#usr_visiting').val(data_record.Visiting);
-			},
-
-			extra_form : function () {
-				var check = function(d) {return d?d:'--'};
-				var getid = function(d) {var id = $(d).jqxDropDownList('getSelectedIndex');return (id>=0)?id:0;};
-				var new_raw = {};
-				new_raw['tags'] = rm_comma($('#usr_tags').val());
-				new_raw['new_user'] = source_newuser_cn[getid("#usr_newuser")];
-				new_raw['new_visitor'] = source_newvisitor_cn[getid("#usr_visitor")];
-				new_raw['ismobiledevice'] = source_mobile_cn[getid("#usr_mobile")];
-				new_raw['binded'] = source_binded_cn[getid("#usr_binded")];
-				new_raw['browser'] = check($('#usr_browser').val());
-				new_raw['platform'] = check($('#usr_platform').val());
-				new_raw['device_name'] = check($('#usr_device').val());
-				new_raw['region'] = check($('#usr_region').val());
-				new_raw['bind_account'] = check($('#usr_account').val());
-				new_raw['UserAgent'] = check($('#usr_useragent').val());
-				new_raw['Visiting'] = check($('#usr_visiting').val());
-				return new_raw;
 			}
 		};
 
@@ -760,15 +802,16 @@ $item['repel']
 			cancel_id : '#Cancel_msg',
 
 			create_form: function(){
+				var drop_opt = {theme: theme, width: 120, height: this.elemHeight, autoDropDownHeight:true};
 				$("#msg_tags").jqxInput({theme: theme, width: 400, height: this.elemHeight});
 				$("#msg_title").jqxComboBox({theme: theme,source: source_notify_title, selectedIndex:0, width: 400, height: this.elemHeight});
 				$("#msg_content").jqxInput({theme: theme,source:countries, width: 400, height: 84});
-				$("#msg_msgmode").jqxDropDownList({source:source_msgmod_cn, selectedIndex:1, theme: theme, width: 120, height: this.elemHeight});
-				$("#msg_position").jqxDropDownList({source:source_posi_cn, selectedIndex:2, theme: theme, width: 120, height: this.elemHeight});
-				$("#msg_sticky").jqxDropDownList({source:source_sticky_cn, selectedIndex:0, theme: theme, width: 120, height: this.elemHeight});
+				$("#msg_msgmode").jqxDropDownList($.extend({source:source_msgmod_cn, selectedIndex:1}, drop_opt));
+				$("#msg_position").jqxDropDownList($.extend({source:source_posi_cn, selectedIndex:2}, drop_opt));
+				$("#msg_sticky").jqxDropDownList($.extend({source:source_sticky_cn, selectedIndex:0}, drop_opt));
+				$("#msg_before_open").jqxDropDownList($.extend({source:source_warning_cn, selectedIndex:0}, drop_opt));
 				$("#msg_time").jqxNumberInput({theme: theme,symbol:'秒',symbolPosition:'right',min:1,decimal:8,decimalDigits:0, 
 								inputMode:'simple',spinButtons:true, width: 120,  height: this.elemHeight});
-				$("#msg_before_open").jqxDropDownList({source:source_warning_cn, selectedIndex:0, theme: theme, width: 120, height: this.elemHeight});
 			},
 
 			fill_form : function(data_record) {
@@ -847,6 +890,7 @@ $item['repel']
 				sortable: true,
 				width: '100%',
 				enableellipsis: false,
+				enableanimations: false,
 				autoheight: true,
 				autorowheight: true,
 				columns: p.data_columns
@@ -896,6 +940,7 @@ $item['repel']
 			});
 
 			$(p.pop_win_id).jqxWindow({
+				maxHeight: 800,
 				height: p.popHeight, 
 				width: p.popWidth,
 				resizable: false, 

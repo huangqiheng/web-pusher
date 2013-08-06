@@ -19,7 +19,9 @@ define('MEMC_PORT', 11211);
 define('COOKIE_DEVICE_ID', 'device_id'); //cookie名称
 define('COOKIE_DEVICE_SAVED', 'device_sav'); //cookie名称
 define('COOKIE_DEBUG', 'device_dbg'); //cookie名称
+define('COOKIE_NEW', 'device_new'); //cookie名称
 define('COOKIE_TIMEOUT', 3600*24*365*100); //cookie超时时间，设一个超大的
+define('COOKIE_TIMEOUT_NEW', 3600*24); //cookie超时时间
 define('COOKIE_DOMAIN', 'appgame.com'); //cookie的域，保证被嵌入网站能访问得到
 
 define('CHECKPOINT_INTERVAL', 60*3); //清理在线列表周期，不要单次清理数量太多

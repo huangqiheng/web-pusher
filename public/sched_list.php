@@ -21,6 +21,26 @@ function update_sched_tasks()
 
 //---------------------------------------------------------------------
 
+function update_new_sched_list($new_sched_list, $del_sched_list)
+{
+	//逐条更新到memcached数组中
+	$use_sched_list = [];
+	foreach ($new_sched_list as $key=>$value) {
+		if (time() < $value['finish_time']) {
+			$use_sched_list[$key] = $value;
+			mmc_array_set(NS_SCHED_TASKS, $key, $value, $value['finish_time']);
+		}
+	}
+
+	//这是分发任务用的cache列表，更新之
+	used_sched_list($use_sched_list);
+
+	//将需要删除的清除掉，让设备不再能够“读取”从而禁止规则执行
+	foreach ($del_sched_list as $key=>$value) {
+		mmc_array_del(NS_SCHED_TASKS, $key);
+	}
+}
+
 function mmc_array_all_cache($name)
 {
 	$list = mmc_array_all($name);
@@ -31,6 +51,7 @@ function mmc_array_all_cache($name)
 		if (empty($list)) {
 			return array();
 		}
+
 		mmc_array_clear($name);
 		foreach ($list as $key=>$value) {
 			$res = mmc_array_set($name, $key, $value);
@@ -42,31 +63,15 @@ function mmc_array_all_cache($name)
 	return $list;
 }
 
-function update_new_sched_list($new_sched_list, $del_sched_list)
-{
-	//逐条更新到memcached数组中
-	foreach ($new_sched_list as $key=>$value) {
-		mmc_array_set(NS_SCHED_TASKS, $key, $value, $value['finish_time']);
-	}
-
-	//这是分发任务用的cache列表，更新之
-	used_sched_list($new_sched_list);
-
-	//将需要删除的清除掉，让设备不再能够“读取”从而禁止规则执行
-	foreach ($del_sched_list as $key=>$value) {
-		mmc_array_del(NS_SCHED_TASKS, $key);
-	}
-}
-
 function used_sched_list($new_list=null)
 {
 	$mem = api_open_mmc();
-	if ($new_list) {
-		return $mem->set(KEY_SCHED_LIST, $new_list);
-	} else {
+	if ($new_list === null) {
 		$result = $mem->get(KEY_SCHED_LIST);
 		(!$result) && ($result=array());
 		return $result;
+	} else {
+		return $mem->set(KEY_SCHED_LIST, $new_list);
 	}
 }
 
