@@ -64,13 +64,13 @@ function handle_heartbeat_cmd()
 	$browser_save['binded'] = false;
 	if ($binded_list = $mem->ns_get(NS_BINDED_LIST, $device)) {
 		$browser_save['binded'] = true;
-		$result['binded'] = $binded_list;
+		//获取保存的账户信息
+		if ($bind_account = $mem->ns_get(NS_BINDED_CAPTION, $device)) {
+			$browser_save['bind_account'] = json_encode($bind_account);
+			$result['binded'] = $binded_list;
+		}
 	}
 
-	//获取保存的账户信息
-	if ($bind_account = $mem->ns_get(NS_BINDED_CAPTION, $device)) {
-		$browser_save['bind_account'] = json_encode($bind_account);
-	}
 
 	omp_trace('get account');
 	/******************************************
@@ -659,6 +659,14 @@ function match_bool($from_device, $from_config)
 	return true;
 }
 
+function make_capview($username, $nickname, $caption)
+{
+	empty($nickname) && (!empty($username)) && ($cap_view=$username.'@'.$caption);
+	empty($username) && (!empty($nickname)) && ($cap_view=$nickname.'@'.$caption);
+	empty($cap_view) && ($cap_view=$nickname.'('.$username.')@'.$caption);
+	return $cap_view;
+}
+
 function handle_bind_device($PARAMS)
 {
 	$device    = @$PARAMS[ 'device' ];
@@ -666,13 +674,15 @@ function handle_bind_device($PARAMS)
 	$caption     = @$PARAMS[ 'cap' ];
 	$username    = @$PARAMS[ 'user' ];
 	$nickname    = @$PARAMS[ 'nick' ];
+	$cap_view = make_capview($username, $nickname, $caption);
 
 	/********************************
 	判断新收到的账户，是否应该被收录	
 	********************************/
 
 	if ((empty($username)) && (empty($nickname))) {
-		return jsonp(array('res'=>'no'));
+		omp_trace($PARAMS);
+		return return_bind(array('status'=>'error'));
 	}
 
 	$platform_list = mmc_array_keys(NS_BINDING_LIST);
@@ -682,6 +692,8 @@ function handle_bind_device($PARAMS)
 
 	$ns_bind_list = NS_BINDING_LIST.$platform;
 	$bind_info = mmc_array_get($ns_bind_list, $device);
+
+	omp_trace($bind_info);
 
 	$changed = false;
 
@@ -706,8 +718,19 @@ function handle_bind_device($PARAMS)
 		$changed = true;
 	}
 
+	$mem = api_open_mmc();
 	if (!$changed) {
-		return jsonp(array('res'=>'ok'));
+		omp_trace('not changed');
+		//绑定信息没有改变的时候，确定绑定显示列表是正常输出的
+		if ($binded_list = $mem->ns_get(NS_BINDED_CAPTION, $device)) {
+			if (in_array($cap_view, $binded_list)) {
+				return return_bind(array('status'=>'ok'));
+			} else {
+				omp_trace('but binbed capview missed');
+			}
+		} else {
+			omp_trace('but binbed capview error');
+		}
 	}
 
 	/********************************
@@ -717,13 +740,13 @@ function handle_bind_device($PARAMS)
 	//1、收录绑定信息
 	if (mmc_array_set($ns_bind_list, $device, $bind_info) > 0) {
 		($caption) && mmc_array_caption($ns_bind_list, $caption);
+		omp_trace('update caption: '.$caption);
 	}
 
 	//2、制作绑定账户的标识列表
 	$new_key = md5($caption.'@'.$platform.'@'.$device);
 	$new_val = md5($username.'('.$nickname.')@'.$device);
 	$changed = false;
-	$mem = api_open_mmc();
 	if ($binded_list = $mem->ns_get(NS_BINDED_LIST, $device)) {
 		if ($binded_list[$new_key] !== $new_val) {
 			$binded_list[$new_key] = $new_val;
@@ -736,20 +759,19 @@ function handle_bind_device($PARAMS)
 	//更新绑定账户标记列表
 	if ($changed) {
 		$mem->ns_set(NS_BINDED_LIST, $device, $binded_list); 
+		omp_trace('update bind md5 info: '.json_encode($binded_list));
 	}
 
 	//3、制作绑定账户显示列表
-	empty($nickname) && (!empty($username)) && ($cap_view=$username.'@'.$caption);
-	empty($username) && (!empty($nickname)) && ($cap_view=$nickname.'@'.$caption);
-	empty($cap_view) && ($cap_view=$nickname.'('.$username.')@'.$caption);
-
 	if ($bind_account = $mem->ns_get(NS_BINDED_CAPTION, $device)) {
 		if (!in_array($cap_view, $bind_account)) {
 			$bind_account[] = $cap_view;
 			$mem->ns_set(NS_BINDED_CAPTION, $device, $bind_account); 
+			omp_trace('set account info ok: '.json_encode($bind_account));
 		}
 	} else {
 		$mem->ns_set(NS_BINDED_CAPTION, $device, array($cap_view)); 
+		omp_trace('set 1st account info ok: '.$cap_view);
 	}
 
 	/********************************
@@ -762,7 +784,15 @@ function handle_bind_device($PARAMS)
 	counter(COUNT_ON_BINDING);
 	call_async_php('/on_account_binding.php', $bind_info);
 
-	return jsonp(array('res'=>'ok!'));
+	return return_bind(array('status'=>'ok!'));
+}
+
+function return_bind($result)
+{
+	if (is_debug_client()) {
+		$result['trace'] = omp_trace(null);
+	}
+	return jsonp($result);
 }
 
 function handle_clear()

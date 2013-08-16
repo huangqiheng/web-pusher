@@ -6,6 +6,8 @@ switch($_GET['cmd']) {
 	case 'message': die(handle_list_command(DATA_MESSAGE_LIST, $_GET['opt']));
 	case 'user': 	die(handle_list_command(DATA_USER_LIST,    $_GET['opt']));
 	case 'sched': 	die(handle_list_command(DATA_SCHED_LIST,   $_GET['opt']));
+	case 'plans': 	die(handle_list_command(DATA_PLANS_LIST,   $_GET['opt']));
+	case 'posi':	die(handle_list_command(DATA_POSI_LIST,    $_GET['opt']));
 	case 'status':  die(handle_sched_status(DATA_SCHED_LIST,   $_GET['key'], $_GET['val']));
 	default: 	die('{"res": false}');
 }
@@ -28,7 +30,13 @@ function handle_sched_status($list_name, $task_id,  $status)
 function handle_list_command($list_name, $cmd_name) 
 {
 	switch($cmd_name) {
-		case 'list':   return jsonp(mmc_array_values($list_name));
+		case 'list':   
+			$res = mmc_array_values($list_name);
+			if (count($res) === 0) {
+				update_sched_tasks($list_name);
+				$res = mmc_array_values($list_name);
+			}
+			return jsonp($res);
 		case 'create': return result_ok(mmc_array_set($list_name, md5($_POST['name']), $_POST));
 		case 'update': return result_ok(mmc_array_set($list_name, md5($_POST['name']), $_POST));
 		case 'delete': return result_ok(mmc_array_del($list_name, md5($_POST['name'])));

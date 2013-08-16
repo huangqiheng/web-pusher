@@ -49,9 +49,11 @@ define('NS_BINDED_CAPTION', 'ns_binded_caption');
 
 //计划任务发送列表
 define('SCHEDUAL_UPDATE_KEY', 'SCHEDUAL_UPDATE_KEY'); //列表被更新标记
-define('DATA_MESSAGE_LIST', '@MESSAGE_LIST');
-define('DATA_USER_LIST', '@USER_LIST');
 define('DATA_SCHED_LIST', '@SCHED_LIST');
+define('DATA_PLANS_LIST', '@PLANS_LIST');
+define('DATA_USER_LIST', '@USER_LIST');
+define('DATA_MESSAGE_LIST', '@MESSAGE_LIST');
+define('DATA_POSI_LIST', '@POSI_LIST');
 
 //常量
 define('CHECKPOINT_TIME_KEY', 'async_check_time'); //没必要改

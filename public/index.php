@@ -158,6 +158,11 @@ api_ui_init(aDataSet);
 	.jqx-popup {
 		z-index: 20000 !important;
 	}
+	.jqx-tabs-title {
+		padding-left: 5px !important;
+		padding-right: 5px !important;
+	}
+
 </style>
 </head>
 <body background="images/bg_tile.jpg">
@@ -165,16 +170,15 @@ api_ui_init(aDataSet);
 		<div id='jqxTabs'>
 			<ul>
 				<li style="margin-left: 30px;">
-					<img style='float: left;' width='16' height='16' src="/images/mailIcon.png" alt="" class="small-image" />
-					<div style="float: left;">发送即时信息</div>
+					<img style='float: left;' width='16' height='16' src="/images/calendarIcon.png" alt="" class="small-image" />
+					<div style="float: left;">弹窗任务管理</div>
 				</li>
-
 				<li>
 					<img style='float: left;' width='16' height='16' src="/images/calendarIcon.png" alt="" class="small-image" />
-					<div style="float: left;">发送任务管理</div>
+					<div style="float: left;">替换任务管理</div>
 				</li>
 
-				<li>
+				<li style="margin-left: 50px;">
 					<img style='float: left;' width='16' height='16' src="/images/people.png" alt="" class="small-image" />
 					<div style="float: left;">终端分类库</div>
 				</li>
@@ -183,24 +187,45 @@ api_ui_init(aDataSet);
 					<img style='float: left;' width='16' height='16' src="/images/message.png" alt="" class="small-image" />
 					<div style="float: left;">预设消息库</div>
 				</li>
+
 				<li>
+					<img style='float: left;' width='16' height='16' src="/images/message.png" alt="" class="small-image" />
+					<div style="float: left;">替换位置库</div>
+				</li>
+				<li style="margin-left: 50px;">
 					<img style='float: left;' width='16' height='16' src="/images/chart.png" alt="" class="small-image" />
 					<div style="float: left;">详细报表</div>
 				</li>
 				<li>
+					<img style='float: left;' width='16' height='16' src="/images/mailIcon.png" alt="" class="small-image" />
+					<div style="float: left;">发送即时信息</div>
+				</li>
+				<li >
 					<img style='float: left;' width='16' height='16' src="/images/settings.png" alt="" class="small-image" />
 					<div style="float: left;">系统配置</div>
 				</li>
 			</ul>
 		
-			<div>
+			<div id='tab_sched'></div><!-- 发送任务管理 标签 -->
+			<div id='tab_replace'></div> <!-- 替换任务管理 标签 -->
+			<div id='tab_user'></div><!-- 终端分类库 标签 -->
+			<div id='tab_message'></div><!-- 预存消息库 标签 -->
+			<div id='tab_posi'></div> <!-- 替换位置库 标签 -->
+
+			<!-- 报表 标签 -->
+			<div style='height:380px;'>
+			</div>
+
+			<!-- 发送即时消息 标签 -->
+			<div> 
 				<div id='message'>
 					<div id="notify-title" style='float:left;'></div>
 					<input id="notify-content" type="text" style='float:left;'/>
 					<div id='property-panel' style='float:right;'>
-						<input id='send-button' type="button" value="发送" style='float:left;' />
-						<div id='message-mode' style='float: left;'></div>
+						<input id='send-button' type="button" value="发送到" style='float:left;' />
 						<div id='viewposi' style='float: left;'></div>
+						<div id='message-form' style='float: left;'></div>
+						<div id='message-mode' style='float: left;'></div>
 						<div id='notify-ttl' style='float:left;'></div>
 						<div id='issticky' style='float: left;'></div>
 						<div id='iswarnning' style='float: left;'></div>
@@ -209,264 +234,7 @@ api_ui_init(aDataSet);
 				<div id='dynamic'></div>
 			</div>
 
-			<div> <!-- tab标签 -->
-				<div style="margin-right: 5px; float: right;">
-					<input id="addrowbutton_sched" type="button" value="添加" />
-					<input id="updaterowbutton_sched" type="button" value="修改" />
-					<input id="deleterowbutton_sched" type="button" value="删除" />
-				</div>
-				<div id='jqxgrid_sched_list'></div>
-
-				<div id="popupWindow_sched">
-					<div>编辑发送任务</div>
-					<div style="overflow: hidden;">
-					<table>
-					<tr>
-						<td align="right">任务名称：</td>
-						<td align="left"><input id="sched_name" /></td>
-					</tr>
-					<tr>
-						<td align="right">发送人群：</td>
-						<td align="left">
-							<div id="sched_target">
-								<div style="border: none;" id="sched_target_grid"></div>
-							</div>
-						</td>
-					</tr>
-					<tr>
-						<td align="right">发送消息：</td>
-						<td align="left">
-							<div id="sched_message">
-								<div style="border: none;" id="sched_message_grid"></div>
-							</div>
-						</td>
-					</tr>
-					<tr>
-						<td align="right">运行状态：</td>
-						<td align="left"><div id="sched_status" /></td>
-					</tr>
-					<tr>
-						<td align="right">开始时间：</td>
-						<td align="left"><div id="sched_start" /></td>
-					</tr>
-					<tr>
-						<td align="right">结束时间：</td>
-						<td align="left"><div id="sched_end" /></td>
-					</tr>
-					<tr>
-						<td align="right">执行次数：</td>
-						<td align="left"><div id="sched_times"></textarea></td>
-					</tr>
-					<tr>
-						<td align="right">每次间隔：</td>
-						<td align="left"><div id="sched_interval"></div></td>
-					</tr>
-					<tr>
-						<td align="right">前距时间：</td>
-						<td align="left"><div id="sched_interval_pre"></div></td>
-					</tr>
-					<tr>
-						<td align="right">间隔模式：</td>
-						<td align="left"><div id="sched_interval_mode"></div></td>
-					</tr>
-					<tr>
-						<td align="right">消息顺序：</td>
-						<td align="left"><div id="sched_sequence"></div></td>
-					</tr>
-					<tr>
-						<td align="right">任务互斥：</td>
-						<td align="left"><div id="sched_repel"></div></td>
-					</tr>
-					<tr>
-						<td align="right"></td>
-						<td style="padding-top: 10px;" align="right">
-							<input id="Save_sched" style="margin-right: 5px;" type="button" value="保存" />
-							<input id="Cancel_sched" type="button" value="取消" /></td>
-					</tr>
-					</table>
-					</div>
-				</div>
-			</div> <!-- tab标签 -->
-
-			<div> <!-- tab标签 -->
-				<div style="margin-right: 5px; float: right;">
-					<input id="addrowbutton_user" type="button" value="添加" />
-					<input id="updaterowbutton_user" type="button" value="修改" />
-					<input id="deleterowbutton_user" type="button" value="删除" />
-				</div>
-				<div id='jqxgrid_user_list'></div>
-
-				<div id="popupWindow_user">
-					<div>编辑终端设备分类规则</div>
-					<div style="overflow: hidden;">
-					<table>
-					<tr>
-						<td align="right">规则名称：</td>
-						<td align="left"><input id="usr_name" /></td>
-					</tr>
-					<tr>
-						<td align="right">分类标签：</td>
-						<td align="left"><input id="usr_tags" /></td>
-					</tr>
-					<tr>
-						<td align="right">浏览器：</td>
-						<td align="left"><input id="usr_browser"></div></td>
-					</tr>
-					<tr>
-						<td align="right">操作系统：</td>
-						<td align="left"><input id="usr_platform"></div></td>
-					</tr>
-					<tr>
-						<td align="right">设备名：</td>
-						<td align="left"><input id="usr_device"></div></td>
-					</tr>
-					<tr>
-						<td align="right">移动设备：</td>
-						<td align="left"><div id="usr_mobile"></div></td>
-					</tr>
-					<tr>
-						<td align="right">地区：</td>
-						<td align="left"><input id="usr_region"></div></td>
-					</tr>
-					<tr>
-						<td align="right">语言：</td>
-						<td align="left"><input id="usr_language"></div></td>
-					</tr>
-					<tr>
-						<td align="right">浏览器特征：</td>
-						<td align="left"><input id="usr_useragent"></div></td>
-					</tr>
-					<tr>
-						<td align="right">来访停留秒数：</td>
-						<td align="left">
-							<div id="usr_stay_time" style='float: left;'></div>
-							<input type="button" value="Button" id='usr_stay_time_btn' style='float: left;'/>
-							<div id="usr_stay_time_low" style='float: left;'></div>
-							<div id="usr_stay_time_high" style='float: left;'></div>
-						</td>
-					</tr>
-					<tr>
-						<td align="right">来访次数区间：</td>
-						<td align="left">
-							<div   id="usr_visit_times_range" style='float: left;'></div>
-							<input id='usr_visit_times_range_btn' type="button" value="Button" style='float: left;'/>
-							<div   id="usr_visit_times_range_low" style='float: left;'></div>
-							<div   id="usr_visit_times_range_high" style='float: left;'></div>
-						</td>
-					</tr>
-					<tr>
-						<td align="right">总页面浏览数：</td>
-						<td align="left">
-							<div id="usr_allpageview_range" style='float: left;'></div>
-							<input id='usr_allpageview_range_btn'  type="button" value="Button" style='float: left;'/>
-							<div id="usr_allpageview_range_low" style='float: left;'></div>
-							<div id="usr_allpageview_range_high" style='float: left;'></div>
-						</td>
-					</tr>
-					<tr>
-						<td align="right">页面浏览数：</td>
-						<td align="left">
-							<div id="usr_pageview_range" style='float: left;'></div>
-							<input type="button" value="Button" id='usr_pageview_range_btn' style='float: left;'/>
-							<div id="usr_pageview_range_low" style='float: left;'></div>
-							<div id="usr_pageview_range_high" style='float: left;'></div>
-						</td>
-					</tr>
-					<tr>
-						<td align="right">新用户：</td>
-						<td align="left"><div id="usr_newuser" /></td>
-					</tr>
-					<tr>
-						<td align="right">新访第一页：</td>
-						<td align="left"><div id="usr_visitor"></textarea></td>
-					</tr>
-					<tr>
-						<td align="right">已注册：</td>
-						<td align="left"><div id="usr_binded"></div></td>
-					</tr>
-					<tr>
-						<td align="right">账户名：</td>
-						<td align="left"><input id="usr_account"></div></td>
-					</tr>
-					<tr>
-						<td align="right">访问网址：</td>
-						<td align="left"><input id="usr_visiting"></div></td>
-					</tr>
-					<tr>
-						<td align="right"></td>
-						<td style="padding-top: 10px;" align="right">
-							<input id="Save_user" style="margin-right: 5px;" type="button" value="保存" />
-							<input id="Cancel_user" type="button" value="取消" /></td>
-					</tr>
-					</table>
-					</div>
-				</div>
-
-			</div> <!-- tab标签 -->
-
-			<div> <!-- tab标签 -->
-				<div style="margin-right: 5px; float: right;">
-					<input id="addrowbutton" type="button" value="添加" />
-					<input id="updaterowbutton" type="button" value="修改" />
-					<input id="deleterowbutton" type="button" value="删除" />
-				</div>
-				<div id='jqxgrid_msg_list'></div>
-
-				<div id="popupWindow_msg">
-					<div>编辑消息</div>
-					<div style="overflow: hidden;">
-					<table>
-					<tr>
-						<td align="right">消息名称：</td>
-						<td align="left"><input id="msg_name" /></td>
-					</tr>
-					<tr>
-						<td align="right">分类标签：</td>
-						<td align="left"><input id="msg_tags" /></td>
-					</tr>
-					<tr>
-						<td align="right">消息标题：</td>
-						<td align="left"><div id="msg_title" /></td>
-					</tr>
-					<tr>
-						<td align="right">消息内容：</td>
-						<td align="left"><textarea id="msg_content"></textarea></td>
-					</tr>
-					<tr>
-						<td align="right">消息类型：</td>
-						<td align="left"><div id="msg_msgmode"></div></td>
-					</tr>
-					<tr>
-						<td align="right">显示位置：</td>
-						<td align="left"><div id="msg_position"></div></td>
-					</tr>
-					<tr>
-						<td align="right">固定显示：</td>
-						<td align="left"><div id="msg_sticky"></div></td>
-					</tr>
-					<tr>
-						<td align="right">显示时长：</td>
-						<td align="left"><div id="msg_time"></div></td>
-					</tr>
-					<tr>
-						<td align="right">弹窗警示：</td>
-						<td align="left"><div id="msg_before_open"></div></td>
-					</tr>
-					<tr>
-						<td align="right"></td>
-						<td style="padding-top: 10px;" align="right">
-							<input id="Save_msg" style="margin-right: 5px;" type="button" value="保存" />
-							<input id="Cancel_msg" type="button" value="取消" /></td>
-					</tr>
-					</table>
-					</div>
-				</div>
-
-			</div>
-
-			<div style='height:380px;'>
-			</div>
-
+			<!-- 系统配置 标签 -->
 			<div style='height:380px;'>
 			</div>
 		</div>

@@ -6,22 +6,28 @@ if (isset($_GET['force'])) {
 	update_sched_tasks();
 }
 
-function update_sched_tasks()
+function update_sched_tasks($listname='all')
 {
 	//获得管理端UI所生成的配置列表
-	$sched_list   = mmc_array_all_cache(DATA_SCHED_LIST);
-	$users_list   = mmc_array_all_cache(DATA_USER_LIST);
-	$message_list = mmc_array_all_cache(DATA_MESSAGE_LIST);
+	if ($listname === 'all') {
+		$sched_list   = mmc_array_all_cache(DATA_SCHED_LIST);
+		$users_list   = mmc_array_all_cache(DATA_USER_LIST);
+		$message_list = mmc_array_all_cache(DATA_MESSAGE_LIST);
+		$plans_list = mmc_array_all_cache(DATA_PLANS_LIST);
+		$posi_list = mmc_array_all_cache(DATA_POSI_LIST);
 
-	//生成新的配置，并同步给设备去识别
-	$new_sched_list = make_new_sched_list($sched_list, $users_list, $message_list);
-	$del_sched_list = array_diff_key(used_sched_list(), $new_sched_list);
-	update_new_sched_list($new_sched_list, $del_sched_list);
+		//生成新的配置，并同步给设备去识别
+		$new_tasks_list = make_new_tasks_list($sched_list, $users_list, $message_list);
+		$del_sched_list = array_diff_key(used_sched_list(), $new_tasks_list);
+		update_new_tasks_list($new_tasks_list, $del_sched_list);
+	} else {
+		mmc_array_all_cache($listname);
+	}
 }
 
 //---------------------------------------------------------------------
 
-function update_new_sched_list($new_sched_list, $del_sched_list)
+function update_new_tasks_list($new_sched_list, $del_sched_list)
 {
 	//逐条更新到memcached数组中
 	$use_sched_list = [];
@@ -91,7 +97,7 @@ function onebox_cached($content)
 	return $result;
 }
 
-function make_new_sched_list($sched_list, $users_list, $message_list)
+function make_new_tasks_list($sched_list, $users_list, $message_list)
 {
 	$result = array();
 	foreach ($sched_list as $name=>$task) {

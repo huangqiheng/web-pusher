@@ -1,10 +1,13 @@
 function api_ui_init(aDataSet)
 {
+	var theme = '';
 	//预存消息管理
 	var source_posi = ['top-left','bottom-left','top-right','bottom-right'];
-	var source_posi_cn = ['左上方','左下方','右上方','右下方'];
+	var source_posi_cn = ['页面左上方','页面左下方','页面右上方','页面右下方'];
 	var source_msgmod = ['realtime', 'heartbeat'];
 	var source_msgmod_cn = ['实时消息','异步消息'];
+	var source_msgform = ['popup', 'replace'];
+	var source_msgform_cn = ['弹出显示','替换显示'];
 	var source_sticky = ['false','true'];
 	var source_sticky_cn = ['自动消退','固定显示'];
 	var source_warning = ['false','true'];
@@ -41,27 +44,31 @@ function api_ui_init(aDataSet)
 	var source_mobile_cn = [source_null, '移动设备', '其他设备'];
 	var source_binded = source_bool;
 	var source_binded_cn = [source_null, '已注册', '未注册'];
-
-	function trans(value, from, to) {
-		return to[from.indexOf(value)]; 
-	}
+	
+	//替换规则库
+	var source_insert = ['before','after','inside-first','inside-append'];
+	var source_insert_cn = ['前面','后面','里面前','里面后'];
+	var source_action = ['none','hide','delete'];
+	var source_action_cn = ['不处理','隐藏','删除'];
 
 	function cn2en(d) {
 		if (d.hasOwnProperty('name')) {
-			(d.hasOwnProperty('msgmod')) && (d.msgmod = trans(d.msgmod, source_msgmod_cn, source_msgmod));
-			(d.hasOwnProperty('position')) && (d.position=trans(d.position, source_posi_cn, source_posi));
-			(d.hasOwnProperty('sticky')) && (d.sticky=trans(d.sticky, source_sticky_cn, source_sticky));
-			(d.hasOwnProperty('before_open')) && (d.before_open=trans(d.before_open, source_warning_cn, source_warning));
-			(d.hasOwnProperty('new_user')) && (d.new_user=trans(d.new_user, source_newuser_cn, source_newuser));
-			(d.hasOwnProperty('new_visitor')) && (d.new_visitor=trans(d.new_visitor, source_newvisitor_cn, source_newvisitor));
-			(d.hasOwnProperty('ismobiledevice')) && (d.ismobiledevice=trans(d.ismobiledevice, source_mobile_cn, source_mobile));
-			(d.hasOwnProperty('binded')) && (d.binded=trans(d.binded, source_binded_cn, source_binded));
-			(d.hasOwnProperty('status')) && (d.status=trans(d.status, source_sched_status_cn, source_sched_status));
-
-			(d.hasOwnProperty('time_interval')) && (d.time_interval=trans(d.time_interval, source_sched_inval_cn, source_sched_inval));
-			(d.hasOwnProperty('time_interval_mode')) && (d.time_interval_mode=trans(d.time_interval_mode, source_schedmode_cn, source_schedmode));
-			(d.hasOwnProperty('msg_sequence')) && (d.msg_sequence=trans(d.msg_sequence, source_sequence_cn, source_sequence));
-			(d.hasOwnProperty('repel')) && (d.repel=trans(d.repel, source_repel_cn, source_repel));
+			set_property(d, 'insert', source_insert_cn, source_insert);
+			set_property(d, 'action', source_action_cn, source_action);
+			set_property(d, 'msgmod', source_msgmod_cn, source_msgmod);
+			set_property(d, 'msgform', source_msgform_cn, source_msgform);
+			set_property(d, 'position', source_posi_cn, source_posi);
+			set_property(d, 'sticky', source_sticky_cn, source_sticky);
+			set_property(d, 'before_open', source_warning_cn, source_warning);
+			set_property(d, 'new_user', source_newuser_cn, source_newuser);
+			set_property(d, 'new_visitor', source_newvisitor_cn, source_newvisitor);
+			set_property(d, 'ismobiledevice', source_mobile_cn, source_mobile);
+			set_property(d, 'binded', source_binded_cn, source_binded);
+			set_property(d, 'status', source_sched_status_cn, source_sched_status);
+			set_property(d, 'time_interval', source_sched_inval_cn, source_sched_inval);
+			set_property(d, 'time_interval_mode', source_schedmode_cn, source_schedmode);
+			set_property(d, 'msg_sequence', source_sequence_cn, source_sequence);
+			set_property(d, 'repel', source_repel_cn, source_repel);
 		} else {
 			$(d).each(function() {
 				cn2en(this);
@@ -72,26 +79,49 @@ function api_ui_init(aDataSet)
 
 	function en2cn(d) {
 		if (d.hasOwnProperty('name')) {
-			(d.hasOwnProperty('msgmod')) && (d.msgmod = trans(d.msgmod, source_msgmod, source_msgmod_cn));
-			(d.hasOwnProperty('position')) && (d.position=trans(d.position, source_posi, source_posi_cn));
-			(d.hasOwnProperty('sticky')) && (d.sticky=trans(d.sticky, source_sticky, source_sticky_cn));
-			(d.hasOwnProperty('before_open')) && (d.before_open=trans(d.before_open, source_warning, source_warning_cn));
-			(d.hasOwnProperty('new_user')) && (d.new_user=trans(d.new_user, source_newuser, source_newuser_cn));
-			(d.hasOwnProperty('new_visitor')) && (d.new_visitor=trans(d.new_visitor, source_newvisitor, source_newvisitor_cn));
-			(d.hasOwnProperty('ismobiledevice')) && (d.ismobiledevice=trans(d.ismobiledevice, source_mobile, source_mobile_cn));
-			(d.hasOwnProperty('binded')) && (d.binded=trans(d.binded, source_binded, source_binded_cn));
-			(d.hasOwnProperty('status')) && (d.status=trans(d.status, source_sched_status, source_sched_status_cn));
-
-			(d.hasOwnProperty('time_interval')) && (d.time_interval=trans(d.time_interval, source_sched_inval, source_sched_inval_cn));
-			(d.hasOwnProperty('time_interval_mode')) && (d.time_interval_mode=trans(d.time_interval_mode, source_schedmode, source_schedmode_cn));
-			(d.hasOwnProperty('msg_sequence')) && (d.msg_sequence=trans(d.msg_sequence, source_sequence, source_sequence_cn));
-			(d.hasOwnProperty('repel')) && (d.repel=trans(d.repel, source_repel, source_repel_cn));
+			set_property(d, 'insert', source_insert, source_insert_cn);
+			set_property(d, 'action', source_action, source_action_cn);
+			set_property(d, 'msgmod', source_msgmod, source_msgmod_cn);
+			set_property(d, 'msgform', source_msgform, source_msgform_cn);
+			set_property(d, 'position', source_posi, source_posi_cn);
+			set_property(d, 'sticky', source_sticky, source_sticky_cn);
+			set_property(d, 'before_open', source_warning, source_warning_cn);
+			set_property(d, 'new_user', source_newuser, source_newuser_cn);
+			set_property(d, 'new_visitor', source_newvisitor, source_newvisitor_cn);
+			set_property(d, 'ismobiledevice', source_mobile, source_mobile_cn);
+			set_property(d, 'binded', source_binded, source_binded_cn);
+			set_property(d, 'status', source_sched_status, source_sched_status_cn);
+			set_property(d, 'time_interval', source_sched_inval, source_sched_inval_cn);
+			set_property(d, 'time_interval_mode', source_schedmode, source_schedmode_cn);
+			set_property(d, 'msg_sequence', source_sequence, source_sequence_cn);
+			set_property(d, 'repel', source_repel, source_repel_cn);
 		} else {
 			$(d).each(function() {
 				en2cn(this);
 			});
 		}
 		return d;
+	}
+
+	function trans(value, from, to) {
+		var index = from.indexOf(value);
+		if (index === -1) {
+			return value;
+		} else {
+			return to[index]; 
+		}
+	}
+
+	function set_property(d, name, from, to) {
+		(d.hasOwnProperty(name)) && (d[name] = trans(d[name], from, to));
+	}
+
+	function init_property(d, name, value) {
+		if (value) {
+			if (!d.hasOwnProperty(name)) {
+				d[name] = value;
+			}
+		}
 	}
 
 	function handle_list_remote(url, rowdata, commit) {
@@ -134,12 +164,18 @@ function api_ui_init(aDataSet)
 		var content = $('#notify-content').val();
 		var issticky = $("#issticky").jqxDropDownList('getSelectedIndex'); 
 		var iswarnning = $("#iswarnning").jqxDropDownList('getSelectedIndex'); 
-		var viewposi = $("#viewposi").jqxDropDownList('getSelectedIndex'); 
+		var viewposi = $('#viewposi').jqxComboBox('val');
 		var ttl = $('#notify-ttl').jqxNumberInput('getDecimal');
 		var msgmod = $("#message-mode").jqxDropDownList('getSelectedIndex');
+		var msgform = $("#message-form").jqxDropDownList('getSelectedIndex');
 
 		var device_id = document.cookie.match(new RegExp("(^| )device_id=([^;]*)(;|$)"));
 		device_id = device_id? device_id[2] : 'null';
+
+		if (content == '') {
+			console.log('no content');
+			return;
+		}
 
 		var cmdbox = new Object();
 		cmdbox.name = 'manual send message';
@@ -148,8 +184,9 @@ function api_ui_init(aDataSet)
 		cmdbox.sticky = source_sticky[issticky];
 		cmdbox.before_open = source_warning[iswarnning];
 		cmdbox.msgmod = source_msgmod[msgmod];
+		cmdbox.msgform = source_msgform[msgform];
 		cmdbox.time = 	ttl*1000;
-		cmdbox.position = source_posi[viewposi];
+		cmdbox.position = trans(viewposi, source_posi_cn, source_posi);
 
 		jQuery.ajax({
 			type: 'POST',
@@ -248,17 +285,18 @@ function api_ui_init(aDataSet)
 				}
 			});
 
-		var theme = '';
-
 		$("#notify-title").jqxComboBox({theme: theme,source: source_notify_title, selectedIndex:0, width:80, height:28});
 
 		var countries = new Array();
-		$("#notify-content").jqxInput({theme: theme,placeHolder:"请输入通知内容",source:countries,width:443,height:28});
+		$("#notify-content").jqxInput({theme: theme,placeHolder:"请输入通知内容",source:countries,width:340,height:28});
 		$("#send-button").jqxButton({ width: 76, height:30, theme: theme });
 
 		$("#send-button").on('click', send_omp_message);
+		$("#viewposi").jqxComboBox({source:source_posi_cn, selectedIndex:2,width: 87, height: 28, theme: theme,autoDropDownHeight:true });
 
-		$("#property-panel").jqxPanel({theme: theme, height: 30, width:431, theme: theme });
+		$("#property-panel").jqxPanel({theme: theme, height: 30, width:534, theme: theme });
+
+		$("#message-form").jqxDropDownList({source:source_msgform_cn, selectedIndex:0,width: 76, height: 28, theme: theme,autoDropDownHeight:true});
 
 		$("#message-mode").jqxDropDownList({source:source_msgmod_cn, selectedIndex:1,width: 76, height: 28, theme: theme,autoDropDownHeight:true});
 
@@ -269,7 +307,6 @@ function api_ui_init(aDataSet)
 
 		$("#iswarnning").jqxDropDownList({source:source_warning_cn, selectedIndex:0,width: 76, height: 28, theme: theme,autoDropDownHeight:true });
 
-		$("#viewposi").jqxDropDownList({source:source_posi_cn, selectedIndex:2,width: 62, height: 28, theme: theme,autoDropDownHeight:true });
 
 		$('#jqxTabs').jqxTabs({
 			width:958,
@@ -278,7 +315,7 @@ function api_ui_init(aDataSet)
 			//animationType: 'fade',
 			contentTransitionDuration: 500,
 			scrollable:false,
-			selectedItem: 1,
+			selectedItem: 0,
 			});
 
 
@@ -286,6 +323,12 @@ function api_ui_init(aDataSet)
 		终端分类库UI代码
 		**********************************/
 		var sched_lst_data = {
+			editrow : -1,
+			elemHeight : 23,
+			popHeight : 434,
+			popWidth : 520,
+			list_name : 'sched',
+			container_id: '#tab_sched',
 			data_fields : [
 				{name: 'name', type: 'string'},
 				{name: 'status', type: 'string'},
@@ -314,260 +357,121 @@ function api_ui_init(aDataSet)
 				{text: '发送目标', datafield: 'target_device', width: 220},
 				{text: '发送消息', datafield: 'sched_msg', width: 220}
 			],
-			create_form: function(){
-				var base_opt = {theme: theme, width: 400, height: this.elemHeight};
-				var drop_opt = {theme: theme, width: 100, height: this.elemHeight};
-				var drop_opt2 = {theme: theme, width: 100, height: this.elemHeight,autoDropDownHeight:true};
-				var numb_base = $.extend({inputMode: 'simple', decimalDigits:0,  spinButtons: true,symbolPosition: 'right'}, drop_opt);
-				var numb_opt  = $.extend({symbol:'次', decimal:8},  numb_base);
-				var numb_opt2 = $.extend({symbol:'秒', decimal:30}, numb_base);
-				var date_opt = {culture:'zh-CN', formatString: 'F', theme:theme, width:200, height:this.elemHeight};
-				$("#sched_status").jqxDropDownList($.extend({source:source_sched_statuscn, selectedIndex:0}, drop_opt2));
-				$("#sched_start").jqxDateTimeInput(date_opt);
-				$("#sched_end").jqxDateTimeInput(date_opt);
-				$("#sched_times").jqxNumberInput(numb_opt);
-				$("#sched_interval").jqxDropDownList($.extend({source:source_sched_inval_cn, selectedIndex:2}, drop_opt));
-				$("#sched_interval_pre").jqxNumberInput(numb_opt2);
-				$("#sched_interval_mode").jqxDropDownList($.extend({source:source_schedmode_cn, selectedIndex:0}, drop_opt2));
-				$("#sched_sequence").jqxDropDownList($.extend({source:source_sequence_cn, selectedIndex:0}, drop_opt2));
-				$("#sched_repel").jqxDropDownList($.extend({source:source_repel_cn, selectedIndex:0}, drop_opt2));
-				$("#sched_target").jqxDropDownButton(base_opt);
-				$("#sched_message").jqxDropDownButton(base_opt);
+			create_form: function(table_id){
+				var src_filter = function(item) {
+					return (trans(item.msgform, source_msgform_cn, source_msgform) === 'popup');
+				};
+				new_dropdown_grid(table_id, '目标人群：', '#sched_target', '#tab_user', null, 400, this.elemHeight);
+				new_dropdown_grid(table_id, '消息集合：', '#sched_message', '#tab_message', src_filter,  400, this.elemHeight);
+				new_dropdown(table_id, '运行状态：', '#sched_status', 120, this.elemHeight, source_sched_statuscn, 0);
+				new_datatime(table_id, '开始时间：', '#sched_start',200, this.elemHeight);
+				new_datatime(table_id, '结束时间：', '#sched_end',200, this.elemHeight);
+				new_number(table_id, '执行次数：', '#sched_times',120, this.elemHeight, '次', -1, -1);
+				new_dropdown(table_id, '每次间隔：', '#sched_interval', 120, this.elemHeight, source_sched_inval_cn, 2);
+				new_number(table_id, '前距时间：', '#sched_interval_pre',120, this.elemHeight, '秒', 0, 0);
+				new_dropdown(table_id, '间隔模式：', '#sched_interval_mode', 120, this.elemHeight, source_schedmode_cn, 0);
+				new_dropdown(table_id, '消息顺序：', '#sched_sequence', 120, this.elemHeight, source_sequence_cn, 0);
+				new_dropdown(table_id, '任务互斥：', '#sched_repel', 120, this.elemHeight, source_repel_cn, 0);
 			},
 			fill_form : function(data_record) {
-				if (data_record == null) {
-					return;
-				}
-				if (data_record.hasOwnProperty('status')) {
-					$("#sched_status").jqxDropDownList({selectedIndex: source_sched_status_cn.indexOf(data_record.status)}); 
-				}
-				if (data_record.hasOwnProperty('start_time')) {
-					$('#sched_start').jqxDateTimeInput('setDate', data_record.start_time);
-				}
-				if (data_record.hasOwnProperty('finish_time')) {
-					$('#sched_end').jqxDateTimeInput('setDate', data_record.finish_time);
-				}
-				if (data_record.hasOwnProperty('times')) {
-					$('#sched_times').jqxNumberInput('setDecimal', data_record.times);
-				}
-				if (data_record.hasOwnProperty('time_interval')) {
-					$("#sched_interval").jqxDropDownList({selectedIndex: source_sched_inval_cn.indexOf(data_record.time_interval)}); 
-				}
-				if (data_record.hasOwnProperty('time_interval_pre')) {
-					$('#sched_interval_pre').jqxNumberInput('setDecimal', data_record.time_interval_pre);
-				}
-				if (data_record.hasOwnProperty('time_interval_mode')) {
-					$("#sched_interval_mode").jqxDropDownList({selectedIndex: source_schedmode_cn.indexOf(data_record.time_interval_mode)}); 
-				}
-				if (data_record.hasOwnProperty('msg_sequence')) {
-					$("#sched_sequence").jqxDropDownList({selectedIndex: source_sequence_cn.indexOf(data_record.msg_sequence)}); 
-				}
-				if (data_record.hasOwnProperty('repel')) {
-					$("#sched_repel").jqxDropDownList({selectedIndex: source_repel_cn.indexOf(data_record.repel)}); 
-				}
-
-				var get_nametags = function(g) {
-					var a = $(g).jqxGrid('getrows');
-					var tags = Array();
-					var names = Array();
-					$.each(a, function(index, value){
-						var lines = value.tags.split(' ');
-						$.each(lines, function(index, value2) {
-							if (value2) {
-								if (tags.indexOf(value2) === -1) {
-									tags.push(value2);
-								}
-							}
-						});
-						if (names.indexOf(value.name) === -1) {
-							names.push(value.name);
-						}
-					});
-					tags = $.map(tags, function(item){return '['+item+']';});
-					return Array(names, tags);
-				};
-
-				var make_array_data = function(items) {
-					var data = Array();
-					while (items.length > 0) {
-						var line = {};
-						line['1'] = items.shift();
-						line['2'] = items.shift();
-						line['3'] = items.shift();
-						line['4'] = items.shift();
-						line['5'] = items.shift();
-						line['6'] = items.shift();
-						line['7'] = items.shift();
-						line['8'] = items.shift();
-						data.push(line);
-					};
-					return data;
-				};
-
-				var get_source = function(items) {
-					var source =
-					{
-						localdata: make_array_data(items),
-						datafields:
-						[
-							{name: '1', type: 'string'},
-							{name: '2', type: 'string'},
-							{name: '3', type: 'string'},
-							{name: '4', type: 'string'},
-							{name: '5', type: 'string'},
-							{name: '6', type: 'string'},
-							{name: '7', type: 'string'},
-							{name: '8', type: 'string'}
-						],
-						datatype: "array"
-					};
-					var data_adapt = new $.jqx.dataAdapter(source);
-					data_adapt.source_ori = source;
-					return data_adapt;
-				};
-
-				var pop_opt = {
-					width: 640,
-					theme: theme,
-					columnsresize: true,
-					autoheight: true,
-					autorowheight: true,
-					showheader: false,
-					selectionmode: 'multiplecells',
-					columns: [
-						{text: '1', columntype: 'textbox', datafield: '1', width: 80 },
-						{text: '2', columntype: 'textbox', datafield: '2', width: 80 },
-						{text: '3', columntype: 'textbox', datafield: '3', width: 80 },
-						{text: '4', columntype: 'textbox', datafield: '4', width: 80 },
-						{text: '5', columntype: 'textbox', datafield: '5', width: 80 },
-						{text: '6', columntype: 'textbox', datafield: '6', width: 80 },
-						{text: '7', columntype: 'textbox', datafield: '7', width: 80 },
-						{text: '8', columntype: 'textbox', datafield: '8', width: 80 }
-					]
-				};
-
-				var usr_items = get_nametags('#jqxgrid_user_list');
-				var msg_items = get_nametags('#jqxgrid_msg_list');
-
-				var add_value = function(list_str, value) {
-					if (list_str == '') {
-						return value;
-					}
-					var arr = list_str.split(',');
-					if (arr.indexOf(value) === -1) {
-						arr.push(value);
-						return arr.join(',');
-					}
-					return list_str;
-				};
-
-				var del_value = function(list_str, value) {
-					if (list_str == '') {
-						return '';
-					}
-					var arr = list_str.split(',');
-					var index = arr.indexOf(value);
-					if (index !== -1) {
-						arr.splice(index, 1);
-						return arr.join(',');
-					}
-					return list_str;
-				};
-
-				if (this.hasOwnProperty('target_src')) {
-					this.target_src.source_ori.localdata = make_array_data($.merge(usr_items[1], usr_items[0]));
-					this.target_src.dataBind();
-					this.message_src.source_ori.localdata = make_array_data($.merge(msg_items[1], msg_items[0]));
-					this.message_src.dataBind();
-
-					$('#sched_target').jqxDropDownButton('setContent', data_record.target_device);
-					$('#sched_message').jqxDropDownButton('setContent', data_record.sched_msg);
-				} else {
-					var create_dropgird = function (drop_id, ini_grid, source_adpt, data_val) {
-						$(drop_id).jqxDropDownButton('setContent', data_val);
-						$(drop_id).bind('open', function () { 
-							var old_val = $(drop_id).jqxDropDownButton('getContent');
-							var arr = old_val.split(',');
-							var localdatas = source_adpt.source_ori.localdata;
-							var new_val = [];
-							$.each(arr, function(i, target) {
-								$.each(localdatas, function(index, line) {
-									var found = false;
-									$.each(line, function(fieldname, value) {
-										if (target == value) {
-											$(ini_grid).jqxGrid('selectcell', index, fieldname);
-											found = true;
-											return false;
-										}
-									});
-									if (found) {
-										new_val.push(target);
-										return false;
-									}
-								});
-							});
-							var new_text = new_val.join(',');
-							$(drop_id).jqxDropDownButton('setContent', new_text);
-						});
-						$(drop_id).bind('close', function () { 
-							var old_val = $(drop_id).jqxDropDownButton('getContent');
-							$('#sched_target_grid').jqxGrid('clearselection');
-							$('#sched_message_grid').jqxGrid('clearselection');
-							$(drop_id).jqxDropDownButton('setContent', old_val);
-						});
-						$(ini_grid).jqxGrid($.extend({source: source_adpt}, pop_opt));
-						$(ini_grid).on('cellselect', function (event) {
-							var value = $(ini_grid).jqxGrid('getcellvalue', event.args.rowindex, event.args.datafield);
-							if (value == '') {return;} 
-							var old_val = $(drop_id).jqxDropDownButton('getContent');
-							var new_val = add_value(old_val, value);
-							if (old_val === new_val) {return;}
-							$(drop_id).jqxDropDownButton('setContent', new_val);
-						});
-						$(ini_grid).on('cellunselect', function (event) {
-							var value = $(ini_grid).jqxGrid('getcellvalue', event.args.rowindex, event.args.datafield);
-							if (value == '') {return;}; 
-							var old_val = $(drop_id).jqxDropDownButton('getContent');
-							var new_val = del_value(old_val, value);
-							if (old_val === new_val) {return;}
-							$(drop_id).jqxDropDownButton('setContent', new_val);
-						});
-					};
-
-					this.target_src = get_source($.merge(usr_items[1], usr_items[0]));
-					this.message_src = get_source($.merge(msg_items[1], msg_items[0]));
-					create_dropgird('#sched_target', '#sched_target_grid', this.target_src, data_record.target_device);
-					create_dropgird('#sched_message', '#sched_message_grid', this.message_src, data_record.sched_msg);
-				}
+				fill_dropdown_button('#sched_target', data_record, 'target_device');
+				fill_dropdown_button('#sched_message', data_record, 'sched_msg');
+				fill_datetime('#sched_start', data_record, 'start_time');
+				fill_datetime('#sched_end', data_record, 'finish_time');
+				fill_dropdown('#sched_status', data_record, 'status', source_sched_statuscn, 0);
+				fill_dropdown('#sched_interval', data_record, 'time_interval', source_sched_inval_cn, 0);
+				fill_dropdown('#sched_interval_mode', data_record, 'time_interval_mode', source_schedmode_cn, 0);
+				fill_dropdown('#sched_sequence', data_record, 'msg_sequence', source_sequence_cn, 0);
+				fill_dropdown('#sched_repel', data_record, 'repel', source_repel_cn, 0);
+				fill_number('#sched_times', data_record, 'times');
+				fill_number('#sched_interval_pre', data_record, 'time_interval_pre');
 			},
 			extra_form : function () {
 				var new_raw = {};
-				new_raw['status'] = source_sched_status_cn[$("#sched_status").jqxDropDownList('getSelectedIndex')];
-				new_raw['start_time'] = $('#sched_start').jqxDateTimeInput('getDate');
-				new_raw['finish_time'] = $('#sched_end').jqxDateTimeInput('getDate');
-				new_raw['times'] = $('#sched_times').jqxNumberInput('getDecimal');
-				new_raw['time_interval'] = source_sched_inval_cn[$("#sched_interval").jqxDropDownList('getSelectedIndex')];
-				new_raw['time_interval_pre'] = $('#sched_interval_pre').jqxNumberInput('getDecimal');
-				new_raw['time_interval_mode'] = source_schedmode_cn[$("#sched_interval_mode").jqxDropDownList('getSelectedIndex')];
-				new_raw['msg_sequence'] = source_sequence_cn[$("#sched_sequence").jqxDropDownList('getSelectedIndex')];
-				new_raw['repel'] = source_repel_cn[$("#sched_repel").jqxDropDownList('getSelectedIndex')];
-				new_raw['target_device'] = $('#sched_target').jqxDropDownButton('getContent');
-				new_raw['sched_msg'] = $('#sched_message').jqxDropDownButton('getContent');
+				extra_dropdown_button(new_raw, '#sched_target', 'target_device');
+				extra_dropdown_button(new_raw, '#sched_message', 'sched_msg');
+				extra_datetime(new_raw, '#sched_start', 'start_time');
+				extra_datetime(new_raw, '#sched_end', 'finish_time');
+				extra_dropdown(new_raw, '#sched_status', 'status');
+				extra_dropdown(new_raw, '#sched_interval', 'time_interval');
+				extra_dropdown(new_raw, '#sched_interval_mode', 'time_interval_mode');
+				extra_dropdown(new_raw, '#sched_sequence', 'msg_sequence');
+				extra_dropdown(new_raw, '#sched_repel', 'repel');
+				extra_number(new_raw, '#sched_times', 'times');
+				extra_number(new_raw, '#sched_interval_pre', 'time_interval_pre');
 				return new_raw;
-			},
+			}
+		};
+
+		var plans_lst_data = {
 			editrow : -1,
 			elemHeight : 23,
-			popHeight : 434,
+			popHeight : 375,
 			popWidth : 520,
-			list_name : 'sched',
-			add_button_id : '#addrowbutton_sched',
-			del_button_id : '#deleterowbutton_sched',
-			update_button_id : '#updaterowbutton_sched',
-			grid_id : '#jqxgrid_sched_list',
-			pop_win_id : '#popupWindow_sched',
-			name_field_id : '#sched_name',
-			save_id : '#Save_sched',
-			cancel_id : '#Cancel_sched'
+			list_name : 'replace',
+			container_id: '#tab_replace',
+			data_fields : [
+				{name: 'name', type: 'string'},
+				{name: 'status', type: 'string'},
+				{name: 'start_time', type: 'date'},
+				{name: 'finish_time', type: 'date'},
+				{name: 'times', type: 'string'},
+				{name: 'interval', type: 'string'},
+				{name: 'interval_pre', type: 'string'},
+				{name: 'msg_sequence', type: 'string'},
+				{name: 'target_device', type: 'string'},
+				{name: 'replace_msg', type: 'string'}
+			],
+			data_columns : [
+				{text: '任务名称', datafield: 'name', width: 86},
+				{text: '状态', datafield: 'status', width: 32},
+				{text: '开始时间', datafield: 'start_time', width: 90, cellsformat:'yyyy-MM-dd HH:mm:ss'},
+				{text: '结束时间', datafield: 'finish_time', width: 90, cellsformat:'yyyy-MM-dd HH:mm:ss'},
+				{text: '次数', datafield: 'times', width: 40},
+				{text: '间隔', datafield: 'interval', width: 50},
+				{text: '前隔', datafield: 'interval_pre', width: 32},
+				{text: '顺序', datafield: 'msg_sequence', width: 32},
+				{text: '发送目标', datafield: 'target_device', width: 220},
+				{text: '替换消息', datafield: 'replace_msg', width: 284}
+			],
+			create_form: function(table_id){
+				var src_filter = function(item) {
+					return (trans(item.msgform, source_msgform_cn, source_msgform) === 'replace');
+				};
+				new_dropdown_grid(table_id, '目标人群：', '#replace_target', '#tab_user', null, 400, this.elemHeight);
+				new_dropdown_grid(table_id, '消息集合：', '#replace_message', '#tab_message', src_filter,  400, this.elemHeight);
+				new_dropdown(table_id, '运行状态：', '#replace_status', 120, this.elemHeight, source_sched_statuscn, 0);
+				new_datatime(table_id, '开始时间：', '#replace_start',200, this.elemHeight);
+				new_datatime(table_id, '结束时间：', '#replace_end',200, this.elemHeight);
+				new_number(table_id, '执行次数：', '#replace_times',120, this.elemHeight, '次', -1, -1);
+				new_number(table_id, '间隔PV：', '#replace_interval',120, this.elemHeight, '次', 0, 0);
+				new_number(table_id, '前距PV：', '#replace_interval_pre',120, this.elemHeight, '次', 0, 0);
+				new_dropdown(table_id, '消息顺序：', '#replace_sequence', 120, this.elemHeight, source_sequence_cn, 0);
+			},
+			fill_form : function(data_record) {
+				fill_dropdown_button('#replace_target', data_record, 'target_device');
+				fill_dropdown_button('#replace_message', data_record, 'replace_msg');
+				fill_dropdown('#replace_status', data_record, 'status', source_sched_statuscn, 0);
+				fill_datetime('#replace_start', data_record, 'start_time');
+				fill_datetime('#replace_end', data_record, 'finish_time');
+				fill_number('#replace_times', data_record, 'times');
+				fill_number('#replace_interval', data_record, 'interval');
+				fill_number('#replace_interval_pre', data_record, 'interval_pre');
+				fill_dropdown('#replace_sequence', data_record, 'msg_sequence', source_sequence_cn, 0);
+			},
+			extra_form : function () {
+				var new_raw = {};
+				extra_dropdown_button(new_raw, '#replace_target', 'target_device');
+				extra_dropdown_button(new_raw, '#replace_message', 'replace_msg');
+				extra_dropdown(new_raw, '#replace_status', 'status');
+				extra_datetime(new_raw, '#replace_start', 'start_time');
+				extra_datetime(new_raw, '#replace_end', 'finish_time');
+				extra_number(new_raw, '#replace_times', 'times');
+				extra_number(new_raw, '#replace_interval', 'interval');
+				extra_number(new_raw, '#replace_interval_pre', 'interval_pre');
+				extra_dropdown(new_raw, '#replace_sequence', 'msg_sequence');
+				return new_raw;
+			},
 		};
 
 		var userlst_data = {
@@ -576,6 +480,7 @@ function api_ui_init(aDataSet)
 			popHeight : 620,
 			popWidth : 560,
 			list_name : 'user',
+			container_id: '#tab_user',
 			data_fields : [
 				{name: 'name', type: 'string'},
 				{name: 'tags', type: 'string'},
@@ -616,147 +521,67 @@ function api_ui_init(aDataSet)
 				{text: '账户名', datafield: 'bind_account', width: 70},
 				{text: '访问网址正则', datafield: 'Visiting', width: 93},
 			],
-
-			add_button_id : '#addrowbutton_user',
-			del_button_id : '#deleterowbutton_user',
-			update_button_id : '#updaterowbutton_user',
-			grid_id : '#jqxgrid_user_list',
-			pop_win_id : '#popupWindow_user',
-			name_field_id : '#usr_name',
-			save_id : '#Save_user',
-			cancel_id : '#Cancel_user',
-
-			create_form: function(){
-				var base_opt = {theme: theme, width: 400, height: this.elemHeight};
-				var btn_opt = {theme: theme, width: 40, height: this.elemHeight+2};
-				var list_opt = $.extend({}, base_opt, {selectedIndex:0, width: 120, autoDropDownHeight: true});
-				$("#usr_tags").jqxInput(base_opt);
-				$("#usr_newuser").jqxDropDownList($.extend({source:source_newuser_cn}, list_opt));
-				$("#usr_visitor").jqxDropDownList($.extend({source:source_newvisitor_cn}, list_opt));
-				$("#usr_mobile").jqxDropDownList($.extend({source:source_mobile_cn}, list_opt));
-				$("#usr_binded").jqxDropDownList($.extend({source:source_binded_cn}, list_opt));
-
-				var  create_range_widget= function(dropid) {
-					var btnid = dropid+'_btn';
-					var lowid = dropid+'_low';
-					var highid = dropid+'_high';
-					var range_opt = {height: this.elemHeight, theme: theme, placeHolder:'请添加区间：',
-						checkboxes:true, selectedIndex:0, width: 236};
-					var rangeint_opt = {height: this.elemHeight, theme: theme, 
-						inputMode:'simple', spinButtons:true, decimalDigits:0, width:60};
-
-					$(dropid).jqxDropDownList($.extend({source:[]}, range_opt));
-					$(btnid).jqxButton(btn_opt);
-					$(btnid).jqxButton('val', '添加');
-					$(lowid).jqxNumberInput(rangeint_opt);
-					$(highid).jqxNumberInput(rangeint_opt);
-
-					$(btnid).on('click', function () {
-						var min = $(lowid).jqxNumberInput('getDecimal');
-						var max = $(highid).jqxNumberInput('getDecimal');
-						if (min > max) {return;}
-						var value = min+'-'+max;
-						var item = $(dropid).jqxDropDownList('getItemByValue', value);
-						if (item) {
-							item.checked = true;
-							return;
-						}
-						$(dropid).jqxDropDownList('addItem', {value: value}); 
-						item = $(dropid).jqxDropDownList('getItemByValue', value);
-						item.checked = true;
-						$(dropid).jqxDropDownList('selectItem', item ); 
-					});
-				};
-				create_range_widget.call(this, '#usr_stay_time');
-				create_range_widget.call(this, '#usr_visit_times_range');
-				create_range_widget.call(this, '#usr_allpageview_range');
-				create_range_widget.call(this, '#usr_pageview_range');
-
-				$("#usr_browser").jqxInput(base_opt);
-				$("#usr_platform").jqxInput(base_opt);
-				$("#usr_device").jqxInput(base_opt);
-				$("#usr_region").jqxInput(base_opt);
-				$("#usr_language").jqxInput(base_opt);
-				$("#usr_account").jqxInput(base_opt);
-				$("#usr_useragent").jqxInput(base_opt);
-				$("#usr_visiting").jqxInput(base_opt);
+			create_form: function(table_id){
+				new_input(table_id, '分类标签：', "#usr_tags", 400, this.elemHeight);
+				new_input(table_id, '浏览器：', "#usr_browser", 400, this.elemHeight);
+				new_input(table_id, '操作系统：', "#usr_platform", 400, this.elemHeight);
+				new_input(table_id, '设备名：', "#usr_device", 400, this.elemHeight);
+				new_dropdown(table_id, '移动设备：', '#usr_mobile', 120, this.elemHeight, source_mobile_cn, 0);
+				new_input(table_id, '地区：', "#usr_region", 400, this.elemHeight);
+				new_input(table_id, '语言：', "#usr_language", 400, this.elemHeight);
+				new_input(table_id, '浏览器特征：', "#usr_useragent", 400, this.elemHeight);
+				new_dropdown_range(table_id,'来访停留秒数：','#usr_stay_time', 400, this.elemHeight);
+				new_dropdown_range(table_id,'来访次数区间：','#usr_visit_times_range', 400, this.elemHeight);
+				new_dropdown_range(table_id,'总页面浏览数：', '#usr_allpageview_range', 400, this.elemHeight);
+				new_dropdown_range(table_id,'页面浏览数：', '#usr_pageview_range', 400, this.elemHeight);
+				new_dropdown(table_id, '新用户：', '#usr_newuser', 120, this.elemHeight, source_newuser_cn, 0);
+				new_dropdown(table_id, '新访第一页：', '#usr_visitor', 120, this.elemHeight, source_newvisitor_cn, 0);
+				new_dropdown(table_id, '已注册：', '#usr_binded', 120, this.elemHeight, source_binded_cn, 0);
+				new_input(table_id, '账户名：', "#usr_account", 400, this.elemHeight);
+				new_input(table_id, '访问网址：', "#usr_visiting", 400, this.elemHeight);
 			},
-
+			fill_form : function(data_record) {
+				fill_dropdown_range('#usr_stay_time', data_record.stay_time);
+				fill_dropdown_range('#usr_visit_times_range', data_record.visit_times_range);
+				fill_dropdown_range('#usr_pageview_range', data_record.pageview_range);
+				fill_dropdown_range('#usr_allpageview_range', data_record.allpageview_range);
+				fill_input('#usr_tags', data_record, 'tags'); 
+				fill_input('#usr_browser', data_record, 'browser'); 
+				fill_input('#usr_platform', data_record, 'platform'); 
+				fill_input('#usr_device', data_record, 'device_name'); 
+				fill_input('#usr_region', data_record, 'region'); 
+				fill_input('#usr_region', data_record, 'region'); 
+				fill_input('#usr_language', data_record, 'language'); 
+				fill_input('#usr_account', data_record, 'bind_account'); 
+				fill_input('#usr_useragent', data_record, 'UserAgent'); 
+				fill_input('#usr_visiting', data_record, 'Visiting'); 
+				fill_dropdown('#usr_newuser', data_record, 'new_user', source_newuser_cn, 0);
+				fill_dropdown('#usr_visitor', data_record, 'new_visitor', source_newvisitor_cn, 0);
+				fill_dropdown('#usr_mobile', data_record, 'ismobiledevice', source_mobile_cn, 0);
+				fill_dropdown('#usr_binded', data_record, 'binded', source_binded_cn, 0);
+			},
 			extra_form : function () {
-				var check = function(d) {return d?d:'--'};
-				var getid = function(d) {var id = $(d).jqxDropDownList('getSelectedIndex');return (id>=0)?id:0;};
-				var get_drop = function(d) {
-					var res = $(d).jqxDropDownList('val');
-					return (res==='')? '--' : res;
-				};
 				var new_raw = {};
-				new_raw['tags'] = rm_comma($('#usr_tags').val());
-				new_raw['stay_time'] = get_drop('#usr_stay_time');
-				new_raw['visit_times_range'] = get_drop('#usr_visit_times_range');
-				new_raw['pageview_range'] = get_drop('#usr_pageview_range');
-				new_raw['allpageview_range'] = get_drop('#usr_allpageview_range');
-				new_raw['new_user'] = source_newuser_cn[getid("#usr_newuser")];
-				new_raw['new_visitor'] = source_newvisitor_cn[getid("#usr_visitor")];
-				new_raw['ismobiledevice'] = source_mobile_cn[getid("#usr_mobile")];
-				new_raw['binded'] = source_binded_cn[getid("#usr_binded")];
-				new_raw['browser'] = check($('#usr_browser').val());
-				new_raw['platform'] = check($('#usr_platform').val());
-				new_raw['device_name'] = check($('#usr_device').val());
-				new_raw['region'] = check($('#usr_region').val());
-				new_raw['language'] = check($('#usr_language').val());
-				new_raw['bind_account'] = check($('#usr_account').val());
-				new_raw['UserAgent'] = check($('#usr_useragent').val());
-				new_raw['Visiting'] = check($('#usr_visiting').val());
+				var check = function(d) {return d?d:'--'};
+				extra_input(new_raw, '#usr_tags', 'tags');
+				extra_input(new_raw, '#usr_browser', 'browser', check);
+				extra_input(new_raw, '#usr_platform', 'platform', check);
+				extra_input(new_raw, '#usr_device', 'device_name', check);
+				extra_input(new_raw, '#usr_region', 'region', check);
+				extra_input(new_raw, '#usr_language', 'language', check);
+				extra_input(new_raw, '#usr_useragent', 'UserAgent', check);
+				extra_input(new_raw, '#usr_account', 'bind_account', check);
+				extra_input(new_raw, '#usr_visiting', 'Visiting', check);
+				extra_dropdown(new_raw, '#usr_stay_time', 'stay_time', check);
+				extra_dropdown(new_raw, '#usr_visit_times_range', 'visit_times_range', check);
+				extra_dropdown(new_raw, '#usr_pageview_range', 'pageview_range', check);
+				extra_dropdown(new_raw, '#usr_allpageview_range', 'allpageview_range', check);
+				extra_dropdown(new_raw, '#usr_newuser', 'new_user', check);
+				extra_dropdown(new_raw, '#usr_visitor', 'new_visitor', check);
+				extra_dropdown(new_raw, '#usr_mobile', 'ismobiledevice', check);
+				extra_dropdown(new_raw, '#usr_binded', 'binded', check);
 				return new_raw;
 			},
-
-			fill_form : function(data_record) {
-				if (data_record === null) {
-					return;
-				}
-				var set_drop = function(d,val) {
-					$(d).jqxDropDownList('clear');
-					if ((val==='') || (val==='--')) {return;}
-					if (val === undefined) {return;}
-					var arr = val.split(',');
-					$.each(arr, function() {
-						$(d).jqxDropDownList('addItem', {value: this}); 
-						item = $(d).jqxDropDownList('getItemByValue', this);
-						item.checked = true;
-						$(d).jqxDropDownList('selectItem', item); 
-					});
-				};
-				set_drop('#usr_stay_time', data_record.stay_time);
-				set_drop('#usr_visit_times_range', data_record.visit_times_range);
-				set_drop('#usr_pageview_range', data_record.pageview_range);
-				set_drop('#usr_allpageview_range', data_record.allpageview_range);
-
-				if (!data_record.hasOwnProperty('new_user')) {
-					data_record.new_user = source_newuser_cn[0];
-				}
-				if (!data_record.hasOwnProperty('new_visitor')) {
-					data_record.new_visitor = source_newvisitor_cn[0];
-				}
-				if (!data_record.hasOwnProperty('ismobiledevice')) {
-					data_record.ismobiledevice = source_mobile_cn[0];
-				}
-				if (!data_record.hasOwnProperty('binded')) {
-					data_record.binded = source_binded_cn[0];
-				}
-				$('#usr_tags').val(data_record.tags);
-				$("#usr_newuser").jqxDropDownList({selectedIndex: source_newuser_cn.indexOf(data_record.new_user)}); 
-				$("#usr_visitor").jqxDropDownList({selectedIndex: source_newvisitor_cn.indexOf(data_record.new_visitor)}); 
-				$("#usr_mobile").jqxDropDownList({selectedIndex: source_mobile_cn.indexOf(data_record.ismobiledevice)}); 
-				$("#usr_binded").jqxDropDownList({selectedIndex: source_binded_cn.indexOf(data_record.binded)}); 
-				$('#usr_browser').val(data_record.browser);
-				$('#usr_platform').val(data_record.platform);
-				$('#usr_device').val(data_record.device_name);
-				$('#usr_region').val(data_record.region);
-				$('#usr_language').val(data_record.language);
-				$('#usr_account').val(data_record.bind_account);
-				$('#usr_useragent').val(data_record.UserAgent);
-				$('#usr_visiting').val(data_record.Visiting);
-			}
 		};
 
 		/**********************************
@@ -766,15 +591,17 @@ function api_ui_init(aDataSet)
 		var msg_lst_data = {
 			editrow : -1,
 			elemHeight : 23,
-			popHeight : 430,
+			popHeight : 450,
 			popWidth : 550,
 			list_name : 'message',
+			container_id: '#tab_message',
 			data_fields : [
 				{name: 'name', type: 'string'},
 				{name: 'tags', type: 'string'},
 				{name: 'title', type: 'string'},
 				{name: 'text', type: 'string'},
 				{name: 'msgmod', type: 'string'},
+				{name: 'msgform', type: 'string'},
 				{name: 'position', type: 'string'},
 				{name: 'sticky', type: 'string'},
 				{name: 'time', type: 'string'},
@@ -784,80 +611,115 @@ function api_ui_init(aDataSet)
 				{ text: '消息名称', datafield: 'name', width: 130 },
 				{ text: '分类标签', datafield: 'tags', width: 80 },
 				{ text: '消息标题', datafield: 'title', width: 150 },
-				{ text: '消息内容', datafield: 'text', width: 408},
+				{ text: '消息内容', datafield: 'text', width: 318},
 				{ text: '类型', datafield: 'msgmod', width: 32},
-				{ text: '位置', datafield: 'position', width: 32},
+				{ text: '形式', datafield: 'msgform', width: 32},
+				{ text: '位置', datafield: 'position', width: 100},
 				{ text: '显退', datafield: 'sticky', width: 32, cellsalign: 'right'},
-				{ text: '显示时长', datafield: 'time', width: 60, cellsalign: 'right'},
+				{ text: '时长', datafield: 'time', width: 50, cellsalign: 'right'},
 				{ text: '弹窗', datafield: 'before_open', width: 32, cellsalign: 'right'}
 			],
-
-			add_button_id : '#addrowbutton',
-			del_button_id : '#deleterowbutton',
-			update_button_id : '#updaterowbutton',
-			grid_id : '#jqxgrid_msg_list',
-			pop_win_id : '#popupWindow_msg',
-			name_field_id : '#msg_name',
-			save_id : '#Save_msg',
-			cancel_id : '#Cancel_msg',
-
-			create_form: function(){
-				var drop_opt = {theme: theme, width: 120, height: this.elemHeight, autoDropDownHeight:true};
-				$("#msg_tags").jqxInput({theme: theme, width: 400, height: this.elemHeight});
-				$("#msg_title").jqxComboBox({theme: theme,source: source_notify_title, selectedIndex:0, width: 400, height: this.elemHeight});
-				$("#msg_content").jqxInput({theme: theme,source:countries, width: 400, height: 84});
-				$("#msg_msgmode").jqxDropDownList($.extend({source:source_msgmod_cn, selectedIndex:1}, drop_opt));
-				$("#msg_position").jqxDropDownList($.extend({source:source_posi_cn, selectedIndex:2}, drop_opt));
-				$("#msg_sticky").jqxDropDownList($.extend({source:source_sticky_cn, selectedIndex:0}, drop_opt));
-				$("#msg_before_open").jqxDropDownList($.extend({source:source_warning_cn, selectedIndex:0}, drop_opt));
-				$("#msg_time").jqxNumberInput({theme: theme,symbol:'秒',symbolPosition:'right',min:1,decimal:8,decimalDigits:0, 
-								inputMode:'simple',spinButtons:true, width: 120,  height: this.elemHeight});
+			create_form: function(table_id){
+				new_input(table_id, '分类标签：', "#msg_tags", 400, this.elemHeight);
+				new_combobox(table_id, '消息标题：', "#msg_title", 400, this.elemHeight, source_notify_title);
+				new_textarea(table_id, '消息内容：', "#msg_content", 400, 84);
+				new_dropdown(table_id, '消息类型：', '#msg_msgmode', 120, this.elemHeight, source_msgmod_cn, 1);
+				new_dropdown(table_id, '消息形式：', '#msg_msgform', 120, this.elemHeight, source_msgform_cn, 1);
+				new_dropdown(table_id, '显示位置：', '#msg_position', 120, this.elemHeight, source_posi_cn, 2);
+				new_dropdown(table_id, '固定显示：', '#msg_sticky', 120, this.elemHeight, source_sticky_cn, 0);
+				new_number(table_id, '显示时长：', '#msg_time',120, this.elemHeight, '毫秒', 1, 8000);
+				new_dropdown(table_id, '弹窗警示：', '#msg_before_open', 120, this.elemHeight, source_warning_cn, 0);
 			},
-
 			fill_form : function(data_record) {
-			    	if (!data_record.hasOwnProperty('msgmod')) {
-					data_record.msgmod = source_msgmod_cn[1];
-				}
-			    	if (!data_record.hasOwnProperty('position')) {
-					data_record.position = source_posi_cn[2];
-				}
-			    	if (!data_record.hasOwnProperty('sticky')) {
-					data_record.sticky = source_sticky_cn[0];
-				}
-			    	if (!data_record.hasOwnProperty('time')) {
-					data_record.time = 8000;
-				}
-			    	if (!data_record.hasOwnProperty('before_open')) {
-					data_record.before_open = source_warning_cn[0];
-				}
-				$("#msg_tags").val(data_record.tags);
-				$('#msg_title').jqxComboBox('val', data_record.title);
-				$("#msg_content").val(data_record.text);
-				$("#msg_msgmode").jqxDropDownList({selectedIndex: source_msgmod_cn.indexOf(data_record.msgmod)}); 
-				$("#msg_position").jqxDropDownList({selectedIndex: source_posi_cn.indexOf(data_record.position)}); 
-				$("#msg_sticky").jqxDropDownList({selectedIndex: source_sticky_cn.indexOf(data_record.sticky)}); 
-				$('#msg_time').jqxNumberInput('setDecimal', data_record.time / 1000);
-				$("#msg_before_open").jqxDropDownList({selectedIndex: source_warning_cn.indexOf(data_record.before_open)}); 
+				fill_input('#msg_tags', data_record, 'tags'); 
+				fill_combobox('#msg_title', data_record, 'title'); 
+				fill_textarea('#msg_content', data_record, 'text');
+				fill_dropdown('#msg_msgmode', data_record, 'msgmod', source_msgmod_cn, 1);
+				fill_dropdown('#msg_msgform', data_record, 'msgform', source_msgform_cn, 0);
+				var items = get_nametags('#tab_posi'+'_jqxgrid_list');
+				fill_dropdown('#msg_position', data_record, 'position', source_posi_cn, 2, items[2]);
+				fill_dropdown('#msg_sticky', data_record, 'sticky', source_sticky_cn, 0);
+				fill_dropdown('#msg_before_open', data_record, 'before_open', source_warning_cn, 0);
+				fill_number('#msg_time', data_record, 'time', 8000);
 			},
-
 			extra_form : function () {
-				var getid = function(d) {var id = $(d).jqxDropDownList('getSelectedIndex');return (id>=0)?id:0;};
 				var new_raw = {};
-				new_raw['tags'] = rm_comma($('#msg_tags').val());
-				new_raw['title'] = $('#msg_title').jqxComboBox('val');
-				new_raw['text'] = rm_space($('#msg_content').val());
-				new_raw['msgmod'] = source_msgmod_cn[getid("#msg_msgmode")];
-				new_raw['position'] = source_posi_cn[getid("#msg_position")];
-				new_raw['sticky'] = source_sticky_cn[getid("#msg_sticky")];
-				new_raw['time'] = $('#msg_time').jqxNumberInput('getDecimal') * 1000;
-				new_raw['before_open'] = source_warning_cn[getid("#msg_before_open")];
+				extra_input(new_raw, '#msg_tags', 'tags');
+				extra_combobox(new_raw, '#msg_title', 'title');
+				extra_textarea(new_raw, '#msg_content', 'text', function(d){return rm_space(d);});
+				extra_dropdown(new_raw, '#msg_msgmode', 'msgmod');
+				extra_dropdown(new_raw, '#msg_msgform', 'msgform');
+				extra_dropdown(new_raw, '#msg_position', 'position');
+				extra_dropdown(new_raw, '#msg_sticky', 'sticky');
+				extra_dropdown(new_raw, '#msg_before_open', 'before_open');
+				extra_number(new_raw, '#msg_time', 'time');
+				//修正可能的错误输入
+				if (source_posi_cn.indexOf(new_raw.position) === -1) {
+					new_raw.msgform = source_msgform_cn[1];
+				} else {
+					new_raw.msgform = source_msgform_cn[0];
+				}
+				return new_raw;
+			}
+		};
+
+		/**********************************
+		位置库 UI代码
+		**********************************/
+
+		var posi_lst_data = {
+			editrow : -1,
+			elemHeight : 23,
+			popHeight : 280,
+			popWidth : 550,
+			list_name : 'posi',
+			container_id: '#tab_posi',
+			data_fields : [
+				{name: 'name', type: 'string'},
+				{name: 'tags', type: 'string'},
+				{name: 'urls', type: 'string'},
+				{name: 'selectors', type: 'string'},
+				{name: 'insert', type: 'string'}, //before or after
+				{name: 'action', type: 'string'} //hide or delete
+			],
+			data_columns : [
+				{ text: '定位名称', datafield: 'name', width: 130},
+				{ text: '分类标签', datafield: 'tags', width: 80},
+				{ text: 'URL正则', datafield: 'urls', width: 327},
+				{ text: '选择器',  datafield: 'selectors', width: 327},
+				{ text: '位置', datafield: 'insert', width: 45},
+				{ text: '动作', datafield: 'action', width: 45}
+			],
+			create_form: function(table_id){
+				new_input(table_id, '分类标签：', '#posi_tags', 400, this.elemHeight);
+				new_dropdown_strarr(table_id, 'URL正则：', '#posi_urls', 400, this.elemHeight, '请添加URL正则表达式：');
+				new_dropdown_strarr(table_id, '定位选择器：', '#posi_selectors', 400, this.elemHeight, '请添加选择器：');
+				new_dropdown(table_id, '插入位置', '#posi_insert', 120, this.elemHeight, source_insert_cn, 0);
+				new_dropdown(table_id, '执行动作', '#posi_action', 120, this.elemHeight, source_action_cn, 0);
+			},
+			fill_form : function(data_record) {
+				fill_input('#posi_tags', data_record, 'tags');
+				fill_dropdown_strarr('#posi_urls', data_record, 'urls');
+				fill_dropdown_strarr('#posi_selectors', data_record, 'selectors');
+				fill_dropdown('#posi_insert', data_record, 'insert', source_insert_cn);
+				fill_dropdown('#posi_action', data_record, 'action', source_action_cn);
+			},
+			extra_form : function () {
+				var new_raw = {};
+				extra_input(new_raw, '#posi_tags', 'tags');
+				extra_dropdown(new_raw, '#posi_urls', 'urls');
+				extra_dropdown(new_raw, '#posi_selectors', 'selectors');
+				extra_dropdown(new_raw, '#posi_insert', 'insert');
+				extra_dropdown(new_raw, '#posi_action', 'action');
 				return new_raw;
 			}
 		};
 
 		init_grid(sched_lst_data);
+		init_grid(plans_lst_data);
 		init_grid(userlst_data);
 		init_grid(msg_lst_data);
+		init_grid(posi_lst_data);
 
 		function init_grid(p)
 		{
@@ -884,6 +746,34 @@ function api_ui_init(aDataSet)
 				}
 				});
 
+
+			//数据定义完毕，下面是定义ui控件
+			p.add_button_id = p.container_id + '_add_button';
+			p.del_button_id = p.container_id + '_delete_button';
+			p.update_button_id = p.container_id + '_update_button';
+			p.grid_id = p.container_id + '_jqxgrid_list';
+			p.pop_win_id = p.container_id + '_popup_window';
+			p.table_id = p.container_id + '_inputtable';
+			p.name_field_id = p.container_id + '_inputname';
+			p.save_id = p.container_id + '_save_id';
+			p.cancel_id = p.container_id + '_cancel_id';
+
+			var html = [
+				'<div style="margin-right: 5px; float: right;">',
+					'<input id="'+rm_tagid(p.add_button_id)+'" type="button" value="添加" />',
+					'<input id="'+rm_tagid(p.update_button_id)+'" type="button" value="修改" />',
+					'<input id="'+rm_tagid(p.del_button_id)+'" type="button" value="删除" />',
+				'</div>',
+				'<div id="'+rm_tagid(p.grid_id)+'"></div>',
+				'<div id="'+rm_tagid(p.pop_win_id)+'">',
+					'<div>编辑列表记录</div>',
+					'<div style="overflow: hidden;">',
+					'<table id="'+rm_tagid(p.table_id)+'">',
+					'</table>',
+					'</div>',
+				'</div>'].join('');
+			$(p.container_id).append(html);
+
 			$(p.grid_id).jqxGrid({
 				source: dataAdapter,
 				theme: theme,
@@ -895,9 +785,6 @@ function api_ui_init(aDataSet)
 				autorowheight: true,
 				columns: p.data_columns
 			});
-
-			//数据定义完毕，下面是定义ui控件
-
 
 			$(p.add_button_id).jqxButton({ theme: theme, width: 70});
 			$(p.del_button_id).jqxButton({ theme: theme, width: 70});
@@ -947,15 +834,23 @@ function api_ui_init(aDataSet)
 				theme: theme, 
 				isModal: true, 
 				autoOpen: false, 
-				cancelButton: $(p.cancel_id), 
 				modalOpacity: 0.01           
 			});
 
-			p.create_form();
+			new_input(p.table_id, '名称：', p.name_field_id, 400, p.elemHeight);
+			p.create_form(p.table_id);
 
-			$(p.name_field_id).jqxInput({theme: theme, width: 400, height: p.elemHeight});
-			$(p.save_id).jqxButton({width: 100, height:40, theme: theme });
+			var html = '<tr><td align="right"></td>';
+			html += '<td style="padding-top: 10px;" align="right">';
+			html += '<input id="'+rm_tagid(p.save_id)+'" style="margin-right: 5px;" type="button" value="保存" />';
+			html += '<input id="'+rm_tagid(p.cancel_id)+'" type="button" value="取消" /></td></tr>';
+			$(p.table_id).append(html);
+
 			$(p.cancel_id).jqxButton({width: 76, height:40, theme: theme });
+			$(p.cancel_id).click(function () {
+				$(p.pop_win_id).jqxWindow('hide');
+			});
+			$(p.save_id).jqxButton({width: 100, height:40, theme: theme });
 			$(p.save_id).click(function () {
 				var fixed_name = function (msg_name) {
 					var rows = $(p.grid_id).jqxGrid('getrows');
@@ -997,11 +892,484 @@ function api_ui_init(aDataSet)
 
 	});
 
+	function new_dropdown(table_id, title, drop_id, width, height, source_cn, index) 
+	{
+		var html = '<tr><td align="right">'+title+'</td>';
+		html += '<td align="left">';
+		html += '<div id="'+rm_tagid(drop_id)+'"></div>';
+		html += '</td></tr>';
+		$(table_id).append(html);
+		$(drop_id).jqxDropDownList({source:source_cn, selectedIndex:index,
+			width: width, height: height, theme: theme,autoDropDownHeight:true});
+	}
+
+	function fill_dropdown(drop_id, data_record, name, list, init_index, ext_list)
+	{
+		if (data_record == null) {return;}
+		if (typeof init_index !== 'undefined') {
+			init_property(data_record, name, list[init_index]);
+		}
+
+		if (ext_list != null) {
+			var new_list = $.merge($.merge([], list), ext_list);
+			$(drop_id).jqxDropDownList({source: new_list});
+		}
+
+		if (data_record.hasOwnProperty(name)) {
+			$(drop_id).jqxDropDownList('val', data_record[name]); 
+		}
+	}
+
+	function extra_dropdown(extra_to, drop_id, name, filter)
+	{
+		var value = $(drop_id).jqxDropDownList('val'); 
+		if (typeof filter === 'function') {
+			value = filter(value);
+		}
+		extra_to[name] = value;
+	}
+
+	function new_dropdown_strarr(table_id, title, drop_id, width, height, tips) 
+	{
+		var btnid = drop_id+'_btn';
+		var inputid = drop_id+'_input';
+		var drop_len = 400/2;
+		var btn_len = 40;
+		var input_len = 400 - drop_len - btn_len - 2;
+
+		var html = '<tr><td align="right">'+title+'</td>';
+		html += '<td align="left">';
+		html += '<div id="'+rm_tagid(drop_id)+'" style="float: left;"></div>';
+		html += '<input type="button" value="添加" id="'+rm_tagid(btnid)+'" style="float: left;"/>';
+		html += '<input type="text" id="'+rm_tagid(inputid)+'" style="float: left;" /></td></tr>';
+		$(table_id).append(html);
+
+		var range_opt = {height: height, theme: theme, placeHolder:tips, checkboxes:true, selectedIndex:0, width: drop_len};
+		var btn_opt = {theme: theme, width: btn_len, height: height+2};
+
+		$(drop_id).jqxDropDownList($.extend({source:[]}, range_opt));
+		$(btnid).jqxButton(btn_opt);
+		$(inputid).jqxInput({theme: theme, width: input_len, height: height});
+
+		$(btnid).on('click', function () {
+			var value = $(inputid).val();
+			var item = $(drop_id).jqxDropDownList('getItemByValue', value);
+			if (item) {
+				item.checked = true;
+				return;
+			}
+			$(drop_id).jqxDropDownList('addItem', {value: value}); 
+			item = $(drop_id).jqxDropDownList('getItemByValue', value);
+			item.checked = true;
+			$(drop_id).jqxDropDownList('selectItem', item ); 
+		});
+	}
+
+	function fill_dropdown_strarr(drop_id, data_record, name) 
+	{
+		if (data_record == null) {return;}
+		var d = drop_id;
+		var inputid = drop_id+'_input';
+		$(inputid).val('');
+		$(d).jqxDropDownList('clear');
+		if (!data_record.hasOwnProperty(name)) {
+			return;
+		}
+		var val = data_record[name];
+		if (val === '') {return;}
+		var arr = val.split(',');
+		$.each(arr, function() {
+			$(d).jqxDropDownList('addItem', {value: this}); 
+			var item = $(d).jqxDropDownList('getItemByValue', this);
+			item.checked = true;
+			$(d).jqxDropDownList('selectItem', item); 
+		});
+	}
+
+	function new_number(table_id, title, id, width, height, symbol, min, init) {
+		var html = '<tr><td align="right">'+title+'</td>';
+		html += '<td align="left"><div id="'+rm_tagid(id)+'" /></td></tr>';
+		$(table_id).append(html);
+		$(id).jqxNumberInput({theme: theme,symbol:symbol,symbolPosition:'right',
+			min:min,decimal:init,decimalDigits:0, 
+			inputMode:'simple',spinButtons:true, width: width, height:height});
+	}
+
+	function fill_number(input_id, data_record, name, init)
+	{
+		if (data_record == null) {return;}
+		init_property(data_record, name, init);
+		if (data_record.hasOwnProperty(name)) {
+			$(input_id).jqxNumberInput('setDecimal', data_record[name]);
+		}
+	}
+
+	function extra_number(extra_to, tag_id, name) 
+	{
+		var value = $(tag_id).jqxNumberInput('getDecimal');
+		extra_to[name] = value;
+	}
+
+	function new_datatime(table_id, title, id, width, height) 
+	{
+		var html = '<tr><td align="right">'+title+'</td>';
+		html += '<td align="left"><div type="text" id="'+rm_tagid(id)+'" /></td></tr>';
+		$(table_id).append(html);
+		var date_opt = {culture:'zh-CN', formatString: 'F', theme:theme, width:200, height:this.elemHeight};
+		$(id).jqxDateTimeInput(date_opt);
+	}
+
+	function fill_datetime(time_id, data_record, name)
+	{
+		if (data_record == null) {return;}
+		if (data_record.hasOwnProperty(name)) {
+			$(time_id).jqxDateTimeInput('setDate', data_record[name]);
+		}
+	}
+
+	function extra_datetime(extra_to, time_id, name) 
+	{
+		var value = $(time_id).jqxDateTimeInput('getDate');
+		extra_to[name] = value;
+	}
+
+	function new_input(table_id, title, id, width, height) {
+		var html = '<tr><td align="right">'+title+'</td>';
+		html += '<td align="left"><input type="text" id="'+rm_tagid(id)+'" /></td></tr>';
+		$(table_id).append(html);
+		$(id).jqxInput({theme: theme, width: width, height: height, source:[]});
+	}
+
+	function new_textarea(table_id, title, id, width, height) {
+		var html = '<tr><td align="right">'+title+'</td>';
+		html += '<td align="left"><textarea id="'+rm_tagid(id)+'"></textarea></td></tr>';
+		$(table_id).append(html);
+		$(id).jqxInput({theme: theme, width: width, height: height});
+	}
+
+	function fill_textarea(input_id, data_record, name, init)
+	{
+		if (data_record == null) {return;}
+		return fill_input(input_id, data_record, name, init);
+	}
+
+	function extra_textarea(extra_to, input_id, name, filter) 
+	{
+		return extra_input(extra_to, input_id, name, filter);
+	}
+
+	function new_combobox(table_id, title, id, width, height, source_arr) 
+	{
+		var html = '<tr><td align="right">'+title+'</td>';
+		html += '<td align="left"><div id="'+rm_tagid(id)+'" /></td></tr>';
+		$(table_id).append(html);
+		$(id).jqxComboBox({theme: theme,source: source_arr, selectedIndex:0, width: width, height: height});
+	}
+
+	function fill_combobox(input_id, data_record, name, init)
+	{
+		if (data_record == null) {return;}
+		if (typeof init !== 'undefined') {
+			init_property(data_record, name, init);
+		}
+		if (data_record.hasOwnProperty(name)) {
+			$(input_id).jqxComboBox('val', data_record[name]);
+		}
+	}
+
+	function extra_combobox(extra_to, input_id, name) {
+		var value = $(input_id).jqxComboBox('val');
+		extra_to[name] = value;
+	}
+
+	function fill_input(input_id, data_record, name, init)
+	{
+		if (data_record == null) {return;}
+		if (typeof init !== 'undefined') {
+			init_property(data_record, name, init);
+		}
+		if (data_record.hasOwnProperty(name)) {
+			$(input_id).val(data_record[name]);
+		}
+	}
+
+	function extra_input(extra_to, input_id, name, filter) 
+	{
+		var value = $(input_id).val();
+		if (typeof filter === 'function') {
+			value = filter(value);
+		}
+		extra_to[name] = value;
+	}
+
+
 	function rm_comma (d) {
 		return d.replace(/,/g, '');
+	}
+
+	function rm_tagid(d) {
+		return d.replace(/#/g, '');
 	}
 
 	function rm_space (d) {
 		return d.replace(/(\r\n|\n|\r)/gm,"");
 	}
+
+
+	function add_value(list_str, value) {
+		if (list_str == '') {
+			return value;
+		}
+		var arr = list_str.split(',');
+		if (arr.indexOf(value) === -1) {
+			arr.push(value);
+			return arr.join(',');
+		}
+		return list_str;
+	}
+
+	function del_value(list_str, value) {
+		if (list_str == '') {
+			return '';
+		}
+		var arr = list_str.split(',');
+		var index = arr.indexOf(value);
+		if (index !== -1) {
+			arr.splice(index, 1);
+			return arr.join(',');
+		}
+		return list_str;
+	}
+
+
+	function get_nametags(grid_id, filter) {
+		var a = $(grid_id).jqxGrid('getrows');
+		var tags = Array();
+		var names = Array();
+
+		var fn=function(d){return true;};
+		if (typeof(filter) === 'function') {
+			fn = filter;
+		}
+
+		$.each(a, function(index, value){
+				if (!fn(value)) {
+					return;
+				}
+				
+				var lines = value.tags.split(' ');
+				$.each(lines, function(index, value2) {
+					if (value2) {
+						if (tags.indexOf(value2) === -1) {
+							tags.push(value2);
+						}
+					}
+				});
+
+				if (names.indexOf(value.name) === -1) {
+					names.push(value.name);
+				}
+		});
+		tags = $.map(tags, function(item){return '['+item+']';});
+		var all = $.extend([], tags, names);
+		return Array(names, tags, all);
+	}
+
+	function fill_dropdown_button(drop_id, data_record, name)
+	{
+		if (data_record == null) {return;}
+		if (data_record.hasOwnProperty(name)) {
+			$(drop_id).jqxDropDownButton('setContent', data_record[name]);
+		}
+	}
+
+	function extra_dropdown_button(extra_to, drop_id, name)
+	{
+		var value = $(drop_id).jqxDropDownButton('getContent');
+		extra_to[name] = value;
+	}
+
+	function new_dropdown_grid(table_id, title, drop_id, tab_id, src_filter, width, height) 
+	{
+		var grid_id = drop_id + '_grid';
+		var grid_src = tab_id+'_jqxgrid_list';
+		$(table_id).append([
+		'<tr>',
+		  '<td align="right">'+title+'</td>',
+		  '<td align="left">',
+		    '<div id="'+rm_tagid(drop_id)+'">',
+			'<div style="border: none;" id="'+rm_tagid(grid_id)+'"></div>',
+		    '</div>',
+		  '</td>',
+		'</tr>'].join(''));
+		$(drop_id).jqxDropDownButton({theme: theme, width: width, height: height});
+
+		$(grid_id).jqxGrid({
+			width: 640,
+			theme: theme,
+			columnsresize: true,
+			autoheight: true,
+			autorowheight: true,
+			showheader: false,
+			selectionmode: 'multiplecells',
+			columns: [
+				{text: '1', columntype: 'textbox', datafield: '1', width: 80 },
+				{text: '2', columntype: 'textbox', datafield: '2', width: 80 },
+				{text: '3', columntype: 'textbox', datafield: '3', width: 80 },
+				{text: '4', columntype: 'textbox', datafield: '4', width: 80 },
+				{text: '5', columntype: 'textbox', datafield: '5', width: 80 },
+				{text: '6', columntype: 'textbox', datafield: '6', width: 80 },
+				{text: '7', columntype: 'textbox', datafield: '7', width: 80 },
+				{text: '8', columntype: 'textbox', datafield: '8', width: 80 }
+			],
+			source : new $.jqx.dataAdapter({
+				localdata: [],
+				datafields:
+				[
+					{name: '1', type: 'string'},
+					{name: '2', type: 'string'},
+					{name: '3', type: 'string'},
+					{name: '4', type: 'string'},
+					{name: '5', type: 'string'},
+					{name: '6', type: 'string'},
+					{name: '7', type: 'string'},
+					{name: '8', type: 'string'}
+				],
+				datatype: "array"
+			})
+		});
+
+		$(drop_id).bind('open', function () { 
+			var make_array_data = function(items) {
+				var data = Array();
+				while (items.length > 0) {
+					var line = {};
+					line['1'] = items.shift();
+					line['2'] = items.shift();
+					line['3'] = items.shift();
+					line['4'] = items.shift();
+					line['5'] = items.shift();
+					line['6'] = items.shift();
+					line['7'] = items.shift();
+					line['8'] = items.shift();
+					data.push(line);
+				};
+				return data;
+			};
+
+			var source = $(grid_id).jqxGrid('source');
+			var items = get_nametags(grid_src, src_filter);
+			var localdatas = make_array_data($.merge(items[1], items[0]));
+			source._source.localdata = localdatas;
+			source.dataBind();
+
+			var new_val = [];
+			var old_val = $(drop_id).jqxDropDownButton('getContent');
+			var arr = old_val.split(',');
+			$.each(arr, function(i, target) {
+				$.each(localdatas, function(index, line) {
+					var found = false;
+					$.each(line, function(fieldname, value) {
+						if (target == value) {
+							$(grid_id).jqxGrid('selectcell', index, fieldname);
+							found = true;
+							return false;
+						}
+					});
+					if (found) {
+						new_val.push(target);
+						return false;
+					}
+				});
+			});
+			var new_text = new_val.join(',');
+			$(drop_id).jqxDropDownButton('setContent', new_text);
+		});
+		$(drop_id).bind('close', function () { 
+			var old_val = $(drop_id).jqxDropDownButton('getContent');
+			$(grid_id).jqxGrid('clearselection');
+			$(drop_id).jqxDropDownButton('setContent', old_val);
+		});
+		$(grid_id).on('cellselect', function (event) {
+			var value = $(grid_id).jqxGrid('getcellvalue', event.args.rowindex, event.args.datafield);
+			if (value == '') {return;} 
+			var old_val = $(drop_id).jqxDropDownButton('getContent');
+			var new_val = add_value(old_val, value);
+			if (old_val === new_val) {return;}
+			$(drop_id).jqxDropDownButton('setContent', new_val);
+		});
+		$(grid_id).on('cellunselect', function (event) {
+			var value = $(grid_id).jqxGrid('getcellvalue', event.args.rowindex, event.args.datafield);
+			if (value == '') {return;}; 
+			var old_val = $(drop_id).jqxDropDownButton('getContent');
+			var new_val = del_value(old_val, value);
+			if (old_val === new_val) {return;}
+			$(drop_id).jqxDropDownButton('setContent', new_val);
+		});
+	}
+
+	function fill_dropdown_range(dropid, value) 
+	{
+		$(dropid).jqxDropDownList('clear');
+		if ((value==='') || (value==='--')) {return;}
+		if (value === undefined) {return;}
+		var arr = value.split(',');
+		$.each(arr, function() {
+			$(dropid).jqxDropDownList('addItem', {value: this}); 
+			item = $(dropid).jqxDropDownList('getItemByValue', this);
+			item.checked = true;
+			$(dropid).jqxDropDownList('selectItem', item); 
+		});
+	}
+
+	function new_dropdown_range(table_id, title, dropid, width, height) 
+	{
+		var btnid = dropid+'_btn';
+		var lowid = dropid+'_low';
+		var highid = dropid+'_high';
+		var btn_len = 40;
+		var range_int_len = 60;
+		var range_len = width - range_int_len*2 - btn_len -2;
+
+		$(table_id).append([
+		'<tr>',
+		  '<td align="right">'+title+'</td>',
+		  '<td align="left">',
+		    '<div id="'+rm_tagid(dropid)+'" style="float: left;"></div>',
+		    '<input type="button" value="Button" id="'+rm_tagid(btnid)+'" style="float: left;"/>',
+		    '<div id="'+rm_tagid(lowid)+'" style="float: left;"></div>',
+		    '<div id="'+rm_tagid(highid)+'" style="float: left;"></div>',
+		  '</td>',
+		'</tr>'].join(''));
+		
+		var range_opt = {height: height, theme: theme, placeHolder:'请添加区间：',
+			checkboxes:true, selectedIndex:0, width: range_len};
+		var rangeint_opt = {height: height, theme: theme, inputMode:'simple', 
+			spinButtons:true, decimalDigits:0, width:range_int_len};
+		var btn_opt = {theme: theme, width: btn_len, height: height+2};
+
+		$(dropid).jqxDropDownList($.extend({source:[]}, range_opt));
+		$(btnid).jqxButton(btn_opt);
+		$(btnid).jqxButton('val', '添加');
+		$(lowid).jqxNumberInput(rangeint_opt);
+		$(highid).jqxNumberInput(rangeint_opt);
+
+		$(btnid).on('click', function () {
+			var min = $(lowid).jqxNumberInput('getDecimal');
+			var max = $(highid).jqxNumberInput('getDecimal');
+			if (min > max) {return;}
+			var value = min+'-'+max;
+			var item = $(dropid).jqxDropDownList('getItemByValue', value);
+			if (item) {
+				item.checked = true;
+				return;
+			}
+			$(dropid).jqxDropDownList('addItem', {value: value}); 
+			item = $(dropid).jqxDropDownList('getItemByValue', value);
+			item.checked = true;
+			$(dropid).jqxDropDownList('selectItem', item ); 
+		});
+	}
+
 }
+
