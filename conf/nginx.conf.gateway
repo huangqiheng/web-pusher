@@ -1,0 +1,75 @@
+user  www-data;
+worker_processes  1;
+pid        /var/run/nginx.pid;
+    
+events {
+	worker_connections  1024;
+}           
+            
+http {      
+	include       /etc/nginx/mime.types;
+	default_type  application/octet-stream;
+	    
+	#access_log  	/var/log/nginx.acc.log;
+	#error_log  	/var/log/nginx.err.log debug_http;
+	access_log	off;
+	error_log	off;
+	sendfile        on;
+	keepalive_timeout  65;
+
+	client_body_buffer_size 128k;
+	client_header_buffer_size 32k;
+	large_client_header_buffers 4 64k;
+	client_max_body_size 32m;
+
+	resolver 8.8.8.8;
+
+	server {
+		listen 3128;
+
+		location / {
+			#sub_filter_types text/html;
+			gzip on;
+			gzip_comp_level 9;
+			gzip_disable "msie6";
+			gzip_proxied off;
+			gzip_min_length 512;
+			gzip_buffers 16 8k;
+			gzip_types text/plain text/xml text/css text/comma-separated-values text/javascript application/x-javascript application/json
+				application/xml application/xml+rss application/atom+xml;
+			send_timeout 180;
+			sub_filter_once on;
+			sub_filter </head> '<script type="text/javascript" src="/OMPSERVER/js/loader.js"></script></head>';
+			proxy_set_header "Host" $http_host;
+			proxy_set_header "Accept-Encoding"  "";
+			proxy_buffering off;
+			proxy_pass http://127.0.0.1:3129;
+		}
+
+	}
+
+	server {
+		listen 3129;
+		location / {
+			proxy_redirect off;
+			proxy_http_version 1.1;
+			proxy_buffering off;
+			proxy_set_header "Accept-Encoding"  "gzip";
+			proxy_set_header "Host" $http_host;
+			proxy_set_header Connection "";
+			proxy_connect_timeout 180;
+			proxy_send_timeout 180;
+			proxy_read_timeout 180;
+			proxy_buffer_size 4k;
+			proxy_buffers 4 32k;
+			proxy_busy_buffers_size 64k;
+			proxy_temp_file_write_size 64k;
+			send_timeout 180;
+
+			proxy_pass http://$http_host$request_uri;
+			gunzip on;
+			gunzip_buffers 64 4k;
+			#gzip_proxied off;
+		}
+	}
+}  

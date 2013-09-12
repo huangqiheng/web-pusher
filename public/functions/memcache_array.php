@@ -103,9 +103,8 @@ function make_data_keys($item)
 
 function mmc_array_length($list_name)
 {
-	$mem = __open_mmc();
-	$return = $mem->ns_get($list_name, LIST_LENGTH_KEY);
-	return empty($return)? 0 : $return;
+	$all = mmc_array_all($list_name);
+	return (count($all));
 }
 
 function mmc_array_cleanup($list_name, $before_time)

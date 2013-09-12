@@ -11,10 +11,11 @@ $ref_obj = ($http_referer)? parse_url($http_referer) : null;
 header('Access-Control-Allow-Origin: '.($ref_obj? ($ref_obj['scheme'].'://'.$ref_obj['host']) : '*'));
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Credentials: true');
+header('content-type: application/json; charset=utf-8');
 
 switch($in_cmd) {
     case 'hbeat':
-        echo handle_heartbeat_cmd();
+        echo handle_heartbeat_cmd($PARAMS);
         break;
     case 'bind':
         echo handle_bind_device($PARAMS);
@@ -30,7 +31,7 @@ switch($in_cmd) {
 }
 exit();
 
-function handle_heartbeat_cmd()
+function handle_heartbeat_cmd($PARAMS)
 {
 	omp_trace('heartbeat start');
 	/******************************************
@@ -66,7 +67,7 @@ function handle_heartbeat_cmd()
 		$browser_save['binded'] = true;
 		//获取保存的账户信息
 		if ($bind_account = $mem->ns_get(NS_BINDED_CAPTION, $device)) {
-			$browser_save['bind_account'] = json_encode($bind_account);
+			$browser_save['bind_account'] = implode(';', $bind_account);
 			$result['binded'] = $binded_list;
 		}
 	}
@@ -93,12 +94,24 @@ function handle_heartbeat_cmd()
 	  获取计划任务消息 
 	******************************************/
 
-	if ($items_result = get_sched_messages($browser_save)) {
+	if ($items_result = get_popup_messages($browser_save)) {
 		$result['sched_msg'] = $items_result;
 		$browser_save['sched_msg'] = base64_encode(json_encode($items_result));
 	}
 
 	omp_trace('sched messages');
+
+	/******************************************
+	  获取替换任务消息 
+	******************************************/
+
+	if ($replace_items = get_replace_messages($browser_save, $PARAMS)) {
+		$result['replace_msg'] = $replace_items;
+		$browser_save['replace_msg'] = base64_encode(json_encode($replace_items));
+	}
+
+	omp_trace('replace messages');
+
 	/*************************************
 	  获取异步消息
 	*************************************/
@@ -153,29 +166,22 @@ function get_init_session()
 		];
 }
 
-function get_sched_messages($browser_save)
+function get_device_block($ns_key, &$browser_save)
 {
-	//return false;
-	/******************************************
-	  新设备检查和颁发机会任务消息
-	******************************************/
-	$device = $browser_save['device'];
-	$new_visitor = $browser_save['new_visitor'];
-
-	//计划消息列表
 	$mem = api_open_mmc();
-	$sched_block = $mem->ns_get(NS_SCHED_DEVICE, $device);
-	if (!$sched_block) {
-		$sched_block = [
+	$device = $browser_save['device'];
+	$device_block = $mem->ns_get($ns_key, $device);
+	if (!$device_block) {
+		$device_block = [
 			'items'=>[], 
 			'session'=>get_init_session(),
 			'global'=>['visit_times'=>0, 'pageviews'=>0]
 		];
 	}
 
-	$exec_items = &$sched_block['items'];
-	$session = &$sched_block['session'];
-	$global = &$sched_block['global'];
+	$exec_items = &$device_block['items'];
+	$session = &$device_block['session'];
+	$global = &$device_block['global'];
 	
 	//初始化session
 	if ($browser_save['new_visitor']) {
@@ -186,100 +192,394 @@ function get_sched_messages($browser_save)
 	$session['pageviews'] += 1;
 	$global['pageviews'] += 1;
 
-	//逐级检查和颁发新任务
-	do {
-		//检查是否需要清理任务
-		$task_items = $mem->get(KEY_SCHED_LIST);
-		$items_del = array_diff_key($exec_items, $task_items);
-		if (!empty($items_del)) {
-			$names = [];
-			foreach($items_del as $key=>$item) {
-				unset($exec_items[$key]);
-				$names[] = $item['name'];
+	//追加必要参数，session相关的参数
+	$browser_save['sec_staytime']  = time()-$session['start_time'];
+	$browser_save['sec_pageviews'] = $session['pageviews'];
+	$browser_save['all_pageviews'] = $global['pageviews'];
+	$browser_save['visit_times']   = $global['visit_times'];
+
+	return $device_block;
+}
+
+function save_device_block($ns_key, $browser_save, $device_block)
+{
+	$mem = api_open_mmc();
+	$device = $browser_save['device'];
+	$mem->ns_set($ns_key, $device, $device_block);
+}
+
+function filter_md5_keys($key)
+{
+	return (strlen($key) === 32);
+}
+
+function get_replace_messages($browser_save, $PARAMS)
+{
+	$NS_device_block = NS_PLANS_DEVICE;
+	$NS_all_tasks = KEY_PLANS_LIST;
+	$NS_data_lstname = DATA_PLANS_LIST;
+
+	/******************************************
+	  新设备检查和颁发机会任务消息
+	******************************************/
+	$replace_block = get_device_block($NS_device_block, $browser_save);
+	$runing_items = &$replace_block['items'];
+	$all_tasks = upddate_runing_items($NS_all_tasks, $browser_save, $runing_items);
+	$session = &$replace_block['session'];
+	$global = &$replace_block['global'];
+	$now = time();
+
+	//如果没有消息，则不必要触发下面的任务检查流程了
+	$accept_posi_nums = [];
+	foreach ($PARAMS as $name=>$value) {
+		if(filter_md5_keys($name)) {
+			$accept_posi_nums[$name] = $value;
+		}
+	}
+
+	if (empty($accept_posi_nums)) {
+		save_device_block($NS_device_block, $browser_save, $replace_block);
+		omp_trace('no posi input');
+		return false;
+	}
+
+	if (empty($runing_items)) {
+		save_device_block($NS_device_block, $browser_save, $replace_block);
+		omp_trace('no runing_items exists');
+		return false;
+	}
+	/*************************************
+		获取计划任务消息
+	*************************************/
+	$items_expired = array();
+	$items_result = array();
+	foreach($runing_items as $task_id => &$task_info) {
+		/*************************************
+			通用任务匹配模块
+		*************************************/
+		$task = $all_tasks[$task_id];
+		$task_print = $task_info['name'].'('.$task_info['run_times'].'/'.$task['times'].')';
+		list($is_matched, $is_expired) = general_match_tasks($NS_data_lstname, $browser_save, $task_id, $task_info, $task);
+
+		if ($is_expired) {
+			$items_expired[] = $task_id;
+		}
+
+		if (!$is_matched) {
+			omp_trace($task_print.' general match tasks false');
+			continue;
+		}
+
+		/*************************************
+			任务其他内容匹配	
+		*************************************/
+		$task_messages = $task['messages'];
+		$messages = [];
+		omp_trace('apply position: '.implode(',', array_keys($accept_posi_nums)));
+		foreach($task_messages as $item) {
+			$key = $item['position'];
+			$dbg_str = "has msg \"".$item['title']."\"";
+			if (array_key_exists($key, $accept_posi_nums)) {
+				$dbg_str .= ' matched key:'.$key.' num:'.$accept_posi_nums[$key];
+				$messages[] = $item;
 			}
-			omp_trace(implode(',', $names).' tasks del');
+			omp_trace($dbg_str);
 		}
 
-		//如果对比任务列表并没有发生变化，就不用颁发了
-		$new_tasks = array_diff_key($task_items, $exec_items);
-		if (empty($new_tasks)) {
-			omp_trace('no new tasks');
-			break;
+		//提交的未知，没有适合的消息，后面不需处理和统计
+		if (empty($messages)) {
+			omp_trace($task_print.' no messages retrive');
+			continue;
 		}
 
-		//逐个分析新出现任务，检查UA相关规则，不符合就不用颁发了
-		foreach($new_tasks as $key=>$item) {
-			//检查对这个任务的分析结果
-			if (!targets_matched($item['targets'], $browser_save)) {
-				//不符合条件的，设置一个bypass标志
-				$exec_items[$key] = 'bypass';
-				omp_trace('pass '.$item['name']);
+		$max_num = $task['max_perpage'];
+		if ($max_num == 0) {
+			omp_trace($task_print.' max_perpage === 0');
+			continue;
+		}
+
+		//哇，有消息，做任务统计了
+		$task_info['pageviews'] += 1;
+
+		//在时间区间内，但看看前面一个消息距离是否足够
+		$valid_pageview = $task_info['pageviews'] - $task['interval_pre'];
+		if ($valid_pageview <= 0) {
+			omp_trace($task_print.' pre pageviews not reach ');
+			continue;
+		}
+
+		//看看间隔是否达到了
+		if ($task['interval'] > 0) {
+			$step = $valid_pageview % ($task['interval'] + 1);
+			if ($step !== 0) {
+				omp_trace($task_print.' pageviews internal not reach ');
+				continue;
+			}
+		}
+
+		$task_msg_count = count($task_messages);
+		$used_queue = fill_replace_queue($task['msg_sequence'], @$task_info['used_queue'], $task_msg_count);
+
+		omp_trace("fill queue({$task['msg_sequence']}): ".implode(',', $used_queue));
+
+		while (count($used_queue)) {
+			//根据pop出的index选取消息
+			$msg_index = array_shift($used_queue);
+			if ($msg_index === null) {
+				$used_queue = fill_replace_queue($task['msg_sequence'], [], $task_msg_count);
+				$msg_index = array_shift($used_queue);
+				omp_trace('remake used_queue');
+			}
+
+			$selected_message = @$task_messages[$msg_index];
+
+			//如果取不到，队列有错了吧
+			if (empty($selected_message)) {
+				omp_trace('selected_message empty');
 				continue;
 			}
 
-			//现在可以颁发了，
-			//所谓颁发，就是生成一个初始化的任务数组
-			$task_info = array();
-			$task_info['name'] = $item['name']; 
-			$task_info['run_times'] = 0; 
-			$task_info['last_time'] = 0; 
-			remake_msgque($task_info, $item);
+			//这个消息，不符合客户端提交的位置
+			if (!array_key_exists($selected_message['position'], $accept_posi_nums)) {
+				omp_trace('not mine: '.$selected_message['title']);
+				continue;
+			}
 
-			$exec_items[$key] = $task_info;
-			omp_trace($item['name'].' new task');
+			//这个消息所在的位置，已经用完了
+			$posi_key = $selected_message['position'];
+			if ($accept_posi_nums[$posi_key] === 0) {
+				omp_trace('posi done: '.$posi_key.' by '.$selected_message['title']);
+				continue;
+			}
+
+			//肯定能找到接收的，这个消息将收录为结果
+			$items_result[] = $selected_message;
+			$accept_posi_nums[$posi_key] -= 1;
+
+			omp_trace('<--- result msg('.count($items_result).'): '.$selected_message['title']);
+
+			//统计最大的客户端接收 个数
+			if ($max_num > 0) {
+				$max_num -= 1;
+				if ($max_num === 0) {
+					omp_trace('break of reaching max allow number');
+					break;
+				}
+			}
+
+			$posi_maxnum = 0;
+			foreach ($accept_posi_nums as $key=>$val) {
+				$posi_maxnum += $val;
+			}
+
+			if ($posi_maxnum === 0) {
+				omp_trace('break of reaching max posi number');
+				break;
+			}
 		}
-	} while(false);
+
+		//保存这次剩下的"随机"列表，供下次使用
+		$task_info['used_queue'] = $used_queue;
+
+		omp_trace("after queue({$task['msg_sequence']}): ".implode(',', $used_queue));
+
+		//统计和日志
+
+		//成功取出了消息，设置状态
+		$task_info['run_times'] += 1;
+		$task_info['last_time'] = $now;
+		$session['last_time'] = $now;
+		$session['run_times'] += 1;
+	}
+
+	//删除被撤销的任务
+	if (!empty($items_expired)) {
+		omp_trace('expired '.implode(',', $items_expired));
+		async_timer('/sched_list.php?force', 10);
+	}
+
+	//需要保存状态到memcached
+	save_device_block($NS_device_block, $browser_save, $replace_block);
+	return (count($items_result))? $items_result : false;
+}
+
+function fill_replace_queue($seq_mode, $used_queue, $task_msg_count)
+{
+	$sample_queue =[];
+	$iter_queue = $used_queue;
+	do {
+		foreach ($iter_queue as $index) {
+			if (!in_array($index, $sample_queue)) {
+				$sample_queue[] = $index;
+			}
+		}
+
+		if (count($sample_queue) >= $task_msg_count) {
+			break;
+		}
+
+		$iter_queue = make_simple_queue($task_msg_count, $seq_mode);
+
+		foreach ($iter_queue as $index) {
+			$used_queue[] = $index;
+		}
+	} while (true);
+
+	return $used_queue;
+}
+
+function upddate_runing_items($ns_tasklist, $browser_save, &$runing_items)
+{
+	//检查是否需要清理任务
+	$mem = api_open_mmc();
+	$task_items = $mem->get($ns_tasklist);
+	$items_del = array_diff_key($runing_items, $task_items);
+	if (!empty($items_del)) {
+		$names = [];
+		foreach($items_del as $key=>$item) {
+			unset($runing_items[$key]);
+			$names[] = $item['name'];
+		}
+		omp_trace(implode(',', $names).' tasks del');
+	}
+
+	//如果对比任务列表并没有发生变化，就不用颁发了
+	$new_tasks = array_diff_key($task_items, $runing_items);
+	if (empty($new_tasks)) {
+		omp_trace('no new tasks');
+		//omp_trace(json_encode($task_items));
+		//omp_trace(json_encode($runing_items));
+		return $task_items;
+	}
+
+	//逐个分析新出现任务，检查UA相关规则，不符合就不用颁发了
+	foreach($new_tasks as $key=>$item) {
+		//所谓颁发，就是生成一个初始化的任务数组
+		$task_info = array();
+		$task_info['name'] = $item['name']; 
+		$task_info['bypass'] = false; 
+		$task_info['run_times'] = 0; 
+		$task_info['last_time'] = 0; 
+		$task_info['pageviews'] = 0; 
+
+		//检查对这个任务的分析结果
+		if (!targets_matched($item['targets'], $browser_save)) {
+			//不符合条件的，设置一个bypass标志
+			$task_info['bypass'] = true; 
+			omp_trace('pass '.$item['name']);
+		}
+
+		$runing_items[$key] = $task_info;
+		omp_trace($item['name'].' new task');
+	}
+
+	return $task_items;
+}
+
+function general_match_tasks($list_name, $browser_save, $task_id, &$task_info, $task)
+{
+	$result = array(false, false);
+	$task_print = $task_info['name'].'('.$task_info['run_times'].'/'.$task['times'].')';
+
+	//忽略不是自己的任务
+	if ($task_info['bypass'] === true) {
+		omp_trace($task_print.' not mine');
+		return $result;
+	}
+
+	//任务是否被用户停止
+	$status = $task['status'];
+	if ($status === 'stop') {
+		omp_trace($task_print.' stopped ');
+		return $result;
+	}
+
+	//判断任务的时间状态
+	$task_info['pageviews'] += 1;
+	$now = time();
+	$run_status = ($now<$task['start_time'])? 'waiting' : (($now>$task['finish_time'])? 'timeout' : 'running');
+
+	//纠正任务列表中显示的状态
+	if ($run_status !== $status) {
+		async_timer("/data.php?cmd=status&list=$list_name&key=$task_id&val=$run_status", 10);
+	}
+
+	//记录超时
+	if ($run_status === 'timeout') {
+		omp_trace($task_print.' expired');
+		$result[1] = true;
+		return $result;
+	}
+
+	//检查是否在时间区间内，否则忽略
+	if ($run_status !== 'running') {
+		omp_trace($task_print.' not time rigion ');
+		return $result;
+	}
+
+	//检查执行次数是否已经达到
+	if ($task['times'] !== -1) {
+		if ($task_info['run_times'] >= $task['times']) {
+			omp_trace($task_print.' times exceed ('.$task['times'].')');
+			return $result;
+		} 
+	}
+
+	//详细再查条件
+	$matched_target = targets_matched($task['targets'], $browser_save, true);
+	if (!$matched_target) {
+		omp_trace($task_print.' target not match');
+		return $result;
+	}
+
+	$result[0] = true;
+	return $result;
+}
+
+function get_popup_messages($browser_save)
+{
+	$NS_device_block = NS_SCHED_DEVICE;
+	$NS_all_tasks = KEY_SCHED_LIST;
+	$NS_data_lstname = DATA_SCHED_LIST;
+
+	/******************************************
+	  新设备检查和颁发机会任务消息
+	******************************************/
+	$sched_block = get_device_block($NS_device_block, $browser_save);
+	$runing_items = &$sched_block['items'];
+	$all_tasks = upddate_runing_items($NS_all_tasks, $browser_save, $runing_items);
+	$session = &$sched_block['session'];
+	$global = &$sched_block['global'];
+	$now = time();
 
 	/*************************************
 		获取计划任务消息
 	*************************************/
-	//上面新访时检查和颁发任务，那仅仅是筛选，在这里将从新详细分析
-
 	$items_expired = array();
 	$items_result = array();
-	foreach($exec_items as $task_id =>&$task_info) {
-		//如果查不到了，那是超时删除了，这个任务将被取消
-		$task = mmc_array_get(NS_SCHED_TASKS, $task_id);
-		$task_name = $task_info['name'];
-		if (empty($task)) {
+	foreach($runing_items as $task_id =>&$task_info) {
+		/*************************************
+			通用任务匹配模块
+		*************************************/
+		$task = $all_tasks[$task_id];
+		$task_print = $task_info['name'].'('.$task_info['run_times'].'/'.$task['times'].')';
+		list($is_matched, $is_expired) = general_match_tasks($NS_data_lstname, $browser_save, $task_id, $task_info, $task);
+
+		if ($is_expired) {
 			$items_expired[] = $task_id;
-			omp_trace($task_name.' expired');
+		}
+
+		if (!$is_matched) {
 			continue;
 		}
 
-		//忽略不是自己的任务
-		if ($task_info === 'bypass') {
-			omp_trace($task_name.' not mine');
-			continue;
-		}
-
-		//任务是否被用户停止
-		$status = $task['status'];
-		if ($status === 'stop') {
-			omp_trace($task_name.' stopped ');
-			continue;
-		}
-
-		$task_print = $task_name.'('.$task_info['run_times'].'/'.$task['times'].')';
+		/*************************************
+			任务其他内容匹配	
+		*************************************/
 
 		//如果前面已经有了返回信息，这时遇到“互斥”只能忽略掉
 		if (($task['repel'] === 'true') && (count($items_result)>0)) {
 			omp_trace($task_print.' repel');
-			continue;
-		}
-
-		//判断任务的时间状态
-		$now = time();
-		$run_status = ($now<$task['start_time'])? 'waiting' : (($now>$task['finish_time'])? 'timeout' : 'running');
-
-		//纠正任务列表中显示的状态
-		if ($run_status !== $status) {
-			call_async_php("/data.php?cmd=status&key=$task_id&val=$run_status");
-		}
-
-		//检查是否在时间区间内，否则忽略
-		if ($run_status !== 'running') {
-			omp_trace($task_print.' not time rigion ');
 			continue;
 		}
 
@@ -288,12 +588,6 @@ function get_sched_messages($browser_save)
 			omp_trace($task_print.' pre time not reach ');
 			continue;
 		}
-
-		//检查执行次数是否已经达到
-		if ($task_info['run_times'] >= $task['times']) {
-			omp_trace($task_print.' times exceed ('.$task['times'].')');
-			continue;
-		} 
 
 		//检查发送周期，还没到时间的，则忽略
 		if ($task['time_interval_mode']  === 'relative') {
@@ -313,18 +607,10 @@ function get_sched_messages($browser_save)
 			}
 		}
 
-		//追加必要参数
-
-		$browser_save['sec_staytime'] = $now-$session['start_time'];
-		$browser_save['sec_pageviews'] = $session['pageviews'];
-		$browser_save['all_pageviews'] = $global['pageviews'];
-		$browser_save['visit_times'] = $global['visit_times'];
-
-		//详细再查条件
-		$matched_target = targets_matched($task['targets'], $browser_save, true);
-		if (!$matched_target) {
-			omp_trace($task_print.' target not match');
-			continue;
+		//第一次时重建msg queue
+		if ($task_info['pageviews'] === 1) {
+			remake_msgque($task_info, $task);
+			omp_trace('make queue: '.json_encode($task_info['msg_queue']));
 		}
 
 		//处理用户改变消息模式
@@ -374,7 +660,7 @@ function get_sched_messages($browser_save)
 	}
 
 	//需要保存状态到memcached
-	$mem->ns_set(NS_SCHED_DEVICE, $device, $sched_block);
+	save_device_block($NS_device_block, $browser_save, $sched_block);
 
 	return (count($items_result))? $items_result : false;
 }
@@ -583,6 +869,29 @@ function match_range($current_val, $range_str)
 	}
 	return false;
 }
+
+function make_simple_queue($msg_count, $mode)
+{
+	if ($msg_count === 0) {return [];}
+	if ($msg_count === 1) {return [0];}
+
+	$template = range(0, $msg_count-1);
+	switch($mode) {
+		case 'confusion': ;
+			shuffle($template); 
+			$result = [];
+			$count = count($template);
+			while($msg_count) {
+				$result[] = $template[rand(0, $count-1)];
+				$msg_count -= 1;
+			}
+			return $result;
+		case 'random': shuffle($template); 
+		case 'sequence':return $template;   
+		default: return $template;
+	}
+}
+
 
 function make_msgque($step, $count, $mode)
 {
@@ -795,19 +1104,14 @@ function return_bind($result)
 	return jsonp($result);
 }
 
-function handle_clear()
-{
-	//删除保存了的在线列表
-	mmc_array_del(NS_DEVICE_LIST, $device);
-}
 
 function handle_reset()
 {
 	$device = get_device();
 	if (empty($device)) {return 'no device';}
 
-	//清除本session
-	handle_clear();
+	//删除保存了的在线列表
+	mmc_array_del(NS_DEVICE_LIST, $device);
 
 	//删除保存了的账户信息
 	$mem = api_open_mmc();
@@ -820,6 +1124,8 @@ function handle_reset()
 
 	//删除保存了的计划任务消息记录
 	$mem->ns_delete(NS_SCHED_DEVICE, $device);
+	$mem->ns_delete(NS_PLANS_DEVICE, $device);
+
 	new_user(time()+COOKIE_TIMEOUT_NEW);
 
 	return 'succeed';

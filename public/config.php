@@ -54,6 +54,7 @@ define('DATA_PLANS_LIST', '@PLANS_LIST');
 define('DATA_USER_LIST', '@USER_LIST');
 define('DATA_MESSAGE_LIST', '@MESSAGE_LIST');
 define('DATA_POSI_LIST', '@POSI_LIST');
+define('DATA_IDENTIFY_LIST', '@IDENTIFY_LIST');
 
 //常量
 define('CHECKPOINT_TIME_KEY', 'async_check_time'); //没必要改
@@ -74,8 +75,15 @@ define('CLIENT_DEBUG', true);
 define('KEY_SCHED_LIST', 'KEY_SCHED_LIST');
 //计划任务列表的命名空间，供各个设备共享访问
 define('NS_SCHED_TASKS', 'NS_SCHED_TASKS');
-//单个设备的执行情况记录块
+//计划任务单个设备的执行情况记录块
 define('NS_SCHED_DEVICE', 'NS_SCHED_DEVICE');
+
+//替换任务列表的缓存版本
+define('KEY_PLANS_LIST', 'KEY_PLANS_LIST');
+//替换任务列表的命名空间，供各个设备共享访问
+define('NS_PLANS_TASKS', 'NS_PLANS_TASKS');
+//替换任务单个设备的执行情况记录块
+define('NS_PLANS_DEVICE', 'NS_PLANS_DEVICE');
 
 define('NS_ONEBOX_CACHE', 'NS_ONEBOX_CACHE');
 

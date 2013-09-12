@@ -51,6 +51,10 @@ function api_ui_init(aDataSet)
 	var source_action = ['none','hide','delete'];
 	var source_action_cn = ['不处理','隐藏','删除'];
 
+	//账户识别库
+	var source_active = ['true', 'false'];
+	var source_active_cn = ['是', '否'];
+
 	function cn2en(d) {
 		if (d.hasOwnProperty('name')) {
 			set_property(d, 'insert', source_insert_cn, source_insert);
@@ -69,6 +73,7 @@ function api_ui_init(aDataSet)
 			set_property(d, 'time_interval_mode', source_schedmode_cn, source_schedmode);
 			set_property(d, 'msg_sequence', source_sequence_cn, source_sequence);
 			set_property(d, 'repel', source_repel_cn, source_repel);
+			set_property(d, 'active', source_active_cn, source_active);
 		} else {
 			$(d).each(function() {
 				cn2en(this);
@@ -95,6 +100,7 @@ function api_ui_init(aDataSet)
 			set_property(d, 'time_interval_mode', source_schedmode, source_schedmode_cn);
 			set_property(d, 'msg_sequence', source_sequence, source_sequence_cn);
 			set_property(d, 'repel', source_repel, source_repel_cn);
+			set_property(d, 'active', source_active, source_active_cn);
 		} else {
 			$(d).each(function() {
 				en2cn(this);
@@ -136,7 +142,7 @@ function api_ui_init(aDataSet)
 			dataType:'text', 
 			data: cn2en(new_rowdata),
 			success: function(msg) {
-				console.log(msg);
+				//console.log(msg);
 				commit(true);
 			},
 			error: function(XMLHttpRequest, textStatus, errorThrown) {
@@ -165,9 +171,19 @@ function api_ui_init(aDataSet)
 		var issticky = $("#issticky").jqxDropDownList('getSelectedIndex'); 
 		var iswarnning = $("#iswarnning").jqxDropDownList('getSelectedIndex'); 
 		var viewposi = $('#viewposi').jqxComboBox('val');
-		var ttl = $('#notify-ttl').jqxNumberInput('getDecimal');
 		var msgmod = $("#message-mode").jqxDropDownList('getSelectedIndex');
-		var msgform = $("#message-form").jqxDropDownList('getSelectedIndex');
+		var ttl = $('#notify-ttl').jqxNumberInput('getDecimal');
+
+		var msgform = 'popup';
+		var position = trans(viewposi, source_posi_cn, source_posi);
+		if (source_posi_cn.indexOf(viewposi) === -1) {
+			msgform = 'replace';
+			if (is_grid_name(get_grid_id('#tab_posi'), viewposi)) {
+				position = md5(viewposi);
+			} else {
+				position = viewposi;
+			}
+		}
 
 		var device_id = document.cookie.match(new RegExp("(^| )device_id=([^;]*)(;|$)"));
 		device_id = device_id? device_id[2] : 'null';
@@ -184,9 +200,9 @@ function api_ui_init(aDataSet)
 		cmdbox.sticky = source_sticky[issticky];
 		cmdbox.before_open = source_warning[iswarnning];
 		cmdbox.msgmod = source_msgmod[msgmod];
-		cmdbox.msgform = source_msgform[msgform];
+		cmdbox.msgform = msgform;
 		cmdbox.time = 	ttl*1000;
-		cmdbox.position = trans(viewposi, source_posi_cn, source_posi);
+		cmdbox.position = position;
 
 		jQuery.ajax({
 			type: 'POST',
@@ -292,21 +308,23 @@ function api_ui_init(aDataSet)
 		$("#send-button").jqxButton({ width: 76, height:30, theme: theme });
 
 		$("#send-button").on('click', send_omp_message);
-		$("#viewposi").jqxComboBox({source:source_posi_cn, selectedIndex:2,width: 87, height: 28, theme: theme,autoDropDownHeight:true });
+		$("#viewposi").jqxComboBox({source:source_posi_cn, selectedIndex:2,width: 165, height: 28, theme: theme,autoDropDownHeight:true });
+		$('#viewposi').on('open', function (event) {
+			var items = get_nametags(get_grid_id('#tab_posi'));
+			var names = items[0];
+			if (names.length > 0) {
+				var source_view = $.extend([], source_posi_cn);
+				source_view = source_view.concat(names);
+				$("#viewposi").jqxComboBox({source: source_view});
+			}
+		}); 
 
 		$("#property-panel").jqxPanel({theme: theme, height: 30, width:534, theme: theme });
-
-		$("#message-form").jqxDropDownList({source:source_msgform_cn, selectedIndex:0,width: 76, height: 28, theme: theme,autoDropDownHeight:true});
-
 		$("#message-mode").jqxDropDownList({source:source_msgmod_cn, selectedIndex:1,width: 76, height: 28, theme: theme,autoDropDownHeight:true});
-
 		$("#notify-ttl").jqxNumberInput({theme: theme,symbol:'秒',symbolPosition:'right',min:1,decimal:8,decimalDigits:0,width:55,height:28, inputMode:'simple',spinButtons:true});
 		$("#notify-ttl").jqxTooltip({theme: theme, content: '通知延迟关闭时间', position: 'mouse'});
-
 		$("#issticky").jqxDropDownList({source:source_sticky_cn, selectedIndex:0,width: 76, height: 28, theme: theme,autoDropDownHeight:true });
-
 		$("#iswarnning").jqxDropDownList({source:source_warning_cn, selectedIndex:0,width: 76, height: 28, theme: theme,autoDropDownHeight:true });
-
 
 		$('#jqxTabs').jqxTabs({
 			width:958,
@@ -322,7 +340,7 @@ function api_ui_init(aDataSet)
 		/**********************************
 		终端分类库UI代码
 		**********************************/
-		var sched_lst_data = {
+		var popup_lst_data = {
 			editrow : -1,
 			elemHeight : 23,
 			popHeight : 434,
@@ -403,10 +421,10 @@ function api_ui_init(aDataSet)
 			}
 		};
 
-		var plans_lst_data = {
+		var replace_lst_data = {
 			editrow : -1,
 			elemHeight : 23,
-			popHeight : 375,
+			popHeight : 400,
 			popWidth : 520,
 			list_name : 'replace',
 			container_id: '#tab_replace',
@@ -416,6 +434,7 @@ function api_ui_init(aDataSet)
 				{name: 'start_time', type: 'date'},
 				{name: 'finish_time', type: 'date'},
 				{name: 'times', type: 'string'},
+				{name: 'max_perpage', type: 'string'},
 				{name: 'interval', type: 'string'},
 				{name: 'interval_pre', type: 'string'},
 				{name: 'msg_sequence', type: 'string'},
@@ -427,12 +446,13 @@ function api_ui_init(aDataSet)
 				{text: '状态', datafield: 'status', width: 32},
 				{text: '开始时间', datafield: 'start_time', width: 90, cellsformat:'yyyy-MM-dd HH:mm:ss'},
 				{text: '结束时间', datafield: 'finish_time', width: 90, cellsformat:'yyyy-MM-dd HH:mm:ss'},
-				{text: '次数', datafield: 'times', width: 40},
-				{text: '间隔', datafield: 'interval', width: 50},
+				{text: '次数', datafield: 'times', width: 32},
+				{text: '个数', datafield: 'max_perpage', width: 32},
+				{text: '间隔', datafield: 'interval', width: 32},
 				{text: '前隔', datafield: 'interval_pre', width: 32},
 				{text: '顺序', datafield: 'msg_sequence', width: 32},
 				{text: '发送目标', datafield: 'target_device', width: 220},
-				{text: '替换消息', datafield: 'replace_msg', width: 284}
+				{text: '替换消息', datafield: 'replace_msg', width: 278}
 			],
 			create_form: function(table_id){
 				var src_filter = function(item) {
@@ -444,6 +464,8 @@ function api_ui_init(aDataSet)
 				new_datatime(table_id, '开始时间：', '#replace_start',200, this.elemHeight);
 				new_datatime(table_id, '结束时间：', '#replace_end',200, this.elemHeight);
 				new_number(table_id, '执行次数：', '#replace_times',120, this.elemHeight, '次', -1, -1);
+				new_number(table_id, '单页个数：', '#replace_maxppv',120, this.elemHeight, '次', -1, -1);
+
 				new_number(table_id, '间隔PV：', '#replace_interval',120, this.elemHeight, '次', 0, 0);
 				new_number(table_id, '前距PV：', '#replace_interval_pre',120, this.elemHeight, '次', 0, 0);
 				new_dropdown(table_id, '消息顺序：', '#replace_sequence', 120, this.elemHeight, source_sequence_cn, 0);
@@ -455,6 +477,7 @@ function api_ui_init(aDataSet)
 				fill_datetime('#replace_start', data_record, 'start_time');
 				fill_datetime('#replace_end', data_record, 'finish_time');
 				fill_number('#replace_times', data_record, 'times');
+				fill_number('#replace_maxppv', data_record, 'max_perpage');
 				fill_number('#replace_interval', data_record, 'interval');
 				fill_number('#replace_interval_pre', data_record, 'interval_pre');
 				fill_dropdown('#replace_sequence', data_record, 'msg_sequence', source_sequence_cn, 0);
@@ -467,6 +490,7 @@ function api_ui_init(aDataSet)
 				extra_datetime(new_raw, '#replace_start', 'start_time');
 				extra_datetime(new_raw, '#replace_end', 'finish_time');
 				extra_number(new_raw, '#replace_times', 'times');
+				extra_number(new_raw, '#replace_maxppv', 'max_perpage');
 				extra_number(new_raw, '#replace_interval', 'interval');
 				extra_number(new_raw, '#replace_interval_pre', 'interval_pre');
 				extra_dropdown(new_raw, '#replace_sequence', 'msg_sequence');
@@ -636,7 +660,7 @@ function api_ui_init(aDataSet)
 				fill_textarea('#msg_content', data_record, 'text');
 				fill_dropdown('#msg_msgmode', data_record, 'msgmod', source_msgmod_cn, 1);
 				fill_dropdown('#msg_msgform', data_record, 'msgform', source_msgform_cn, 0);
-				var items = get_nametags('#tab_posi'+'_jqxgrid_list');
+				var items = get_nametags(get_grid_id('#tab_posi'));
 				fill_dropdown('#msg_position', data_record, 'position', source_posi_cn, 2, items[2]);
 				fill_dropdown('#msg_sticky', data_record, 'sticky', source_sticky_cn, 0);
 				fill_dropdown('#msg_before_open', data_record, 'before_open', source_warning_cn, 0);
@@ -683,10 +707,10 @@ function api_ui_init(aDataSet)
 				{name: 'action', type: 'string'} //hide or delete
 			],
 			data_columns : [
-				{ text: '定位名称', datafield: 'name', width: 130},
-				{ text: '分类标签', datafield: 'tags', width: 80},
-				{ text: 'URL正则', datafield: 'urls', width: 327},
-				{ text: '选择器',  datafield: 'selectors', width: 327},
+				{ text: '定位名称', datafield: 'name', width: 140},
+				{ text: '分类标签', datafield: 'tags', width: 70},
+				{ text: 'URL正则', datafield: 'urls', width: 328},
+				{ text: '选择器',  datafield: 'selectors', width: 328},
 				{ text: '位置', datafield: 'insert', width: 45},
 				{ text: '动作', datafield: 'action', width: 45}
 			],
@@ -715,11 +739,80 @@ function api_ui_init(aDataSet)
 			}
 		};
 
-		init_grid(sched_lst_data);
-		init_grid(plans_lst_data);
+		/**********************************
+		账户识别库 UI代码
+		**********************************/
+
+		var identify_lst_data = {
+			editrow : -1,
+			elemHeight : 23,
+			popHeight : 350,
+			popWidth : 550,
+			list_name : 'identify',
+			container_id: '#tab_identify',
+			data_fields : [
+				{name: 'name', type: 'string'},
+				{name: 'active', type: 'string'},
+				{name: 'platform', type: 'string'},
+				{name: 'caption', type: 'string'},
+				{name: 'host', type: 'string'},
+				{name: 'username-selector', type: 'string'},
+				{name: 'username-revisor', type: 'string'},
+				{name: 'nickname-selector', type: 'string'},
+				{name: 'nickname-revisor', type: 'string'}
+			],
+			data_columns : [
+				{ text: '规则名称', datafield: 'name', width: 80},
+				{ text: '激活', datafield: 'active', width: 32},
+				{ text: '系统标识', datafield: 'platform', width: 80},
+				{ text: '系统名称', datafield: 'caption', width: 80},
+				{ text: '主机名称正则', datafield: 'host', width: 100},
+				{ text: '用户名选择器',  datafield: 'username-selector', width: 146},
+				{ text: '用户名修正',  datafield: 'username-revisor', width: 146},
+				{ text: '昵称选择器',  datafield: 'nickname-selector', width: 146},
+				{ text: '昵称修正',  datafield: 'nickname-revisor', width: 146}
+			],
+			create_form: function(table_id){
+				new_dropdown(table_id, '激活：', '#id_active', 200, this.elemHeight, source_active_cn, 0);
+				new_combobox(table_id, '账户系统标识', '#id_platform', 200, this.elemHeight, []);
+				new_combobox(table_id, '账户系统名称', '#id_caption', 200, this.elemHeight, []);
+				new_combobox(table_id, '主机名称正则', '#id_host', 200, this.elemHeight, []);
+				new_input(table_id, '用户名选择器：', "#id_user_selector", 400, this.elemHeight);
+				new_input(table_id, '用户名修正：', "#id_user_revisor", 400, this.elemHeight);
+				new_input(table_id, '昵称选择器：', "#id_nick_selector", 400, this.elemHeight);
+				new_input(table_id, '昵称修正：', "#id_nick_revisor", 400, this.elemHeight);
+			},
+			fill_form : function(data_record) {
+				fill_dropdown('#id_active', data_record, 'active', source_active_cn, 0);
+				fill_combobox('#id_platform', data_record, 'platform');
+				fill_combobox('#id_caption', data_record, 'caption');
+				fill_combobox('#id_host', data_record, 'host');
+				fill_input('#id_user_selector', data_record, 'username-selector');
+				fill_input('#id_user_revisor', data_record, 'username-revisor');
+				fill_input('#id_nick_selector', data_record, 'nickname-selector');
+				fill_input('#id_nick_revisor', data_record, 'nickname-revisor');
+			},
+			extra_form : function () {
+				var new_raw = {};
+				extra_dropdown(new_raw, '#id_active', 'active');
+				extra_combobox(new_raw, '#id_platform', 'platform');
+				extra_combobox(new_raw, '#id_caption', 'caption');
+				extra_combobox(new_raw, '#id_host', 'host');
+				extra_input(new_raw, '#id_user_selector', 'username-selector');
+				extra_input(new_raw, '#id_user_revisor', 'username-revisor');
+				extra_input(new_raw, '#id_nick_selector', 'nickname-selector');
+				extra_input(new_raw, '#id_nick_revisor', 'nickname-revisor');
+				return new_raw;
+			}
+		};
+
+
+		init_grid(popup_lst_data);
+		init_grid(replace_lst_data);
 		init_grid(userlst_data);
 		init_grid(msg_lst_data);
 		init_grid(posi_lst_data);
+		init_grid(identify_lst_data);
 
 		function init_grid(p)
 		{
@@ -751,7 +844,7 @@ function api_ui_init(aDataSet)
 			p.add_button_id = p.container_id + '_add_button';
 			p.del_button_id = p.container_id + '_delete_button';
 			p.update_button_id = p.container_id + '_update_button';
-			p.grid_id = p.container_id + '_jqxgrid_list';
+			p.grid_id = get_grid_id(p.container_id);
 			p.pop_win_id = p.container_id + '_popup_window';
 			p.table_id = p.container_id + '_inputtable';
 			p.name_field_id = p.container_id + '_inputname';
@@ -781,6 +874,7 @@ function api_ui_init(aDataSet)
 				width: '100%',
 				enableellipsis: false,
 				enableanimations: false,
+				enablehover: false,
 				autoheight: true,
 				autorowheight: true,
 				columns: p.data_columns
@@ -837,7 +931,7 @@ function api_ui_init(aDataSet)
 				modalOpacity: 0.01           
 			});
 
-			new_input(p.table_id, '名称：', p.name_field_id, 400, p.elemHeight);
+			new_input(p.table_id, '名称：', p.name_field_id, 200, p.elemHeight);
 			p.create_form(p.table_id);
 
 			var html = '<tr><td align="right"></td>';
@@ -951,6 +1045,32 @@ function api_ui_init(aDataSet)
 		$(btnid).jqxButton(btn_opt);
 		$(inputid).jqxInput({theme: theme, width: input_len, height: height});
 
+		$(drop_id).on('checkChange', function (event) {
+			var args = event.args;
+			if (args) {
+				var items = $(drop_id).jqxDropDownList('getItems'); 
+				var input_val = $(inputid).val();
+
+				var in_items = false;
+				if (input_val === '') {
+					in_items = true;
+				} else {
+					for(var index in items) {
+						var item = items[index];
+						if (item.value == args.item.value) {
+							in_items = true;
+							break;
+						}
+					}
+				}
+
+				if (in_items) {
+					var item = args.item;
+					$(inputid).val(item.value);
+				}
+			} 
+		});
+
 		$(btnid).on('click', function () {
 			var value = $(inputid).val();
 			var item = $(drop_id).jqxDropDownList('getItemByValue', value);
@@ -963,6 +1083,7 @@ function api_ui_init(aDataSet)
 			item.checked = true;
 			$(drop_id).jqxDropDownList('selectItem', item ); 
 		});
+
 	}
 
 	function fill_dropdown_strarr(drop_id, data_record, name) 
@@ -1141,6 +1262,17 @@ function api_ui_init(aDataSet)
 		return list_str;
 	}
 
+	function is_grid_name(grid_id, name) {
+		var a = $(grid_id).jqxGrid('getrows');
+		var found = false;
+		$.each(a, function(index, value){
+			if (value.name === name) {
+				found = true;
+				return false;
+			}
+		});
+		return found;
+	}
 
 	function get_nametags(grid_id, filter) {
 		var a = $(grid_id).jqxGrid('getrows');
@@ -1153,22 +1285,22 @@ function api_ui_init(aDataSet)
 		}
 
 		$.each(a, function(index, value){
-				if (!fn(value)) {
-					return;
-				}
-				
-				var lines = value.tags.split(' ');
-				$.each(lines, function(index, value2) {
-					if (value2) {
-						if (tags.indexOf(value2) === -1) {
-							tags.push(value2);
-						}
+			if (!fn(value)) {
+				return;
+			}
+			
+			var lines = value.tags.split(' ');
+			$.each(lines, function(index, value2) {
+				if (value2) {
+					if (tags.indexOf(value2) === -1) {
+						tags.push(value2);
 					}
-				});
-
-				if (names.indexOf(value.name) === -1) {
-					names.push(value.name);
 				}
+			});
+
+			if (names.indexOf(value.name) === -1) {
+				names.push(value.name);
+			}
 		});
 		tags = $.map(tags, function(item){return '['+item+']';});
 		var all = $.extend([], tags, names);
@@ -1192,7 +1324,7 @@ function api_ui_init(aDataSet)
 	function new_dropdown_grid(table_id, title, drop_id, tab_id, src_filter, width, height) 
 	{
 		var grid_id = drop_id + '_grid';
-		var grid_src = tab_id+'_jqxgrid_list';
+		var grid_src = get_grid_id(tab_id);
 		$(table_id).append([
 		'<tr>',
 		  '<td align="right">'+title+'</td>',
@@ -1371,5 +1503,10 @@ function api_ui_init(aDataSet)
 		});
 	}
 
+	function get_grid_id(container_id) {
+		return container_id+'_jqxgrid_list';
+	}
 }
+
+(function(a){function b(a,b){var c=(a&65535)+(b&65535),d=(a>>16)+(b>>16)+(c>>16);return d<<16|c&65535}function c(a,b){return a<<b|a>>>32-b}function d(a,d,e,f,g,h){return b(c(b(b(d,a),b(f,h)),g),e)}function e(a,b,c,e,f,g,h){return d(b&c|~b&e,a,b,f,g,h)}function f(a,b,c,e,f,g,h){return d(b&e|c&~e,a,b,f,g,h)}function g(a,b,c,e,f,g,h){return d(b^c^e,a,b,f,g,h)}function h(a,b,c,e,f,g,h){return d(c^(b|~e),a,b,f,g,h)}function i(a,c){a[c>>5]|=128<<c%32,a[(c+64>>>9<<4)+14]=c;var d,i,j,k,l,m=1732584193,n=-271733879,o=-1732584194,p=271733878;for(d=0;d<a.length;d+=16)i=m,j=n,k=o,l=p,m=e(m,n,o,p,a[d],7,-680876936),p=e(p,m,n,o,a[d+1],12,-389564586),o=e(o,p,m,n,a[d+2],17,606105819),n=e(n,o,p,m,a[d+3],22,-1044525330),m=e(m,n,o,p,a[d+4],7,-176418897),p=e(p,m,n,o,a[d+5],12,1200080426),o=e(o,p,m,n,a[d+6],17,-1473231341),n=e(n,o,p,m,a[d+7],22,-45705983),m=e(m,n,o,p,a[d+8],7,1770035416),p=e(p,m,n,o,a[d+9],12,-1958414417),o=e(o,p,m,n,a[d+10],17,-42063),n=e(n,o,p,m,a[d+11],22,-1990404162),m=e(m,n,o,p,a[d+12],7,1804603682),p=e(p,m,n,o,a[d+13],12,-40341101),o=e(o,p,m,n,a[d+14],17,-1502002290),n=e(n,o,p,m,a[d+15],22,1236535329),m=f(m,n,o,p,a[d+1],5,-165796510),p=f(p,m,n,o,a[d+6],9,-1069501632),o=f(o,p,m,n,a[d+11],14,643717713),n=f(n,o,p,m,a[d],20,-373897302),m=f(m,n,o,p,a[d+5],5,-701558691),p=f(p,m,n,o,a[d+10],9,38016083),o=f(o,p,m,n,a[d+15],14,-660478335),n=f(n,o,p,m,a[d+4],20,-405537848),m=f(m,n,o,p,a[d+9],5,568446438),p=f(p,m,n,o,a[d+14],9,-1019803690),o=f(o,p,m,n,a[d+3],14,-187363961),n=f(n,o,p,m,a[d+8],20,1163531501),m=f(m,n,o,p,a[d+13],5,-1444681467),p=f(p,m,n,o,a[d+2],9,-51403784),o=f(o,p,m,n,a[d+7],14,1735328473),n=f(n,o,p,m,a[d+12],20,-1926607734),m=g(m,n,o,p,a[d+5],4,-378558),p=g(p,m,n,o,a[d+8],11,-2022574463),o=g(o,p,m,n,a[d+11],16,1839030562),n=g(n,o,p,m,a[d+14],23,-35309556),m=g(m,n,o,p,a[d+1],4,-1530992060),p=g(p,m,n,o,a[d+4],11,1272893353),o=g(o,p,m,n,a[d+7],16,-155497632),n=g(n,o,p,m,a[d+10],23,-1094730640),m=g(m,n,o,p,a[d+13],4,681279174),p=g(p,m,n,o,a[d],11,-358537222),o=g(o,p,m,n,a[d+3],16,-722521979),n=g(n,o,p,m,a[d+6],23,76029189),m=g(m,n,o,p,a[d+9],4,-640364487),p=g(p,m,n,o,a[d+12],11,-421815835),o=g(o,p,m,n,a[d+15],16,530742520),n=g(n,o,p,m,a[d+2],23,-995338651),m=h(m,n,o,p,a[d],6,-198630844),p=h(p,m,n,o,a[d+7],10,1126891415),o=h(o,p,m,n,a[d+14],15,-1416354905),n=h(n,o,p,m,a[d+5],21,-57434055),m=h(m,n,o,p,a[d+12],6,1700485571),p=h(p,m,n,o,a[d+3],10,-1894986606),o=h(o,p,m,n,a[d+10],15,-1051523),n=h(n,o,p,m,a[d+1],21,-2054922799),m=h(m,n,o,p,a[d+8],6,1873313359),p=h(p,m,n,o,a[d+15],10,-30611744),o=h(o,p,m,n,a[d+6],15,-1560198380),n=h(n,o,p,m,a[d+13],21,1309151649),m=h(m,n,o,p,a[d+4],6,-145523070),p=h(p,m,n,o,a[d+11],10,-1120210379),o=h(o,p,m,n,a[d+2],15,718787259),n=h(n,o,p,m,a[d+9],21,-343485551),m=b(m,i),n=b(n,j),o=b(o,k),p=b(p,l);return[m,n,o,p]}function j(a){var b,c="";for(b=0;b<a.length*32;b+=8)c+=String.fromCharCode(a[b>>5]>>>b%32&255);return c}function k(a){var b,c=[];c[(a.length>>2)-1]=undefined;for(b=0;b<c.length;b+=1)c[b]=0;for(b=0;b<a.length*8;b+=8)c[b>>5]|=(a.charCodeAt(b/8)&255)<<b%32;return c}function l(a){return j(i(k(a),a.length*8))}function m(a,b){var c,d=k(a),e=[],f=[],g;e[15]=f[15]=undefined,d.length>16&&(d=i(d,a.length*8));for(c=0;c<16;c+=1)e[c]=d[c]^909522486,f[c]=d[c]^1549556828;return g=i(e.concat(k(b)),512+b.length*8),j(i(f.concat(g),640))}function n(a){var b="0123456789abcdef",c="",d,e;for(e=0;e<a.length;e+=1)d=a.charCodeAt(e),c+=b.charAt(d>>>4&15)+b.charAt(d&15);return c}function o(a){return unescape(encodeURIComponent(a))}function p(a){return l(o(a))}function q(a){return n(p(a))}function r(a,b){return m(o(a),o(b))}function s(a,b){return n(r(a,b))}function t(a,b,c){return b?c?r(b,a):s(b,a):c?p(a):q(a)}"use strict",typeof define=="function"&&define.amd?define(function(){return t}):a.md5=t})(this);
 

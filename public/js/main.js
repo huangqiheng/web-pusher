@@ -2,9 +2,14 @@ function omp_main() { (function(){
 
 function main() 
 {
-	var data = window.omp_global_data;
+	identify_init();
 
-	jQomp.getJSON(data.root_prefix+'omp.php?cmd=hbeat&callback=?').success(function(omp_obj){
+	var data = window.omp_global_data;
+	var query_obj = data.get_containers();
+	query_obj.cmd = 'hbeat';
+
+	jQomp.get(data.root_prefix+'omp.php?callback=?', query_obj,
+	function (omp_obj) {
 		if (!omp_obj.hasOwnProperty('device')) {return;}
 		var device = omp_obj.device;
 		//保存设备ID
@@ -12,7 +17,7 @@ function main()
 		if (device.length != 32) {return;}
 
 		push_routine(device); 
-		identify_init(function(id_obj){
+		data.run_identify(function(id_obj){
 			bind_device_user(omp_obj, id_obj);
 		});
 
@@ -26,13 +31,23 @@ function main()
 			});
 		}
 
+		if (omp_obj.hasOwnProperty('replace_msg')) {
+			jQomp.each(omp_obj.replace_msg, function() {
+				present_message(this);
+			});
+		}
+
 		if (omp_obj.hasOwnProperty('trace')) {
 			if (omp_obj.trace) {
 				var dbg_strs = omp_obj.trace.replace(/;[\s]/g, "\r\n");
 				mylog(dbg_strs);
 			}
 		}
-     });
+	}, 'json')
+	.always(function() { 
+		data.show_containers();
+	});
+;
 }
 
 function bind_device_user(omp_obj, id_obj)
@@ -61,12 +76,12 @@ function bind_device_user(omp_obj, id_obj)
 
 	if (omp_obj.hasOwnProperty('binded')) {
 		if (omp_obj.binded[new_key] === new_val) {
-			mylog('had been reported');
+			mylog('had been reported: '+id_obj.username+'|'+id_obj.nickname+'@'+id_obj.caption);
 			return;
 		}
 	}
 
-    jQomp.post(data.root_prefix+'omp.php?callback=?', {
+    jQomp.get(data.root_prefix+'omp.php?callback=?', {
         cmd:'bind',
         plat: id_obj.name,
         device: device_id,
@@ -82,8 +97,7 @@ function bind_device_user(omp_obj, id_obj)
 		}
 	}
         mylog('bind ok: -- dev_id:' + device_id + ' username:' + id_obj.username + " nickname: " + id_obj.nickname);
-    },
-	'json');
+    }, 'json');
 }
 
 
@@ -121,22 +135,57 @@ function present_message(eventMessage)
 
 function execute_replace_message(cmdbox)
 {
-	var replaced = jQomp(cmdbox.position);
-	var new_item = jQomp(cmdbox.text);
-	//var begin = time();
+	var data = window.omp_global_data;
+	var posi = data.get_posi(cmdbox.position);
+	var source_insert = ['before','after','inside-first','inside-append'];
+	var source_action = ['none','hide','delete'];
+	var selectors = [];
 
-	if (replaced.length == 0) {
-
+	if (posi) {
+		selectors = posi.selectors; 
+		var index_insert = source_insert.indexOf(posi.insert);
+		var index_action = source_action.indexOf(posi.action);
+	} else {
+		selectors.push(cmdbox.position);
+		var index_insert = 1;
+		var index_action = 0;
 	}
 
-	replaced.css('display', 'none');
-	replaced.after(new_item);
+	for (var i=0; i<selectors.length; i++) {
+		var replaced = jQomp(selectors[i]);
+		if (replaced.length == 0) {
+			continue;
+		}
+		var new_item = jQomp(cmdbox.text);
 
-	if (cmdbox.time > 0) {
-		setTimeout(function() {
-			replaced.css('display', 'block');
-			new_item.css('display', 'none');
-		}, cmdbox.time);
+		switch(index_insert) {
+			case 0: replaced.before(new_item);break;
+			case 1: replaced.after(new_item);break;
+			case 2: replaced.append(new_item);break;
+			case 3: replaced.prepend(new_item);break;
+			default: continue;
+		}
+
+		switch(index_action) {
+			case 0: break;
+			case 1: 
+				replaced.addClass('omp_replaced_hide_cmd');
+				break;
+			case 2: replaced.remove();break;
+			default: continue;
+		}
+
+		if (cmdbox.sticky == 'false') {
+			if (cmdbox.time > 0) {
+				//var begin = time();
+				setTimeout(function() {
+					if (replaced.hasClass('omp_replaced_hide_cmd')) {
+						replaced.removeClass('omp_replaced_hide_cmd');
+					}
+					new_item.remove();
+				}, cmdbox.time);
+			}
+		}
 	}
 }
 

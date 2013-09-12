@@ -49,14 +49,7 @@ function get_online_objects()
 			continue;
 		}
 
-		$account_json = @$browser['bind_account'];
-		if (empty($account_json)) {
-			$account = '';
-		} else {
-			$account_arr = json_decode($account_json, true);
-			$account = implode(';', $account_arr);
-		}
-
+		$account = @$browser['bind_account'];
 		$device = $browser['device'];
 		$useragent = $browser['UserAgent'];
 
@@ -180,7 +173,7 @@ api_ui_init(aDataSet);
 
 				<li style="margin-left: 50px;">
 					<img style='float: left;' width='16' height='16' src="/images/people.png" alt="" class="small-image" />
-					<div style="float: left;">终端分类库</div>
+					<div style="float: left;">用户分类库</div>
 				</li>
 
 				<li>
@@ -192,13 +185,13 @@ api_ui_init(aDataSet);
 					<img style='float: left;' width='16' height='16' src="/images/message.png" alt="" class="small-image" />
 					<div style="float: left;">替换位置库</div>
 				</li>
-				<li style="margin-left: 50px;">
-					<img style='float: left;' width='16' height='16' src="/images/chart.png" alt="" class="small-image" />
-					<div style="float: left;">详细报表</div>
-				</li>
 				<li>
+					<img style='float: left;' width='16' height='16' src="/images/chart.png" alt="" class="small-image" />
+					<div style="float: left;">账户识别库</div>
+				</li>
+				<li style="margin-left: 90px;">
 					<img style='float: left;' width='16' height='16' src="/images/mailIcon.png" alt="" class="small-image" />
-					<div style="float: left;">发送即时信息</div>
+					<div style="float: left;">即时信息</div>
 				</li>
 				<li >
 					<img style='float: left;' width='16' height='16' src="/images/settings.png" alt="" class="small-image" />
@@ -211,10 +204,7 @@ api_ui_init(aDataSet);
 			<div id='tab_user'></div><!-- 终端分类库 标签 -->
 			<div id='tab_message'></div><!-- 预存消息库 标签 -->
 			<div id='tab_posi'></div> <!-- 替换位置库 标签 -->
-
-			<!-- 报表 标签 -->
-			<div style='height:380px;'>
-			</div>
+			<div id='tab_identify'></div> <!-- 账户识别库 标签 -->
 
 			<!-- 发送即时消息 标签 -->
 			<div> 
