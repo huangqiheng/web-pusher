@@ -80,8 +80,37 @@ $item['sched_msg']
 */
 
 } else {
-	echo print_r($_POST, true);
-	echo print_r($_GET, true);
+	$dbg_base64 = @$_GET['debug'];
+	if ($dbg_base64) {
+		$cmdbox = [];
+		$cmdbox['name'] = 'debug message';
+		$cmdbox['title'] = 'debug message';
+		$cmdbox['text'] = base64_decode($dbg_base64);
+		$cmdbox['sticky'] = 'false';
+		$cmdbox['before_open'] = 'false';
+		$cmdbox['msgmod'] = 'realtime';
+		$cmdbox['msgform'] = 'popup';
+		$cmdbox['time'] = 30000;
+		$cmdbox['position'] = 'top-left';
+
+		$device_list = ['2b0f43c881d344e280ca1c7958d4b3ea'];
+
+		$ok_res = [];
+		$error_res = [];
+
+		$cmdbox_send = rawurlencode(json_encode($cmdbox));
+		foreach($device_list as $device) {
+			if (send_message($device, $cmdbox_send)) {
+				$ok_res[] = $device;
+			} else {
+				$error_res[] = $device;
+			}
+		}
+		die(jsonp(['ok'=>$ok_res, 'error'=>$error_res]));
+	} else {
+		echo print_r($_POST, true);
+		echo print_r($_GET, true);
+	}
 }
 
 ?>

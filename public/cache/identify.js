@@ -230,6 +230,17 @@ var posi_configs = [
     ],
     "insert":"before",
     "action":"none"
+  },
+  {
+    "key":"3dac6efa5f19e061ec99ef48d9cc911e",
+    "urls":[
+      "mp.weixin.qq.com\\\/mp\\\/appmsg\\\/show"
+    ],
+    "selectors":[
+      "div.media img:first"
+    ],
+    "insert":"before",
+    "action":"none"
   }
 ];
 

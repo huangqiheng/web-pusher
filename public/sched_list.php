@@ -2,9 +2,20 @@
 require_once 'functions.php';
 require_once 'functions/onebox.php';
 
+$is_debug = false;
+
 if (isset($_GET['force'])) {
+	$is_debug = true;
 	update_sched_tasks();
 	die();
+}
+
+function dbg_print($obj)
+{
+	global $is_debug;
+	if ($is_debug) {
+		print_r2($obj);
+	}
 }
 
 function update_sched_tasks($listname='all')
@@ -315,7 +326,7 @@ function make_new_replace_list($replace_list, $users_list, $message_list, $posi_
 				$new_message[] = $item;
 			}
 		}
-
+		
 		$new = array();
 		$new['targets'] = $new_target;
 		$new['messages'] = $new_message;

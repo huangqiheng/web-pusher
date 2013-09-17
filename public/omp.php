@@ -787,6 +787,7 @@ function match_normal($target, $browser_save, $keys)
 function targets_matched($targets, $browser_save, $is_detail=false)
 {
 	$matched = false;
+
 	foreach($targets as $target) {
 		do {
 			$key_names = ['ismobiledevice', 'browser', 'platform', 'device_name', 'region'];
