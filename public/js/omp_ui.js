@@ -35,7 +35,7 @@ function api_ui_init(aDataSet)
 
 	//目标管理
 	var source_null = '--';
-	var source_bool = ['null', 'true', 'false'];
+	var source_bool = [source_null, 'true', 'false'];
 	var source_newuser = source_bool;
 	var source_newuser_cn = [source_null, '首次访问', '后续访问'];
 	var source_newvisitor = source_bool;

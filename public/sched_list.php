@@ -28,7 +28,7 @@ function update_sched_tasks($listname='all')
 		$replace_list   = mmc_array_all_cache(DATA_PLANS_LIST);
 		$posi_list      = mmc_array_all_cache(DATA_POSI_LIST);
 		$identify_list  = mmc_array_all_cache(DATA_IDENTIFY_LIST);
-
+dbg_print($users_list);
 		//生成新的配置，并同步给设备去识别
 		$new_popup_list = make_new_popup_list($popup_list, $users_list, $message_list);
 		update_new_popup_list($new_popup_list);

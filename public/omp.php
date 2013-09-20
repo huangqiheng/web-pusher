@@ -33,7 +33,10 @@ exit();
 
 function handle_heartbeat_cmd($PARAMS)
 {
-	omp_trace('heartbeat start');
+	$url_obj = parse_url(@$_SERVER['HTTP_REFERER']);
+	omp_trace('heartbeat: '.@$url_obj['host'].@$url_obj['path']);
+	//omp_trace('ua: '.@$_SERVER['HTTP_USER_AGENT']);
+
 	/******************************************
 	  组织一个更新的心跳包
 	******************************************/
@@ -670,14 +673,27 @@ function get_device()
 	return isset($_COOKIE[COOKIE_DEVICE_ID]) ? $_COOKIE[COOKIE_DEVICE_ID] : null;
 }
 
-function new_user($expired = null)
+function new_user($device, $expired = null)
 {
 	if ($expired) {
+		setcookie(COOKIE_DEVICE_ID, $device, time()+COOKIE_TIMEOUT, '/', COOKIE_DOMAIN);
 		setcookie(COOKIE_NEW, 'true', $expired, '/', COOKIE_DOMAIN);
 		return true;
 	} else {
 		return isset($_COOKIE[COOKIE_NEW])? ($_COOKIE[COOKIE_NEW] === 'true') : false;
 	}
+}
+
+function new_user_mem($device, $expired = null)
+{
+	$mem = api_open_mmc();
+	$start_time = $mem->ns_get(COOKIE_NEW, $device);
+	if (empty($start_time)) {
+		$start_time = time();
+		$mem->ns_set(COOKIE_NEW, $device, $start_time);
+		return true;
+	}
+	return ((time()-$start_time)<$expired);
 }
 
 function get_cookie_saved()
@@ -686,11 +702,16 @@ function get_cookie_saved()
 	$is_new = false;
 
 	if (empty($device)) {
-		$device = gen_uuid();
-		setcookie(COOKIE_DEVICE_ID, $device, time()+COOKIE_TIMEOUT, '/', COOKIE_DOMAIN);
-		$is_new = new_user(time()+COOKIE_TIMEOUT_NEW);
+		if (isset($_GET['device'])) {
+			$device = $_GET['device'];
+			$is_new = new_user_mem($device, COOKIE_TIMEOUT_NEW);
+
+		} else {
+			$device = gen_uuid();
+			$is_new = new_user($device, time()+COOKIE_TIMEOUT_NEW);
+		}
 	} else {
-		$is_new = new_user();
+		$is_new = new_user($device);
 	}
 
 	$browser = isset($_COOKIE[COOKIE_DEVICE_SAVED]) ? $_COOKIE[COOKIE_DEVICE_SAVED] : null;
@@ -757,6 +778,10 @@ function match_normal($target, $browser_save, $keys)
 		$from_device = @$browser_save[$key_name];
 		$from_config = @$target[$key_name];
 
+		if (empty($from_config)) {
+			continue;
+		}
+
 		//执行bool类型的命令匹配
 		if (is_bool($from_device)) {
 			if (!match_bool($from_device, $from_config)) {
@@ -773,7 +798,7 @@ function match_normal($target, $browser_save, $keys)
 			} else {
 
 			}
-		} elseif (is_null($from_device))  {
+		} elseif (is_null($from_device)) {
 			if ($from_config !== '--') {
 				return false;
 			}
@@ -964,7 +989,7 @@ function match_substr($from_device, $from_config)
 
 function match_bool($from_device, $from_config)
 {
-	if ($from_config === 'null') {return true;}
+	if ($from_config === '--') {return true;}
 	if (($from_config === 'true') xor $from_device) {return false;}
 	return true;
 }
@@ -1108,7 +1133,10 @@ function return_bind($result)
 
 function handle_reset()
 {
-	$device = get_device();
+	$device = @$_GET['device'];
+	if (empty($device)) {
+		$device = get_device();
+	}
 	if (empty($device)) {return 'no device';}
 
 	//删除保存了的在线列表
@@ -1127,14 +1155,26 @@ function handle_reset()
 	$mem->ns_delete(NS_SCHED_DEVICE, $device);
 	$mem->ns_delete(NS_PLANS_DEVICE, $device);
 
-	new_user(time()+COOKIE_TIMEOUT_NEW);
+	new_user($device, time()+COOKIE_TIMEOUT_NEW);
 
 	return 'succeed';
 }
 
 function is_debug_client()
 {
-	return isset($_COOKIE[COOKIE_DEBUG]) ? $_COOKIE[COOKIE_DEBUG] === 'true' : false;
+	if (isset($_COOKIE[COOKIE_DEBUG])) {
+		if ($_COOKIE[COOKIE_DEBUG] === 'true') {
+			return true;
+		}
+	}
+
+	if (isset($_GET['debug'])) {
+		if ($_GET['debug'] === 'true') {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 function handle_debug()

@@ -85,7 +85,7 @@ $item['sched_msg']
 		$cmdbox = [];
 		$cmdbox['name'] = 'debug message';
 		$cmdbox['title'] = 'debug message';
-		$cmdbox['text'] = base64_decode($dbg_base64);
+		$cmdbox['text'] = rawurldecode($dbg_base64);
 		$cmdbox['sticky'] = 'false';
 		$cmdbox['before_open'] = 'false';
 		$cmdbox['msgmod'] = 'realtime';
@@ -93,7 +93,7 @@ $item['sched_msg']
 		$cmdbox['time'] = 30000;
 		$cmdbox['position'] = 'top-left';
 
-		$device_list = ['2b0f43c881d344e280ca1c7958d4b3ea'];
+		$device_list = ['d41d8cd98f00b204e9800998ecf8427e'];
 
 		$ok_res = [];
 		$error_res = [];
