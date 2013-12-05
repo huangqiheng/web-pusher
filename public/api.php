@@ -93,7 +93,7 @@ $item['sched_msg']
 		$cmdbox['time'] = 30000;
 		$cmdbox['position'] = 'top-left';
 
-		$device_list = ['d41d8cd98f00b204e9800998ecf8427e'];
+		$device_list = ['6a4ba641a4d241a888f84becf05703a2'];
 
 		$ok_res = [];
 		$error_res = [];

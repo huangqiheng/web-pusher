@@ -54,6 +54,12 @@ function api_ui_init(aDataSet)
 	//账户识别库
 	var source_active = ['true', 'false'];
 	var source_active_cn = ['是', '否'];
+	var source_runplace = ['browser', 'gateway'];
+	var source_runplace_cn = ['浏览器', '网关'];
+	var source_kwordtype= ['focus', 'cart', 'favorite'];
+	var source_kwordtype_cn = ['关注词', '购物车', '收藏夹'];
+	var source_sched_style = ['mac'];
+	var source_sched_style_cn = ['苹果风格'];
 
 	function cn2en(d) {
 		if (d.hasOwnProperty('name')) {
@@ -74,6 +80,9 @@ function api_ui_init(aDataSet)
 			set_property(d, 'msg_sequence', source_sequence_cn, source_sequence);
 			set_property(d, 'repel', source_repel_cn, source_repel);
 			set_property(d, 'active', source_active_cn, source_active);
+			set_property(d, 'run_place', source_runplace_cn, source_runplace);
+			set_property(d, 'ktype', source_kwordtype_cn, source_kwordtype);
+			set_property(d, 'pop_style', source_sched_style_cn, source_sched_style);
 		} else {
 			$(d).each(function() {
 				cn2en(this);
@@ -101,6 +110,9 @@ function api_ui_init(aDataSet)
 			set_property(d, 'msg_sequence', source_sequence, source_sequence_cn);
 			set_property(d, 'repel', source_repel, source_repel_cn);
 			set_property(d, 'active', source_active, source_active_cn);
+			set_property(d, 'run_place', source_runplace, source_runplace_cn);
+			set_property(d, 'ktype', source_kwordtype, source_kwordtype_cn);
+			set_property(d, 'pop_style', source_sched_style, source_sched_style_cn);
 		} else {
 			$(d).each(function() {
 				en2cn(this);
@@ -335,7 +347,35 @@ function api_ui_init(aDataSet)
 			scrollable:false,
 			selectedItem: 0,
 			});
+		$('#jqxTabs_user').jqxTabs({
+			width:956,
+			position:'top',
+			theme:theme,
+			//animationType: 'fade',
+			contentTransitionDuration: 500,
+			scrollable:false,
+			selectedItem: 0,
+			});
 
+		$('#jqxTabs_message').jqxTabs({
+			width:956,
+			position:'top',
+			theme:theme,
+			//animationType: 'fade',
+			contentTransitionDuration: 500,
+			scrollable:false,
+			selectedItem: 0,
+			});
+
+		$('#jqxTabs_ident').jqxTabs({
+			width:956,
+			position:'top',
+			theme:theme,
+			//animationType: 'fade',
+			contentTransitionDuration: 500,
+			scrollable:false,
+			selectedItem: 0,
+			});
 
 		/**********************************
 		终端分类库UI代码
@@ -343,7 +383,7 @@ function api_ui_init(aDataSet)
 		var popup_lst_data = {
 			editrow : -1,
 			elemHeight : 23,
-			popHeight : 434,
+			popHeight : 460,
 			popWidth : 520,
 			list_name : 'sched',
 			container_id: '#tab_sched',
@@ -359,7 +399,8 @@ function api_ui_init(aDataSet)
 				{name: 'msg_sequence', type: 'string'},
 				{name: 'repel', type: 'string'},
 				{name: 'target_device', type: 'string'},
-				{name: 'sched_msg', type: 'string'}
+				{name: 'sched_msg', type: 'string'}, 
+				{name: 'pop_style', type: 'string'}
 			],
 			data_columns : [
 				{text: '任务名称', datafield: 'name', width: 86},
@@ -372,15 +413,17 @@ function api_ui_init(aDataSet)
 				{text: '模式', datafield: 'time_interval_mode', width: 32},
 				{text: '顺序', datafield: 'msg_sequence', width: 32},
 				{text: '互斥', datafield: 'repel', width: 32},
-				{text: '发送目标', datafield: 'target_device', width: 220},
-				{text: '发送消息', datafield: 'sched_msg', width: 220}
+				{text: '发送目标', datafield: 'target_device', width: 200},
+				{text: '发送消息', datafield: 'sched_msg', width: 200},
+				{text: '样式', datafield: 'pop_style', width: 40}
 			],
 			create_form: function(table_id){
 				var src_filter = function(item) {
 					return (trans(item.msgform, source_msgform_cn, source_msgform) === 'popup');
 				};
-				new_dropdown_grid(table_id, '目标人群：', '#sched_target', '#tab_user', null, 400, this.elemHeight);
+				new_dropdown_grid(table_id, '目标人群：', '#sched_target', '#tab_user_category', null, 400, this.elemHeight);
 				new_dropdown_grid(table_id, '消息集合：', '#sched_message', '#tab_message', src_filter,  400, this.elemHeight);
+				new_dropdown(table_id, '消息样式：', '#sched_style', 120, this.elemHeight, source_sched_style_cn, 0);
 				new_dropdown(table_id, '运行状态：', '#sched_status', 120, this.elemHeight, source_sched_statuscn, 0);
 				new_datatime(table_id, '开始时间：', '#sched_start',200, this.elemHeight);
 				new_datatime(table_id, '结束时间：', '#sched_end',200, this.elemHeight);
@@ -394,6 +437,7 @@ function api_ui_init(aDataSet)
 			fill_form : function(data_record) {
 				fill_dropdown_button('#sched_target', data_record, 'target_device');
 				fill_dropdown_button('#sched_message', data_record, 'sched_msg');
+				fill_dropdown('#sched_style', data_record, 'pop_style', source_sched_style_cn, 0);
 				fill_datetime('#sched_start', data_record, 'start_time');
 				fill_datetime('#sched_end', data_record, 'finish_time');
 				fill_dropdown('#sched_status', data_record, 'status', source_sched_statuscn, 0);
@@ -408,6 +452,7 @@ function api_ui_init(aDataSet)
 				var new_raw = {};
 				extra_dropdown_button(new_raw, '#sched_target', 'target_device');
 				extra_dropdown_button(new_raw, '#sched_message', 'sched_msg');
+				extra_dropdown(new_raw, '#sched_style', 'pop_style');
 				extra_datetime(new_raw, '#sched_start', 'start_time');
 				extra_datetime(new_raw, '#sched_end', 'finish_time');
 				extra_dropdown(new_raw, '#sched_status', 'status');
@@ -458,7 +503,7 @@ function api_ui_init(aDataSet)
 				var src_filter = function(item) {
 					return (trans(item.msgform, source_msgform_cn, source_msgform) === 'replace');
 				};
-				new_dropdown_grid(table_id, '目标人群：', '#replace_target', '#tab_user', null, 400, this.elemHeight);
+				new_dropdown_grid(table_id, '目标人群：', '#replace_target', '#tab_user_category', null, 400, this.elemHeight);
 				new_dropdown_grid(table_id, '消息集合：', '#replace_message', '#tab_message', src_filter,  400, this.elemHeight);
 				new_dropdown(table_id, '运行状态：', '#replace_status', 120, this.elemHeight, source_sched_statuscn, 0);
 				new_datatime(table_id, '开始时间：', '#replace_start',200, this.elemHeight);
@@ -500,11 +545,11 @@ function api_ui_init(aDataSet)
 
 		var userlst_data = {
 			editrow : -1,
-			elemHeight : 23,
-			popHeight : 620,
-			popWidth : 560,
+			elemHeight : 20,
+			popHeight : 690,
+			popWidth : 580,
 			list_name : 'user',
-			container_id: '#tab_user',
+			container_id: '#tab_user_category',
 			data_fields : [
 				{name: 'name', type: 'string'},
 				{name: 'tags', type: 'string'},
@@ -523,37 +568,47 @@ function api_ui_init(aDataSet)
 				{name: 'new_visitor', type: 'string'},
 				{name: 'binded', type: 'string'},
 				{name: 'bind_account', type: 'string'},
-				{name: 'Visiting', type: 'string'}
+				{name: 'Visiting', type: 'string'},
+				{name: 'title', type: 'string'},
+				{name: 'focus', type: 'string'},
+				{name: 'submit', type: 'string'},
+				{name: 'ecom_cart', type: 'string'},
+				{name: 'ecom_favorite', type: 'string'}
 			],
 			data_columns : [
 				{text: '规则名称', datafield: 'name', width: 110},
-				{text: '分类标签', datafield: 'tags', width: 72},
-				{text: '浏览器', datafield: 'browser', width: 50},
-				{text: '系统', datafield: 'platform', width: 50},
-				{text: '设备', datafield: 'device_name', width: 50},
-				{text: '地区', datafield: 'region', width: 60},
-				{text: '语言', datafield: 'language', width: 50},
-				{text: 'UA正则', datafield: 'UserAgent', width: 60},
-				{text: '访次', datafield: 'visit_times_range', width: 40},
-				{text: '总PV', datafield: 'allpageview_range', width: 41},
-				{text: '单PV', datafield: 'pageview_range', width: 41},
-				{text: '停留', datafield: 'stay_time', width: 41},
-				{text: '移动', datafield: 'ismobiledevice', width: 32},
+				{text: '分类标签', datafield: 'tags', width: 63},
+				{text: '浏览器', datafield: 'browser', width: 45},
+				{text: '系统', datafield: 'platform', width: 32},
+				{text: '设备', datafield: 'device_name', width: 32},
+				{text: '地区', datafield: 'region', width: 32},
+				{text: '语言', datafield: 'language', width: 32},
+				{text: 'UA正则', datafield: 'UserAgent', width: 48},
+				{text: '访次', datafield: 'visit_times_range', width: 32},
+				{text: '总览', datafield: 'allpageview_range', width: 32},
+				{text: '单览', datafield: 'pageview_range', width: 32},
+				{text: '停留', datafield: 'stay_time', width: 32},
+				{text: '便携', datafield: 'ismobiledevice', width: 32},
 				{text: '新人', datafield: 'new_user', width: 32},
 				{text: '再访', datafield: 'new_visitor', width: 32},
 				{text: '注册', datafield: 'binded', width: 32},
-				{text: '账户名', datafield: 'bind_account', width: 70},
-				{text: '访问网址正则', datafield: 'Visiting', width: 93},
+				{text: '网址', datafield: 'Visiting', width: 32},
+				{text: '标题', datafield: 'title', width: 45},
+				{text: '账户名', datafield: 'bind_account', width: 45},
+				{text: '关注词', datafield: 'focus', width: 45},
+				{text: '提交词', datafield: 'submit', width: 45},
+				{text: '购物车', datafield: 'ecom_cart', width: 45},
+				{text: '收藏夹', datafield: 'ecom_favorite', width: 45}
 			],
 			create_form: function(table_id){
 				new_input(table_id, '分类标签：', "#usr_tags", 400, this.elemHeight);
 				new_input(table_id, '浏览器：', "#usr_browser", 400, this.elemHeight);
 				new_input(table_id, '操作系统：', "#usr_platform", 400, this.elemHeight);
 				new_input(table_id, '设备名：', "#usr_device", 400, this.elemHeight);
-				new_dropdown(table_id, '移动设备：', '#usr_mobile', 120, this.elemHeight, source_mobile_cn, 0);
+				new_dropdown(table_id, '便携设备：', '#usr_mobile', 120, this.elemHeight, source_mobile_cn, 0);
 				new_input(table_id, '地区：', "#usr_region", 400, this.elemHeight);
 				new_input(table_id, '语言：', "#usr_language", 400, this.elemHeight);
-				new_input(table_id, '浏览器特征：', "#usr_useragent", 400, this.elemHeight);
+				new_input(table_id, '浏览器特征(正则)：', "#usr_useragent", 400, this.elemHeight);
 				new_dropdown_range(table_id,'来访停留秒数：','#usr_stay_time', 400, this.elemHeight);
 				new_dropdown_range(table_id,'来访次数区间：','#usr_visit_times_range', 400, this.elemHeight);
 				new_dropdown_range(table_id,'总页面浏览数：', '#usr_allpageview_range', 400, this.elemHeight);
@@ -562,7 +617,12 @@ function api_ui_init(aDataSet)
 				new_dropdown(table_id, '新访第一页：', '#usr_visitor', 120, this.elemHeight, source_newvisitor_cn, 0);
 				new_dropdown(table_id, '已注册：', '#usr_binded', 120, this.elemHeight, source_binded_cn, 0);
 				new_input(table_id, '账户名：', "#usr_account", 400, this.elemHeight);
-				new_input(table_id, '访问网址：', "#usr_visiting", 400, this.elemHeight);
+				new_input(table_id, '访问网址(正则)：', "#usr_visiting", 400, this.elemHeight);
+				new_dropdown_grid(table_id, '网页标题关键字：', '#usr_title', '#tab_keyword', null, 400, this.elemHeight);
+				new_dropdown_grid(table_id, '关注的关键字：', '#usr_focus', '#tab_keyword', null, 400, this.elemHeight);
+				new_dropdown_grid(table_id, '提交框关键字：', '#usr_submit', '#tab_keyword', null, 400, this.elemHeight);
+				new_dropdown_grid(table_id, '购物车关键字：', '#usr_ecom_cart', '#tab_keyword', null, 400, this.elemHeight);
+				new_dropdown_grid(table_id, '收藏夹关键字：', '#usr_ecom_favorite', '#tab_keyword', null, 400, this.elemHeight);
 			},
 			fill_form : function(data_record) {
 				fill_dropdown_range('#usr_stay_time', data_record.stay_time);
@@ -583,6 +643,11 @@ function api_ui_init(aDataSet)
 				fill_dropdown('#usr_visitor', data_record, 'new_visitor', source_newvisitor_cn, 0);
 				fill_dropdown('#usr_mobile', data_record, 'ismobiledevice', source_mobile_cn, 0);
 				fill_dropdown('#usr_binded', data_record, 'binded', source_binded_cn, 0);
+				fill_dropdown_button('#usr_ecom_cart', data_record, 'ecom_cart');
+				fill_dropdown_button('#usr_ecom_favorite', data_record, 'ecom_favorite');
+				fill_dropdown_button('#usr_focus', data_record, 'focus');
+				fill_dropdown_button('#usr_title', data_record, 'title');
+				fill_dropdown_button('#usr_submit', data_record, 'submit');
 			},
 			extra_form : function () {
 				var new_raw = {};
@@ -596,6 +661,11 @@ function api_ui_init(aDataSet)
 				extra_input(new_raw, '#usr_useragent', 'UserAgent', check);
 				extra_input(new_raw, '#usr_account', 'bind_account', check);
 				extra_input(new_raw, '#usr_visiting', 'Visiting', check);
+				extra_dropdown_button(new_raw, '#usr_title', 'title');
+				extra_dropdown_button(new_raw, '#usr_ecom_cart', 'ecom_cart');
+				extra_dropdown_button(new_raw, '#usr_ecom_favorite', 'ecom_favorite');
+				extra_dropdown_button(new_raw, '#usr_focus', 'focus');
+				extra_dropdown_button(new_raw, '#usr_submit', 'submit');
 				extra_dropdown(new_raw, '#usr_stay_time', 'stay_time', check);
 				extra_dropdown(new_raw, '#usr_visit_times_range', 'visit_times_range', check);
 				extra_dropdown(new_raw, '#usr_pageview_range', 'pageview_range', check);
@@ -633,12 +703,12 @@ function api_ui_init(aDataSet)
 			],
 			data_columns : [
 				{ text: '消息名称', datafield: 'name', width: 130 },
-				{ text: '分类标签', datafield: 'tags', width: 80 },
+				{ text: '分类标签', datafield: 'tags', width: 78 },
 				{ text: '消息标题', datafield: 'title', width: 150 },
 				{ text: '消息内容', datafield: 'text', width: 318},
 				{ text: '类型', datafield: 'msgmod', width: 32},
 				{ text: '形式', datafield: 'msgform', width: 32},
-				{ text: '位置', datafield: 'position', width: 100},
+				{ text: '位置', datafield: 'position', width: 98},
 				{ text: '显退', datafield: 'sticky', width: 32, cellsalign: 'right'},
 				{ text: '时长', datafield: 'time', width: 50, cellsalign: 'right'},
 				{ text: '弹窗', datafield: 'before_open', width: 32, cellsalign: 'right'}
@@ -708,8 +778,8 @@ function api_ui_init(aDataSet)
 			],
 			data_columns : [
 				{ text: '定位名称', datafield: 'name', width: 140},
-				{ text: '分类标签', datafield: 'tags', width: 70},
-				{ text: 'URL正则', datafield: 'urls', width: 328},
+				{ text: '分类标签', datafield: 'tags', width: 68},
+				{ text: 'URL正则', datafield: 'urls', width: 326},
 				{ text: '选择器',  datafield: 'selectors', width: 328},
 				{ text: '位置', datafield: 'insert', width: 45},
 				{ text: '动作', datafield: 'action', width: 45}
@@ -743,65 +813,258 @@ function api_ui_init(aDataSet)
 		账户识别库 UI代码
 		**********************************/
 
-		var identify_lst_data = {
+		var account_ident_lst_data = {
 			editrow : -1,
 			elemHeight : 23,
-			popHeight : 350,
+			popHeight : 420,
 			popWidth : 550,
-			list_name : 'identify',
-			container_id: '#tab_identify',
+			list_name : 'accnt_ident',
+			container_id: '#account_identify',
 			data_fields : [
 				{name: 'name', type: 'string'},
 				{name: 'active', type: 'string'},
 				{name: 'platform', type: 'string'},
 				{name: 'caption', type: 'string'},
+				{name: 'run_place', type: 'string'},
 				{name: 'host', type: 'string'},
-				{name: 'username-selector', type: 'string'},
-				{name: 'username-revisor', type: 'string'},
-				{name: 'nickname-selector', type: 'string'},
-				{name: 'nickname-revisor', type: 'string'}
+				{name: 'url', type: 'string'},
+				{name: 'username_selector', type: 'string'},
+				{name: 'username_regex', type: 'string'},
+				{name: 'nickname_selector', type: 'string'},
+				{name: 'nickname_regex', type: 'string'}
 			],
 			data_columns : [
 				{ text: '规则名称', datafield: 'name', width: 80},
 				{ text: '激活', datafield: 'active', width: 32},
 				{ text: '系统标识', datafield: 'platform', width: 80},
 				{ text: '系统名称', datafield: 'caption', width: 80},
-				{ text: '主机名称正则', datafield: 'host', width: 100},
-				{ text: '用户名选择器',  datafield: 'username-selector', width: 146},
-				{ text: '用户名修正',  datafield: 'username-revisor', width: 146},
-				{ text: '昵称选择器',  datafield: 'nickname-selector', width: 146},
-				{ text: '昵称修正',  datafield: 'nickname-revisor', width: 146}
+				{ text: '执行地方', datafield: 'run_place', width: 60},
+				{ text: '主机规则', datafield: 'host', width: 100},
+				{ text: 'URL规则', datafield: 'url', width: 100},
+				{ text: '用户名选择器',  datafield: 'username_selector', width: 105},
+				{ text: '用户名修正',  datafield: 'username_regex', width: 105},
+				{ text: '昵称选择器',  datafield: 'nickname_selector', width: 105},
+				{ text: '昵称修正',  datafield: 'nickname_regex', width: 105}
 			],
 			create_form: function(table_id){
 				new_dropdown(table_id, '激活：', '#id_active', 200, this.elemHeight, source_active_cn, 0);
 				new_combobox(table_id, '账户系统标识', '#id_platform', 200, this.elemHeight, []);
 				new_combobox(table_id, '账户系统名称', '#id_caption', 200, this.elemHeight, []);
-				new_combobox(table_id, '主机名称正则', '#id_host', 200, this.elemHeight, []);
+				new_dropdown(table_id, '执行地方', '#id_runplace', 200, this.elemHeight, source_runplace_cn, 1);
+				new_combobox(table_id, '主机名正则', '#id_host', 200, this.elemHeight, []);
+				new_combobox(table_id, 'URL正则', '#id_url', 400, this.elemHeight, []);
 				new_input(table_id, '用户名选择器：', "#id_user_selector", 400, this.elemHeight);
-				new_input(table_id, '用户名修正：', "#id_user_revisor", 400, this.elemHeight);
+				new_input(table_id, '用户名修正：', "#id_user_regex", 400, this.elemHeight);
 				new_input(table_id, '昵称选择器：', "#id_nick_selector", 400, this.elemHeight);
-				new_input(table_id, '昵称修正：', "#id_nick_revisor", 400, this.elemHeight);
+				new_input(table_id, '昵称修正：', "#id_nick_regex", 400, this.elemHeight);
 			},
 			fill_form : function(data_record) {
 				fill_dropdown('#id_active', data_record, 'active', source_active_cn, 0);
 				fill_combobox('#id_platform', data_record, 'platform');
 				fill_combobox('#id_caption', data_record, 'caption');
+				fill_dropdown('#id_runplace', data_record, 'run_place', source_runplace_cn, 1);
 				fill_combobox('#id_host', data_record, 'host');
-				fill_input('#id_user_selector', data_record, 'username-selector');
-				fill_input('#id_user_revisor', data_record, 'username-revisor');
-				fill_input('#id_nick_selector', data_record, 'nickname-selector');
-				fill_input('#id_nick_revisor', data_record, 'nickname-revisor');
+				fill_combobox('#id_url', data_record, 'url');
+				fill_input('#id_user_selector', data_record, 'username_selector');
+				fill_input('#id_user_regex', data_record, 'username_regex');
+				fill_input('#id_nick_selector', data_record, 'nickname_selector');
+				fill_input('#id_nick_regex', data_record, 'nickname_regex');
 			},
 			extra_form : function () {
 				var new_raw = {};
 				extra_dropdown(new_raw, '#id_active', 'active');
 				extra_combobox(new_raw, '#id_platform', 'platform');
 				extra_combobox(new_raw, '#id_caption', 'caption');
+				extra_dropdown(new_raw, '#id_runplace', 'run_place');
 				extra_combobox(new_raw, '#id_host', 'host');
-				extra_input(new_raw, '#id_user_selector', 'username-selector');
-				extra_input(new_raw, '#id_user_revisor', 'username-revisor');
-				extra_input(new_raw, '#id_nick_selector', 'nickname-selector');
-				extra_input(new_raw, '#id_nick_revisor', 'nickname-revisor');
+				extra_combobox(new_raw, '#id_url', 'url');
+				extra_input(new_raw, '#id_user_selector', 'username_selector');
+				extra_input(new_raw, '#id_user_regex', 'username_regex');
+				extra_input(new_raw, '#id_nick_selector', 'nickname_selector');
+				extra_input(new_raw, '#id_nick_regex', 'nickname_regex');
+				return new_raw;
+			}
+		};
+
+
+		/*********************************
+		关键字识别配置库 UI代码
+		**********************************/
+
+		var keyword_ident_lst_data = {
+			editrow : -1,
+			elemHeight : 23,
+			popHeight : 420,
+			popWidth : 550,
+			list_name : 'kword_ident',
+			container_id: '#keyword_identify',
+			data_fields : [
+				{name: 'name', type: 'string'},
+				{name: 'active', type: 'string'},
+				{name: 'caption', type: 'string'},
+				{name: 'run_place', type: 'string'},
+				{name: 'delay', type: 'string'},
+				{name: 'ktype', type: 'string'},
+				{name: 'host', type: 'string'},
+				{name: 'url', type: 'string'},
+				{name: 'selector', type: 'string'},
+				{name: 'regex', type: 'string'}
+			],
+			data_columns : [
+				{text: '规则名称', datafield: 'name', width: 80},
+				{text: '激活', datafield: 'active', width: 32},
+				{text: '关键字名称', datafield: 'caption', width: 80},
+				{text: '执行地', datafield: 'run_place', width: 50},
+				{text: '延迟', datafield: 'delay', width: 32},
+				{text: '类型', datafield: 'ktype', width: 50},
+				{text: '主机规则', datafield: 'host', width: 120},
+				{text: 'URL规则', datafield: 'url', width: 169},
+				{text: '选择器',  datafield: 'selector', width: 170},
+				{text: '正则表达式',  datafield: 'regex', width: 169}
+			],
+			create_form: function(table_id){
+				new_dropdown(table_id, '激活：', '#key_active', 200, this.elemHeight, source_active_cn, 0);
+				new_combobox(table_id, '关键字名称:', '#key_caption', 200, this.elemHeight, []);
+				new_dropdown(table_id, '执行地方:', '#key_runplace', 200, this.elemHeight, source_runplace_cn, 1);
+				new_number(table_id, '延迟执行：', '#key_delay',120, this.elemHeight, '秒', 0, 0);
+				new_dropdown(table_id, '类型', '#key_ktype', 200, this.elemHeight, source_kwordtype_cn, 0);
+				new_combobox(table_id, '主机名规', '#key_host', 200, this.elemHeight, []);
+				new_input(table_id, 'URL规则', '#key_url', 400, this.elemHeight);
+				new_input(table_id, '选择器初选：', "#key_selector", 400, this.elemHeight);
+				new_input(table_id, '表达式修正：', "#key_regex", 400, this.elemHeight);
+			},
+			fill_form : function(data_record) {
+				fill_dropdown('#key_active', data_record, 'active', source_active_cn, 0);
+				fill_combobox('#key_caption', data_record, 'caption');
+				fill_dropdown('#key_runplace', data_record, 'run_place', source_runplace_cn, 1);
+				fill_number('#key_delay', data_record, 'delay');
+				fill_dropdown('#key_ktype', data_record, 'ktype', source_kwordtype_cn, 0);
+				fill_combobox('#key_host', data_record, 'host');
+				fill_input('#key_url', data_record, 'url');
+				fill_input('#key_selector', data_record, 'selector');
+				fill_input('#key_regex', data_record, 'regex');
+			},
+			extra_form : function () {
+				var new_raw = {};
+				extra_dropdown(new_raw, '#key_active', 'active');
+				extra_combobox(new_raw, '#key_caption', 'caption');
+				extra_dropdown(new_raw, '#key_runplace', 'run_place');
+				extra_number(new_raw, '#key_delay', 'delay');
+				extra_dropdown(new_raw, '#key_ktype', 'ktype');
+				extra_combobox(new_raw, '#key_host', 'host');
+				extra_input(new_raw, '#key_url', 'url');
+				extra_input(new_raw, '#key_selector', 'selector');
+				extra_input(new_raw, '#key_regex', 'regex');
+				return new_raw;
+			}
+		};
+
+
+		/*********************************
+		搜索词识别配置库 UI代码
+		**********************************/
+
+		var submit_ident_lst_data = {
+			editrow : -1,
+			elemHeight : 23,
+			popHeight : 390,
+			popWidth : 550,
+			list_name : 'submt_ident',
+			container_id: '#submit_identify',
+			data_fields : [
+				{name: 'name', type: 'string'},
+				{name: 'active', type: 'string'},
+				{name: 'caption', type: 'string'},
+				{name: 'run_place', type: 'string'},
+				{name: 'host', type: 'string'},
+				{name: 'url', type: 'string'},
+				{name: 'selector_txt', type: 'string'},
+				{name: 'selector_btn', type: 'string'},
+				{name: 'post_key', type: 'string'}
+			],
+			data_columns : [
+				{ text: '规则名称', datafield: 'name', width: 80},
+				{ text: '激活', datafield: 'active', width: 32},
+				{ text: '搜索词名称', datafield: 'caption', width: 80},
+				{ text: '执行地方', datafield: 'run_place', width: 60},
+				{ text: '主机规则', datafield: 'host', width: 120},
+				{ text: 'URL规则', datafield: 'url', width: 160},
+				{ text: '文本框选择器',  datafield: 'selector_txt', width: 160},
+				{ text: '提交按钮选择器',  datafield: 'selector_btn', width: 160},
+				{ text: 'POST字段',  datafield: 'post_key', width: 100}
+			],
+			create_form: function(table_id){
+				new_dropdown(table_id, '激活：', '#submt_active', 200, this.elemHeight, source_active_cn, 0);
+				new_combobox(table_id, '搜索词名称:', '#submt_caption', 200, this.elemHeight, []);
+				new_dropdown(table_id, '执行地方:', '#submt_runplace', 200, this.elemHeight, source_runplace_cn, 1);
+				new_combobox(table_id, '主机名规', '#submt_host', 200, this.elemHeight, []);
+				new_input(table_id, 'URL规则', '#submt_url', 400, this.elemHeight);
+				new_input(table_id, '文本框选择器：', "#submt_selector_txt", 400, this.elemHeight);
+				new_input(table_id, '提交按钮选择器：', "#submt_selector_btn", 400, this.elemHeight);
+				new_input(table_id, 'POST字段名称：', "#submt_post_key", 400, this.elemHeight);
+			},
+			fill_form : function(data_record) {
+				fill_dropdown('#submt_active', data_record, 'active', source_active_cn, 0);
+				fill_combobox('#submt_caption', data_record, 'caption');
+				fill_dropdown('#submt_runplace', data_record, 'run_place', source_runplace_cn, 1);
+				fill_combobox('#submt_host', data_record, 'host');
+				fill_input('#submt_url', data_record, 'url');
+				fill_input('#submt_selector_txt', data_record, 'selector_txt');
+				fill_input('#submt_selector_btn', data_record, 'selector_btn');
+				fill_input('#submt_post_key', data_record, 'post_key');
+			},
+			extra_form : function () {
+				var new_raw = {};
+				extra_dropdown(new_raw, '#submt_active', 'active');
+				extra_combobox(new_raw, '#submt_caption', 'caption');
+				extra_dropdown(new_raw, '#submt_runplace', 'run_place');
+				extra_combobox(new_raw, '#submt_host', 'host');
+				extra_input(new_raw, '#submt_url', 'url');
+				extra_input(new_raw, '#submt_selector_txt', 'selector_txt');
+				extra_input(new_raw, '#submt_selector_btn', 'selector_btn');
+				extra_input(new_raw, '#submt_post_key', 'post_key');
+				return new_raw;
+			}
+		};
+
+		/**********************************
+		关键字配置库 UI代码
+		**********************************/
+
+		var keyword_lst_data = {
+			editrow : -1,
+			elemHeight : 23,
+			popHeight : 250,
+			popWidth : 550,
+			list_name : 'keyword',
+			container_id: '#tab_keyword',
+			data_fields : [
+				{name: 'name', type: 'string'},
+				{name: 'tags', type: 'string'},
+				{name: 'keywords', type: 'string'},
+				{name: 'exkeywords', type: 'string'}
+			],
+			data_columns : [
+				{ text: '名称', datafield: 'name', width: 140},
+				{ text: '分类标签', datafield: 'tags', width: 70},
+				{ text: '包含关键字', datafield: 'keywords', width: 418},
+				{ text: '不包含关键字',  datafield: 'exkeywords', width: 324}
+			],
+			create_form: function(table_id){
+				new_input(table_id, '分类标签：', '#keyword_tags', 400, this.elemHeight);
+				new_input(table_id, '包含关键字：', '#keyword_include', 400, this.elemHeight);
+				new_input(table_id, '不包含关键字：', '#keyword_exclude', 400, this.elemHeight);
+			},
+			fill_form : function(data_record) {
+				fill_input('#keyword_tags', data_record, 'tags');
+				fill_input('#keyword_include', data_record, 'keywords');
+				fill_input('#keyword_exclude', data_record, 'exkeywords');
+			},
+			extra_form : function () {
+				var new_raw = {};
+				extra_input(new_raw, '#keyword_tags', 'tags');
+				extra_input(new_raw, '#keyword_include', 'keywords');
+				extra_input(new_raw, '#keyword_exclude', 'exkeywords');
 				return new_raw;
 			}
 		};
@@ -809,10 +1072,19 @@ function api_ui_init(aDataSet)
 
 		init_grid(popup_lst_data);
 		init_grid(replace_lst_data);
+
 		init_grid(userlst_data);
+		init_grid(keyword_lst_data);
 		init_grid(msg_lst_data);
 		init_grid(posi_lst_data);
-		init_grid(identify_lst_data);
+
+		init_grid(account_ident_lst_data);
+		init_grid(keyword_ident_lst_data);
+		init_grid(submit_ident_lst_data);
+
+
+		$('div#jqxTabs div.jqx-tabs-header:first').css({'font-size': '15'});
+
 
 		function init_grid(p)
 		{
@@ -880,9 +1152,9 @@ function api_ui_init(aDataSet)
 				columns: p.data_columns
 			});
 
-			$(p.add_button_id).jqxButton({ theme: theme, width: 70});
-			$(p.del_button_id).jqxButton({ theme: theme, width: 70});
-			$(p.update_button_id).jqxButton({ theme: theme, width: 70});
+			$(p.add_button_id).jqxButton({ theme: theme, width: 50});
+			$(p.del_button_id).jqxButton({ theme: theme, width: 50});
+			$(p.update_button_id).jqxButton({ theme: theme, width: 50});
 
 			$(p.add_button_id).on('click', function () {
 				var data_record = {};
@@ -1318,6 +1590,9 @@ function api_ui_init(aDataSet)
 	function extra_dropdown_button(extra_to, drop_id, name)
 	{
 		var value = $(drop_id).jqxDropDownButton('getContent');
+		if (value == '') {
+			value = '--';
+		}
 		extra_to[name] = value;
 	}
 

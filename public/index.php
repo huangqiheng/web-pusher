@@ -163,49 +163,90 @@ api_ui_init(aDataSet);
 		<div id='jqxTabs'>
 			<ul>
 				<li style="margin-left: 30px;">
-					<img style='float: left;' width='16' height='16' src="/images/calendarIcon.png" alt="" class="small-image" />
-					<div style="float: left;">弹窗任务管理</div>
+					<img style='float: left;' width='32' height='32' src="/images/message.png" alt="" class="small-image" />
+					<div style="float: left; margin-top: 6px;">弹窗任务管理</div>
 				</li>
 				<li>
-					<img style='float: left;' width='16' height='16' src="/images/calendarIcon.png" alt="" class="small-image" />
-					<div style="float: left;">替换任务管理</div>
+					<img style='float: left;' width='32' height='32' src="/images/replace.png" alt="" class="small-image" />
+					<div style="float: left; margin-top: 6px;">替换任务管理</div>
 				</li>
-
 				<li style="margin-left: 50px;">
-					<img style='float: left;' width='16' height='16' src="/images/people.png" alt="" class="small-image" />
-					<div style="float: left;">用户分类库</div>
-				</li>
-
-				<li>
-					<img style='float: left;' width='16' height='16' src="/images/message.png" alt="" class="small-image" />
-					<div style="float: left;">预设消息库</div>
-				</li>
-
-				<li>
-					<img style='float: left;' width='16' height='16' src="/images/message.png" alt="" class="small-image" />
-					<div style="float: left;">替换位置库</div>
+					<img style='float: left;' width='32' height='32' src="/images/user.png" alt="" class="small-image" />
+					<div style="float: left; margin-top: 6px;">用户分类库</div>
 				</li>
 				<li>
-					<img style='float: left;' width='16' height='16' src="/images/chart.png" alt="" class="small-image" />
-					<div style="float: left;">账户识别库</div>
+					<img style='float: left;' width='32' height='32' src="/images/info.png" alt="" class="small-image" />
+					<div style="float: left; margin-top: 6px;">预设消息库</div>
 				</li>
-				<li style="margin-left: 90px;">
-					<img style='float: left;' width='16' height='16' src="/images/mailIcon.png" alt="" class="small-image" />
-					<div style="float: left;">即时信息</div>
+				<li>
+					<img style='float: left;' width='32' height='32' src="/images/search.png" alt="" class="small-image" />
+					<div style="float: left; margin-top: 6px;">识别规则库</div>
+				</li>
+				<li style="margin-left: 85px;">
+					<img style='float: left;' width='32' height='32' src="/images/sendmsg.png" alt="" class="small-image" />
+					<div style="float: left; margin-top: 6px;">发送</div>
 				</li>
 				<li >
-					<img style='float: left;' width='16' height='16' src="/images/settings.png" alt="" class="small-image" />
-					<div style="float: left;">系统配置</div>
+					<img style='float: left;' width='32' height='32' src="/images/settings.png" alt="" class="small-image" />
+					<div style="float: left; margin-top: 6px;">配置</div>
 				</li>
 			</ul>
 		
 			<div id='tab_sched'></div><!-- 发送任务管理 标签 -->
 			<div id='tab_replace'></div> <!-- 替换任务管理 标签 -->
-			<div id='tab_user'></div><!-- 终端分类库 标签 -->
-			<div id='tab_message'></div><!-- 预存消息库 标签 -->
-			<div id='tab_posi'></div> <!-- 替换位置库 标签 -->
-			<div id='tab_identify'></div> <!-- 账户识别库 标签 -->
-
+			<div id='tab_user'>
+				<div id='jqxTabs_user' >
+					<ul>
+						<li style="margin-left: 295px;">
+							<img style='float: left;' width='16' height='16' src="/images/calendarIcon.png" alt="" class="small-image" />
+							<div style="float: left;">终端用户详细分类</div>
+						</li>
+						<li>
+							<img style='float: left;' width='16' height='16' src="/images/calendarIcon.png" alt="" class="small-image" />
+							<div style="float: left;">关键字组配置</div>
+						</li>
+					</ul>
+					<div id='tab_user_category'></div>
+					<div id='tab_keyword'></div>
+				</div>
+			</div><!-- 终端分类库 标签 -->
+			<div>
+				<div id='jqxTabs_message'>
+					<ul>
+						<li style="margin-left: 425px;">
+							<img style='float: left;' width='16' height='16' src="/images/calendarIcon.png" alt="" class="small-image" />
+							<div style="float: left;">预设消息列表</div>
+						</li>
+						<li>
+							<img style='float: left;' width='16' height='16' src="/images/calendarIcon.png" alt="" class="small-image" />
+							<div style="float: left;">替换位置配置表</div>
+						</li>
+					</ul>
+					<div id='tab_message'></div>
+					<div id='tab_posi'></div>
+				</div>
+			</div><!-- 预存消息库 标签 -->
+			<div id='tab_identify'>
+				<div id='jqxTabs_ident'>
+					<ul>
+						<li style="margin-left: 485px;">
+							<img style='float: left;' width='16' height='16' src="/images/people.png" alt="" class="small-image" />
+							<div style="float: left;">账户识别规则</div>
+						</li>
+						<li>
+							<img style='float: left;' width='16' height='16' src="/images/calendarIcon.png" alt="" class="small-image" />
+							<div style="float: left;">关键字识别规则</div>
+						</li>
+						<li>
+							<img style='float: left;' width='16' height='16' src="/images/calendarIcon.png" alt="" class="small-image" />
+							<div style="float: left;">提交框识别规则</div>
+						</li>
+					</ul>
+					<div id='account_identify'></div>
+					<div id='keyword_identify'></div>
+					<div id='submit_identify'></div>
+				</div>
+			</div> <!-- 账户识别库 标签 -->
 			<!-- 发送即时消息 标签 -->
 			<div> 
 				<div id='message'>

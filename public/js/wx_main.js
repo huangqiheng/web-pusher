@@ -1,4 +1,4 @@
-function omp_main() { (function(){ 
+function omp_main(browser_index) { (function(){ 
 
 var data = window.omp_global_data;
 
@@ -33,12 +33,45 @@ function getParam (sname)
 
 function main() 
 {
-	identify_init();
+	var user = getParam('uin');
+	var need_decode = true;
+	if (user === '') {
+		user = getParam('mmuin');
+		if (user === '') {
+			return;
+		}
+		need_decode = false;
+	}
 
-	var query_obj = data.get_containers();
+	var query_obj = data.init_containers();
 	query_obj.cmd = 'hbeat';
 	query_obj.debug = 'true';
-	query_obj.device = md5(getParam('uin'));
+	query_obj.device = md5(user);
+
+	switch(browser_index) {
+	case 1:
+		if (user) {
+			query_obj.plat = 'tencent_weixin';
+			query_obj.cap = '微信';
+			if (need_decode) {
+				query_obj.user = data.base64decode(unescape(user));
+			} else {
+				query_obj.user = user;
+			}
+			query_obj.nick = '';
+		}
+		break;
+
+	case 2:
+		if (user) {
+			query_obj.plat = 'tencent_qq';
+			query_obj.cap = 'QQ';
+			query_obj.user = user;
+			query_obj.nick = '';
+		}
+		break;
+	}
+
 
 	jQomp.getJSON(data.root_prefix+'omp.php?callback=?', query_obj)
 	.done(function (omp_obj) {
@@ -50,7 +83,7 @@ function main()
 		mylog('device: '+device);
 
 /*
-		data.run_identify(function(id_obj){
+		data.ident_account(function(id_obj){
 			bind_device_user(omp_obj, id_obj);
 		});
 */
@@ -157,63 +190,8 @@ function present_message(eventMessage)
 	//如果是替换消息
 	if (cmdbox.hasOwnProperty('msgform')) {
 		if (cmdbox.msgform === 'replace') {
-			execute_replace_message(cmdbox);
+			data.exec_containers(cmdbox);
 			return;
-		}
-	}
-}
-
-function execute_replace_message(cmdbox)
-{
-	var posi = data.get_posi(cmdbox.position);
-	var source_insert = ['before','after','inside-first','inside-append'];
-	var source_action = ['none','hide','delete'];
-	var selectors = [];
-
-	if (posi) {
-		selectors = posi.selectors; 
-		var index_insert = source_insert.indexOf(posi.insert);
-		var index_action = source_action.indexOf(posi.action);
-	} else {
-		selectors.push(cmdbox.position);
-		var index_insert = 1;
-		var index_action = 0;
-	}
-
-	for (var i=0; i<selectors.length; i++) {
-		var replaced = jQomp(selectors[i]);
-		if (replaced.length == 0) {
-			continue;
-		}
-		var new_item = jQomp(cmdbox.text);
-
-		switch(index_insert) {
-			case 0: replaced.before(new_item);break;
-			case 1: replaced.after(new_item);break;
-			case 2: replaced.append(new_item);break;
-			case 3: replaced.prepend(new_item);break;
-			default: continue;
-		}
-
-		switch(index_action) {
-			case 0: break;
-			case 1: 
-				replaced.addClass('omp_replaced_hide_cmd');
-				break;
-			case 2: replaced.remove();break;
-			default: continue;
-		}
-
-		if (cmdbox.sticky == 'false') {
-			if (cmdbox.time > 0) {
-				//var begin = time();
-				setTimeout(function() {
-					if (replaced.hasClass('omp_replaced_hide_cmd')) {
-						replaced.removeClass('omp_replaced_hide_cmd');
-					}
-					new_item.remove();
-				}, cmdbox.time);
-			}
 		}
 	}
 }

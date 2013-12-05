@@ -8,7 +8,10 @@ switch($_GET['cmd']) {
 	case 'sched': 	die(handle_list_command(DATA_SCHED_LIST,   $_GET['opt']));
 	case 'replace': die(handle_list_command(DATA_PLANS_LIST,   $_GET['opt']));
 	case 'posi':	die(handle_list_command(DATA_POSI_LIST,    $_GET['opt']));
-	case 'identify':die(handle_list_command(DATA_IDENTIFY_LIST,    $_GET['opt']));
+	case 'accnt_ident':die(handle_list_command(DATA_ACCNT_IDENT_LIST,    $_GET['opt']));
+	case 'kword_ident':die(handle_list_command(DATA_KWORD_IDENT_LIST,    $_GET['opt']));
+	case 'submt_ident':die(handle_list_command(DATA_SUBMT_IDENT_LIST,    $_GET['opt']));
+	case 'keyword': die(handle_list_command(DATA_KEYWORD_LIST,    $_GET['opt']));
 	case 'status':  die(handle_sched_status($_GET['list'], $_GET['key'], $_GET['val']));
 	default: 	die('{"res": false}');
 }

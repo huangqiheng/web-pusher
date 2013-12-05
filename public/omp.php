@@ -18,7 +18,10 @@ switch($in_cmd) {
         echo handle_heartbeat_cmd($PARAMS);
         break;
     case 'bind':
-        echo handle_bind_device($PARAMS);
+        echo handle_bind_account($PARAMS);
+        break;
+    case 'kword':
+        echo handle_bind_keyword($PARAMS);
         break;
     case 'reset':
         echo handle_reset();
@@ -43,6 +46,19 @@ function handle_heartbeat_cmd($PARAMS)
 
 	list($is_new, $device, $device_saved) = get_cookie_saved();
 	$result = array('device' => $device);
+
+	$device_param = @$PARAMS['device'];
+	if ($device_param) {
+		if ($device_param !== $device) {
+			$device = $device_param;
+		}
+	}
+
+	omp_trace('device: '.$device);
+	//支持微信等不支持cookies的客户端，一次请求完成心跳和账户绑定
+	if (isset($PARAMS['plat'])) {
+		handle_bind_account($PARAMS);
+	}
 
 	$browser_save = array();
 	$browser_save['device'] = $device;
@@ -75,8 +91,7 @@ function handle_heartbeat_cmd($PARAMS)
 		}
 	}
 
-
-	omp_trace('get account');
+	omp_trace('get account: '.@$browser_save['bind_account']);
 	/******************************************
 	  更新心跳，维护在线列表
 	******************************************/
@@ -97,7 +112,7 @@ function handle_heartbeat_cmd($PARAMS)
 	  获取计划任务消息 
 	******************************************/
 
-	if ($items_result = get_popup_messages($browser_save)) {
+	if ($items_result = get_popup_messages($browser_save, $session_pv, $global_pv)) {
 		$result['sched_msg'] = $items_result;
 		$browser_save['sched_msg'] = base64_encode(json_encode($items_result));
 	}
@@ -138,9 +153,20 @@ function handle_heartbeat_cmd($PARAMS)
 	call_notifier($browser_save);
 	omp_trace('call notifier');
 
-	if (is_debug_client()) {
+	if ($is_debug = is_debug_client()) {
 		$result['trace'] = omp_trace(null);
 	}
+
+	$events = array();
+	$events['debug'] = $is_debug;
+	$events['first_session'] = $browser_save['new_user'];
+	$events['first_visit'] = $browser_save['new_visitor'];
+	$events['gw_bind_time'] = time();
+	$events['gw_kword_time'] = time();
+	$events['session_pv'] = $session_pv;
+	$events['global_pv'] = $global_pv;
+	$result['events'] = $events;
+
 	return jsonp($result);
 }
 
@@ -539,7 +565,7 @@ function general_match_tasks($list_name, $browser_save, $task_id, &$task_info, $
 	return $result;
 }
 
-function get_popup_messages($browser_save)
+function get_popup_messages($browser_save, &$session_pv, &$global_pv)
 {
 	$NS_device_block = NS_SCHED_DEVICE;
 	$NS_all_tasks = KEY_SCHED_LIST;
@@ -554,6 +580,9 @@ function get_popup_messages($browser_save)
 	$session = &$sched_block['session'];
 	$global = &$sched_block['global'];
 	$now = time();
+
+	$session_pv = $session['pageviews'];
+	$global_pv = $global['pageviews'];
 
 	/*************************************
 		获取计划任务消息
@@ -705,13 +734,15 @@ function get_cookie_saved()
 		if (isset($_GET['device'])) {
 			$device = $_GET['device'];
 			$is_new = new_user_mem($device, COOKIE_TIMEOUT_NEW);
-
+			omp_trace('device in params: '.$device);
 		} else {
 			$device = gen_uuid();
 			$is_new = new_user($device, time()+COOKIE_TIMEOUT_NEW);
+			omp_trace('device new: '.$device);
 		}
 	} else {
 		$is_new = new_user($device);
+		omp_trace('device in cookies: '.$device);
 	}
 
 	$browser = isset($_COOKIE[COOKIE_DEVICE_SAVED]) ? $_COOKIE[COOKIE_DEVICE_SAVED] : null;
@@ -1002,13 +1033,34 @@ function make_capview($username, $nickname, $caption)
 	return $cap_view;
 }
 
-function handle_bind_device($PARAMS)
+function handle_bind_keyword($PARAMS)
 {
-	$device    = @$PARAMS[ 'device' ];
-	$platform    = @$PARAMS[ 'plat' ];
+	$device      = @$PARAMS[ 'device' ];
+	$ktype	     = @$PARAMS[ 'ktype' ];
 	$caption     = @$PARAMS[ 'cap' ];
-	$username    = @$PARAMS[ 'user' ];
-	$nickname    = @$PARAMS[ 'nick' ];
+	$kword 	     = @$PARAMS[ 'kword' ];
+
+	return return_bind(array('status'=>'ok'));
+}
+
+function get_kword_info($platform, $device)
+{
+
+}
+
+function check_input($input, $max_length = 32)
+{
+	$input = trim(strip_tags($input));
+	return substr($input, 0, $max_length);
+}
+
+function handle_bind_account($PARAMS)
+{
+	$device      = @$PARAMS['device'];
+	$platform    = @$PARAMS['plat'];
+	$caption     = @$PARAMS['cap'];
+	$username    = check_input(@$PARAMS['user']);
+	$nickname    = check_input(@$PARAMS['nick']);
 	$cap_view = make_capview($username, $nickname, $caption);
 
 	/********************************
@@ -1017,6 +1069,11 @@ function handle_bind_device($PARAMS)
 
 	if ((empty($username)) && (empty($nickname))) {
 		omp_trace($PARAMS);
+		return return_bind(array('status'=>'error'));
+	}
+
+	if ((count($username) > 100) || (count($nickname) > 100)) {
+		omp_trace('username or nickname too long');
 		return return_bind(array('status'=>'error'));
 	}
 
@@ -1059,6 +1116,8 @@ function handle_bind_device($PARAMS)
 		//绑定信息没有改变的时候，确定绑定显示列表是正常输出的
 		if ($binded_list = $mem->ns_get(NS_BINDED_CAPTION, $device)) {
 			if (in_array($cap_view, $binded_list)) {
+				omp_trace($cap_view.' in binded_list');
+				omp_trace($binded_list);
 				return return_bind(array('status'=>'ok'));
 			} else {
 				omp_trace('but binbed capview missed');
@@ -1119,7 +1178,7 @@ function handle_bind_device($PARAMS)
 	counter(COUNT_ON_BINDING);
 	call_async_php('/on_account_binding.php', $bind_info);
 
-	return return_bind(array('status'=>'ok!'));
+	return return_bind(array('status'=>'ok'));
 }
 
 function return_bind($result)
