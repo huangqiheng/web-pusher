@@ -46,28 +46,33 @@ if(self==top){(function(){
 	//加载jquery和setting
 	if (typeof load_jquery === 'function') {
 		load_jquery();
-		loaded_jquery();
+		done_load_jquery();
 	} else {
-		LazyLoad.js( data.root_prefix+'js/jquery.min.js', loaded_jquery);
+		LazyLoad.js( data.root_prefix+'js/jquery.min.js', done_load_jquery);
 	}
 
-	function loaded_jquery() {
+	function done_load_jquery() {
 		window.jQomp = jQuery.noConflict(true);
 
 		if (typeof identify_init === 'function') {
-			loaded_settings();
+			done_load_settings();
 		} else {
-			LazyLoad.js(data.root_prefix+'cache/settings.js', loaded_settings);
+			LazyLoad.js(data.root_prefix+'cache/settings.js', done_load_settings);
 		}
 	}
 
-	function loaded_settings() {
+	function done_load_settings() {
 		identify_init();
 		call_main_entry();
 	}
 
 	//加载主函数和必要的库
 	function call_main_entry() {
+		if (host_matched(['appgame\.com'])) {
+			LazyLoad.js( data.root_prefix+'js/rwt_main.js', function(){ jQomp(omp_main()); });
+			return;
+		}
+
 		var index = 0;
 		if (index = ua_matched(['MicroMessenger', 'Mobile\/.+QQ\/'])) {
 			LazyLoad.js( data.root_prefix+'js/wx_main.js', function(){ jQomp(omp_main(index)); });

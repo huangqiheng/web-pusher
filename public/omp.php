@@ -36,16 +36,43 @@ exit();
 
 function handle_heartbeat_cmd($PARAMS)
 {
-	$url_obj = parse_url(@$_SERVER['HTTP_REFERER']);
-	omp_trace('heartbeat: '.@$url_obj['host'].@$url_obj['path']);
-	//omp_trace('ua: '.@$_SERVER['HTTP_USER_AGENT']);
+	/******************************************
+	  例外处理，一次心跳完成账户绑定，关键字搜集等
+	******************************************/
+
+	//支持微信等不支持cookies的客户端，一次请求完成心跳和账户绑定
+	if (isset($PARAMS['plat'])) {
+		handle_bind_account($PARAMS);
+	}
+
+	if (count($cmd_que = msg_queue())) {
+		foreach($cmd_que as $cmd_item) {
+			if (empty($cmd_item)) {
+				continue;
+			}
+
+			switch($cmd_item['cmd']) {
+				case 'bind':
+					handle_bind_account($cmd_item);
+					break;
+				case 'kword':
+					handle_bind_keyword($cmd_item);
+					break;
+				default:
+					omp_trace('error cookie cmd: '.json_encode($cmd_item));
+			}
+		}
+	}
 
 	/******************************************
 	  组织一个更新的心跳包
 	******************************************/
 
+	$url_obj = parse_url(@$_SERVER['HTTP_REFERER']);
+	omp_trace('heartbeat: '.@$url_obj['host'].@$url_obj['path']);
+	//omp_trace('ua: '.@$_SERVER['HTTP_USER_AGENT']);
+
 	list($is_new, $device, $device_saved) = get_cookie_saved();
-	$result = array('device' => $device);
 
 	$device_param = @$PARAMS['device'];
 	if ($device_param) {
@@ -53,13 +80,9 @@ function handle_heartbeat_cmd($PARAMS)
 			$device = $device_param;
 		}
 	}
+	$result = array('device' => $device);
 
 	omp_trace('device: '.$device);
-	//支持微信等不支持cookies的客户端，一次请求完成心跳和账户绑定
-	if (isset($PARAMS['plat'])) {
-		handle_bind_account($PARAMS);
-	}
-
 	$browser_save = array();
 	$browser_save['device'] = $device;
 	$browser_save['ip_addr'] = $_SERVER['REMOTE_ADDR'];
@@ -92,6 +115,7 @@ function handle_heartbeat_cmd($PARAMS)
 	}
 
 	omp_trace('get account: '.@$browser_save['bind_account']);
+
 	/******************************************
 	  更新心跳，维护在线列表
 	******************************************/
@@ -107,6 +131,24 @@ function handle_heartbeat_cmd($PARAMS)
 	}
 
 	omp_trace('update heartbeat');
+
+
+	/******************************************
+	  如果不需要返回消息，就此打住
+	******************************************/
+
+	$bypass_msg = (isset($PARAMS['nomsg']))? ($PARAMS['nomsg'] === 'true') : false;
+	if ($bypass_msg) {
+		if ($is_debug = is_debug_client()) {
+			$result['trace'] = omp_trace(null);
+		}
+		$events = array();
+		$events['debug'] = $is_debug;
+		$events['first_session'] = $browser_save['new_user'];
+		$events['first_visit'] = $browser_save['new_visitor'];
+		$result['events'] = $events;
+		return jsonp($result);
+	}
 
 	/******************************************
 	  获取计划任务消息 
@@ -748,14 +790,16 @@ function get_cookie_saved()
 	$browser = isset($_COOKIE[COOKIE_DEVICE_SAVED]) ? $_COOKIE[COOKIE_DEVICE_SAVED] : null;
 	$device_saved = null;
 
-	if ($browser) {
-		$device_saved = json_decode(base64_decode($browser), true);
-		$error = json_last_error();
-		if ($error === JSON_ERROR_NONE) {
-			$device_saved[0] = empty($device_saved[0]) ? false : true;
-			return array($is_new, $device, $device_saved);
-		} else {
-			$browser = null;
+	if (is_first_hit($device) === false) {
+		if ($browser) {
+			$device_saved = json_decode(base64_decode($browser), true);
+			$error = json_last_error();
+			if ($error === JSON_ERROR_NONE) {
+				$device_saved[0] = empty($device_saved[0]) ? false : true;
+				return array($is_new, $device, $device_saved);
+			} else {
+				$browser = null;
+			}
 		}
 	}
 
@@ -763,7 +807,13 @@ function get_cookie_saved()
 	$browser_o = get_browser_mem($useragent);
 	$device_name = get_device_mem($useragent);
 
-	$device_saved = array($browser_o->ismobiledevice, $browser_o->browser, $browser_o->platform, $device_name);
+	$is_mobile  = (empty($browser_o->ismobiledevice))? false : true;
+
+	if (!$is_mobile) {
+		$is_mobile = is_mobile($useragent);
+	}
+
+	$device_saved = array($is_mobile, $browser_o->browser, $browser_o->platform, $device_name);
 	$device_saved_encode = base64_encode(json_encode($device_saved));
 
 	setcookie(COOKIE_DEVICE_SAVED, $device_saved_encode, time()+COOKIE_TIMEOUT, '/', COOKIE_DOMAIN);
@@ -843,6 +893,11 @@ function match_normal($target, $browser_save, $keys)
 function targets_matched($targets, $browser_save, $is_detail=false)
 {
 	$matched = false;
+
+	if (empty($targets)) {
+		omp_trace('targets empty.');
+		return $matched;
+	}
 
 	foreach($targets as $target) {
 		do {
@@ -1035,10 +1090,10 @@ function make_capview($username, $nickname, $caption)
 
 function handle_bind_keyword($PARAMS)
 {
-	$device      = @$PARAMS[ 'device' ];
-	$ktype	     = @$PARAMS[ 'ktype' ];
-	$caption     = @$PARAMS[ 'cap' ];
-	$kword 	     = @$PARAMS[ 'kword' ];
+	$device      = @$PARAMS['device'];
+	$ktype	     = @$PARAMS['ktype'];
+	$caption     = @$PARAMS['cap'];
+	$kword 	     = @$PARAMS['kword'];
 
 	return return_bind(array('status'=>'ok'));
 }
@@ -1215,6 +1270,10 @@ function handle_reset()
 	$mem->ns_delete(NS_PLANS_DEVICE, $device);
 
 	new_user($device, time()+COOKIE_TIMEOUT_NEW);
+
+	//清空cookie
+	unset($_COOKIE[COOKIE_DEVICE_SAVED]);
+	setcookie(COOKIE_DEVICE_SAVED, '', time()-3600, '/', COOKIE_DOMAIN);
 
 	return 'succeed';
 }

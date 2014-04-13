@@ -894,7 +894,7 @@ function api_ui_init(aDataSet)
 		var keyword_ident_lst_data = {
 			editrow : -1,
 			elemHeight : 23,
-			popHeight : 420,
+			popHeight : 520,
 			popWidth : 550,
 			list_name : 'kword_ident',
 			container_id: '#keyword_identify',
@@ -908,7 +908,8 @@ function api_ui_init(aDataSet)
 				{name: 'host', type: 'string'},
 				{name: 'url', type: 'string'},
 				{name: 'selector', type: 'string'},
-				{name: 'regex', type: 'string'}
+				{name: 'regex', type: 'string'},
+				{name: 'formater', type: 'string'}
 			],
 			data_columns : [
 				{text: '规则名称', datafield: 'name', width: 80},
@@ -917,10 +918,11 @@ function api_ui_init(aDataSet)
 				{text: '执行地', datafield: 'run_place', width: 50},
 				{text: '延迟', datafield: 'delay', width: 32},
 				{text: '类型', datafield: 'ktype', width: 50},
-				{text: '主机规则', datafield: 'host', width: 120},
-				{text: 'URL规则', datafield: 'url', width: 169},
-				{text: '选择器',  datafield: 'selector', width: 170},
-				{text: '正则表达式',  datafield: 'regex', width: 169}
+				{text: '主机规则', datafield: 'host', width: 118},
+				{text: 'URL规则', datafield: 'url', width: 130},
+				{text: '选择器',  datafield: 'selector', width: 130},
+				{text: '正则表达式',  datafield: 'regex', width: 130},
+				{text: '格式化函数',  datafield: 'formater', width: 120}
 			],
 			create_form: function(table_id){
 				new_dropdown(table_id, '激活：', '#key_active', 200, this.elemHeight, source_active_cn, 0);
@@ -932,6 +934,7 @@ function api_ui_init(aDataSet)
 				new_input(table_id, 'URL规则', '#key_url', 400, this.elemHeight);
 				new_input(table_id, '选择器初选：', "#key_selector", 400, this.elemHeight);
 				new_input(table_id, '表达式修正：', "#key_regex", 400, this.elemHeight);
+				new_textarea(table_id, '格式化函数：', "#key_formater", 400, 84);
 			},
 			fill_form : function(data_record) {
 				fill_dropdown('#key_active', data_record, 'active', source_active_cn, 0);
@@ -943,6 +946,7 @@ function api_ui_init(aDataSet)
 				fill_input('#key_url', data_record, 'url');
 				fill_input('#key_selector', data_record, 'selector');
 				fill_input('#key_regex', data_record, 'regex');
+				fill_textarea('#key_formater', data_record, 'formater');
 			},
 			extra_form : function () {
 				var new_raw = {};
@@ -955,6 +959,7 @@ function api_ui_init(aDataSet)
 				extra_input(new_raw, '#key_url', 'url');
 				extra_input(new_raw, '#key_selector', 'selector');
 				extra_input(new_raw, '#key_regex', 'regex');
+				extra_textarea(new_raw, '#key_formater', 'formater', function(d){return rm_space(d);});
 				return new_raw;
 			}
 		};
@@ -1145,10 +1150,11 @@ function api_ui_init(aDataSet)
 				sortable: true,
 				width: '100%',
 				enableellipsis: false,
-				enableanimations: false,
+				enableanimations: true,
 				enablehover: false,
 				autoheight: true,
 				autorowheight: true,
+				//rowsheight: 40,
 				columns: p.data_columns
 			});
 

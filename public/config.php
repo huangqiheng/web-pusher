@@ -19,6 +19,7 @@ define('MEMC_PORT', 11211);
 define('COOKIE_DEVICE_ID', 'device_id'); //cookie名称
 define('COOKIE_DEVICE_SAVED', 'device_sav'); //cookie名称
 define('COOKIE_DEBUG', 'device_dbg'); //cookie名称
+define('COOKIE_QUEUE', 'device_msg'); //cookie名称
 define('COOKIE_NEW', 'device_new'); //cookie名称
 define('COOKIE_TIMEOUT', 3600*24*365*100); //cookie超时时间，设一个超大的
 define('COOKIE_TIMEOUT_NEW', 3600*24); //cookie超时时间
@@ -40,6 +41,9 @@ define('LOCAL_LOG_FILE', 'debug.log');
 /*********************************************************
 		下面的不用修改，为程序常量
 *********************************************************/
+
+//提供给每个客户端判读，memcached是否从上次访问后重新启动过
+define('NS_MEMCACHED_RESTARTED', 'mem_restarted'); //没必要改
 
 //定期维护超时的设备列表内容
 define('NS_DEVICE_LIST', 'ns_device_list'); //没必要改

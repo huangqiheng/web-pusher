@@ -7,6 +7,7 @@ $is_debug = false;
 if (isset($_GET['force'])) {
 	$is_debug = true;
 	update_sched_tasks();
+	sched_changed();
 	die();
 }
 
@@ -119,7 +120,6 @@ function makeconf_submt_ident($submt_ident_list)
 		$run_place = $item['run_place'];
 		if ($run_place == 'browser') {
 			$new_item = [];
-			$new_item['platform'] = $item['platform'];
 			$new_item['caption'] = $item['caption'];
 			$new_item['host'] = $item['host'];
 			$new_item['url'] = $item['url'];
@@ -166,14 +166,14 @@ function makeconf_kword_ident($kword_ident_list)
 		$run_place = $item['run_place'];
 		if ($run_place == 'browser') {
 			$new_item = [];
-			$new_item['platform'] = $item['platform'];
-			$new_item['caption'] = $item['caption'];
-			$new_item['ktype'] = $item['ktype'];
-			$new_item['host'] = $item['host'];
-			$new_item['url'] = $item['url'];
-			$new_item['delay'] = $item['delay'];
-			$new_item['selector'] = $item['selector'];
-			$new_item['regex'] = $item['regex'];
+			$new_item['caption'] = @$item['caption'];
+			$new_item['ktype'] = @$item['ktype'];
+			$new_item['host'] = @$item['host'];
+			$new_item['url'] = @$item['url'];
+			$new_item['delay'] = @$item['delay'];
+			$new_item['selector'] = @$item['selector'];
+			$new_item['regex'] = @$item['regex'];
+			$new_item['formater'] = @$item['formater'];
 			$browser_item[] = $new_item;
 
 		} elseif ($run_place == 'gateway') {

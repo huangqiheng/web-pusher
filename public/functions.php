@@ -1,10 +1,27 @@
 <?php
 require_once 'functions/memcached_namespace.php';
 require_once 'functions/memcache_array.php';
+require_once 'functions/memcache_queue.php';
 require_once 'functions/async_call.php';
 require_once 'functions/geoipcity.php';
 require_once 'functions/device_name.php';
 require_once 'config.php';
+
+function msg_queue()
+{
+	$result = [];
+	$msg_list = @$_COOKIE[COOKIE_QUEUE];
+	$msg_arr = explode(',', $msg_list);
+	foreach($msg_arr as $coded_str) {
+		$item_str = rawurldecode($coded_str);
+		$item = json_decode($item_str, true);
+		$result[] = $item;
+	}
+
+	unset($_COOKIE[COOKIE_QUEUE]);
+	setcookie(COOKIE_QUEUE, '', time()-3600);
+	return $result;
+}
 
 function print_r2($val){
 	echo '<pre>';
@@ -80,6 +97,18 @@ function sched_changed_time()
 {
 	$mem = api_open_mmc();
 	return $mem->get(SCHEDUAL_UPDATE_KEY);
+}
+
+function is_first_hit($device='system')
+{
+	$mem = api_open_mmc();
+	if ($restarted = $mem->get(NS_MEMCACHED_RESTARTED, $device)) {
+		return false;
+	}
+
+	$first_hit_time = time();
+	$mem->set(NS_MEMCACHED_RESTARTED, $device, $first_hit_time);
+	return $first_hit_time;
 }
 
 function get_browser_mem($useragent)

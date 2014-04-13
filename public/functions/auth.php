@@ -37,6 +37,7 @@ function force_login()
 function getDigest() {
 
     // mod_php
+    $digest = '';
     if (isset($_SERVER['PHP_AUTH_DIGEST'])) {
         $digest = $_SERVER['PHP_AUTH_DIGEST'];
     // most other servers

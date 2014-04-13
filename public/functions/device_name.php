@@ -1,6 +1,17 @@
 <?php
 require_once 'Mobile_Detect.php';
 
+function is_mobile($userAgent)
+{
+	$detect = new Mobile_Detect();
+	$detect->setUserAgent($userAgent);
+	$result = $detect->isMobile();
+	if (!$result) {
+		$result = $detect->isTablet();
+	}
+	return $result;
+}
+
 function get_device_name($userAgent) 
 {
 	$detect = new Mobile_Detect();
