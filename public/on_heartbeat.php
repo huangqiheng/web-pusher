@@ -10,7 +10,7 @@ if (!preg_match('#^http://([a-zA-Z0-9\-]+\.)*appgame\.com/([\S]+/)?[\d]+\.html$#
 	exit;
 }
 
-CachedHandler::queue('new-access-report', $url, function($items){
+CachedHandler::queue('new-access-reporter', $url, function($items){
 	$res = report_remote('http://db.appgame.com/service/spec/appgame.php', [
 		'cmd' => 'event',
 		'event' => 'new_articles',

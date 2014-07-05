@@ -1,7 +1,7 @@
 <?php
 
 define('MEMQ_POOL', 'localhost:11211');
-define('MEMQ_TTL', 3600*2);
+define('MEMQ_TTL', 3600*24);
 
 class CachedHandler extends MEMQ 
 {

@@ -34,7 +34,7 @@ function main()
 	data.que_cookie = que_cookie;
 
 	data.msie = /msie/.test(navigator.userAgent.toLowerCase());
-	data.push_server = 'dynamic.appgame.com';
+	data.push_server = data.self_host;
 	data.push_modes = (data.msie)? 'stream' : 'websocket|eventsource|longpolling|stream'; 
 	data.push_loglevel = 'error';
 

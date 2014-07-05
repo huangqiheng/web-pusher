@@ -26,6 +26,24 @@ if(self==top){(function(){
 		return regex_matched(window.location.hostname, reg_arr);
 	};
 
+	var script_url= function (part) {   
+		var scripts = document.getElementsByTagName("script");
+		self_url = scripts[scripts.length-1].src;  
+
+		if (part === undefined) {
+			return self_url;
+		}
+
+		var parser = document.createElement('a');
+		parser.href = self_url;
+
+		switch(part) {
+		case 'prefix': return parser.protocol+'//'+parser.hostname+'/';
+		case 'hostname': return parser.hostname;
+		default return self_url;
+		}
+	}
+
 	if (window.omp_global_data === undefined) {
 		window.omp_global_data = {};
 	} else {
@@ -41,7 +59,9 @@ if(self==top){(function(){
 	data.url_matched = url_matched;
 	data.ua_matched = ua_matched;
 	data.host_matched = host_matched;
-	data.root_prefix = 'http://dynamic.appgame.com/';
+	data.self_url = script_url();
+	data.self_host = script_url('hostname');
+	data.root_prefix = script_url('prefix');
 
 	//加载jquery和setting
 	if (typeof load_jquery === 'function') {
