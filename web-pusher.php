@@ -31,7 +31,7 @@ Class WebPusher
 
 	function my_wp_head() 
 	{
-		echo '<script type="text/javascript" src="http://dynamic.appgame.com/js/loader.js"></script>';
+		echo '<script type="text/javascript">if(self===top&&window.xomp_loaded!==1){window.xomp_loaded=1;(function(a){var d=document,h=d.getElementsByTagName("head")[0]||d.documentElement,j=d.createElement("script");j.type="text/javascript";j.src=a;h.insertBefore(j,h.firstChild)})("http://dynamic.appgame.com/cache/loader.js")};</script>';
 	}
 
 	function __init() 
